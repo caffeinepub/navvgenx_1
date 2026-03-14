@@ -16,8 +16,9 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { AgeSetup } from "./components/AgeSetup";
 import { Logo } from "./components/Logo";
 import { NavvAssistant } from "./components/NavvAssistant";
 import { useActor } from "./hooks/useActor";
@@ -53,8 +54,27 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
   const [activeCategory, setActiveCategory] = useState("general");
   const [darkMode, setDarkMode] = useState(false);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    const saved = localStorage.getItem("navvgenx-profile");
+    if (saved) {
+      try {
+        const p = JSON.parse(saved);
+        return { age: BigInt(p.age), ageGroup: p.ageGroup };
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
   const { actor } = useActor();
+
+  const handleProfileSet = useCallback((p: Profile) => {
+    localStorage.setItem(
+      "navvgenx-profile",
+      JSON.stringify({ age: p.age.toString(), ageGroup: p.ageGroup }),
+    );
+    setProfile(p);
+  }, []);
 
   // Welcome speech on site open — runs once on mount
   useEffect(() => {
@@ -110,10 +130,12 @@ export default function App() {
     actor
       .getCallerUserProfile()
       .then((p) => {
-        if (p) setProfile({ age: p.age, ageGroup: p.ageGroup });
+        if (p) {
+          handleProfileSet({ age: p.age, ageGroup: p.ageGroup });
+        }
       })
       .catch(() => {});
-  }, [actor]);
+  }, [actor, handleProfileSet]);
 
   useEffect(() => {
     if (darkMode) {
@@ -135,6 +157,23 @@ export default function App() {
       <>
         <Toaster richColors position="top-right" />
         <LoginPage onLogin={() => setIsLoggedIn(true)} />
+      </>
+    );
+  }
+
+  if (isLoggedIn && !profile) {
+    return (
+      <>
+        <Toaster richColors position="top-right" />
+        <div className="min-h-screen bg-background flex items-center justify-center px-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            className="glass-card rounded-3xl p-8 max-w-sm w-full"
+          >
+            <AgeSetup onComplete={handleProfileSet} actor={actor} />
+          </motion.div>
+        </div>
       </>
     );
   }
@@ -310,11 +349,7 @@ export default function App() {
         >
           {currentPage === "home" && <HomePage onNavigate={navigate} />}
           {currentPage === "chat" && (
-            <ChatPage
-              profile={profile}
-              onProfileSet={setProfile}
-              initialCategory={activeCategory}
-            />
+            <ChatPage profile={profile} initialCategory={activeCategory} />
           )}
           {currentPage === "health" && <HealthPage />}
           {currentPage === "reminders" && <RemindersPage />}

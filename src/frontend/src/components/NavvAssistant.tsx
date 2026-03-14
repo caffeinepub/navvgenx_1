@@ -1,6 +1,19 @@
-import { Mic, MicOff, Send, Volume2, VolumeX, X } from "lucide-react";
+import {
+  ExternalLink,
+  Mic,
+  MicOff,
+  Send,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  type AIResponse,
+  generateAIResponse,
+  getSuggestions,
+} from "../utils/aiEngine";
 import { wrapFriendly } from "../utils/friendlyTone";
 
 interface Message {
@@ -8,6 +21,10 @@ interface Message {
   role: "navv" | "user";
   text: string;
   timestamp: Date;
+  isLoading?: boolean;
+  wikiCard?: AIResponse["wikiCard"];
+  images?: AIResponse["imageResults"];
+  quickLinks?: AIResponse["quickLinks"];
 }
 
 interface NavvAssistantProps {
@@ -165,206 +182,13 @@ function getNavvAnswer(query: string): string {
   }
   if (/parenting|kids|children|toddler|teenager/.test(q)) {
     return wrapFriendly(
-      "Parenting is beautiful and hard at the same time — and no parent has it all figured out. Connection before correction: make sure your child feels safe and heard before discipline. Get on their level, literally — sit on the floor, make eye contact. Consistency matters more than perfection. Be kind to yourself too — a rested, calm parent is the greatest gift to a child.",
-      query,
-    );
-  }
-  if (/habit|build a habit|daily routine|new habit|stop a bad habit/.test(q)) {
-    return wrapFriendly(
-      "Building habits that stick comes down to making them obvious, attractive, easy, and satisfying (the habit loop). Attach your new habit to something you already do — this is called habit stacking. Start ridiculously small: '2 minutes of exercise' instead of '1 hour at the gym.' Track your streak visually — seeing that chain of days is powerful motivation to keep going.",
-      query,
-    );
-  }
-  if (/angry|anger|frustrated|rage|annoyed/.test(q)) {
-    return wrapFriendly(
-      "Anger is completely valid — it's telling you something important. But acting on it impulsively usually makes things worse. Try this: pause before responding (count to 10, take 3 deep breaths, leave the room if needed). Once you're calmer, express how you feel with 'I feel angry when...' rather than attacking the person. Regular exercise and sleep dramatically reduce baseline irritability too.",
-      query,
-    );
-  }
-  if (/bored|nothing to do|kill time/.test(q)) {
-    return wrapFriendly(
-      "Boredom is actually a creative invitation! Try: learning something new on YouTube or an app, starting a small project you've been putting off, going for a walk without headphones, calling someone you haven't talked to in a while, reading the first chapter of a book, or trying a new recipe. Boredom often hits when we're understimulated — it's a sign to create something.",
-      query,
-    );
-  }
-  if (/study|focus|concentrate|distracted|exam/.test(q)) {
-    return wrapFriendly(
-      "Studying smarter beats studying longer every time. Use the Pomodoro method: 25 minutes of focused work, 5 minute break, repeat. Study in a clean, distraction-free space — phone in another room. Use active recall: close your notes and write down everything you remember. Teach the topic out loud to yourself. Sleep is crucial for memory consolidation — all-nighters actually hurt retention.",
-      query,
-    );
-  }
-
-  if (/old money|old-money/.test(q)) {
-    return wrapFriendly(
-      "Old Money aesthetic is about quiet luxury and understated elegance. Key pieces: tailored blazers, cashmere sweaters, Oxford shirts, chino trousers, loafers, and polo shirts. Stick to a neutral palette — cream, navy, camel, burgundy, forest green. Preferred brands include Ralph Lauren, Loro Piana, Brunello Cucinelli, and Brooks Brothers. The rule: quality over logos, always.",
-      query,
-    );
-  }
-  if (/quiet luxury|stealth wealth/.test(q)) {
-    return wrapFriendly(
-      "Quiet Luxury (Stealth Wealth) is about wearing expensive pieces with no visible branding. Think The Row, Bottega Veneta, Loro Piana. Tonal dressing — one or two neutral colors head-to-toe. Impeccable fit is everything. Materials matter: cashmere, fine wool, supple leather.",
-      query,
-    );
-  }
-  if (/dark academia/.test(q)) {
-    return wrapFriendly(
-      "Dark Academia aesthetic channels scholarly elegance. Essentials: tweed blazers, turtleneck sweaters, Oxford shoes, plaid trousers, long wool coats. Rich autumn tones — brown, burgundy, dark green, ivory. Pair with a leather satchel and round glasses for the full look.",
-      query,
-    );
-  }
-  if (/streetwear|street style/.test(q)) {
-    return wrapFriendly(
-      "Streetwear blends comfort and culture. Key brands: Supreme, Off-White, Palace, Stüssy, A Bathing Ape. Essential pieces: graphic tees, hoodies, baggy denim, cargo pants, and sneakers (Nike Air Force 1, Jordan 1, Yeezy). Layer boldly and don't be afraid of statement pieces.",
-      query,
-    );
-  }
-  if (/y2k|y 2k|2000s fashion/.test(q)) {
-    return wrapFriendly(
-      "Y2K fashion is back! Think low-rise jeans, butterfly tops, mini skirts, platform shoes, and bold metallics. Key accessories: tinted sunglasses, chunky belts, micro bags. Colors: hot pink, lime green, silver, baby blue. Key brands: Juicy Couture, Von Dutch, and Miss Sixty.",
-      query,
-    );
-  }
-  if (/cottagecore|cottage core/.test(q)) {
-    return wrapFriendly(
-      "Cottagecore celebrates rural romance. Flowy floral dresses, puffed sleeves, linen blouses, prairie skirts, and wicker baskets. Muted earthy tones — sage green, dusty rose, warm cream. Add a straw hat and Mary Jane shoes to complete the enchanting look.",
-      query,
-    );
-  }
-  if (/fashion trend|style trend|what to wear/.test(q)) {
-    return wrapFriendly(
-      "2025 fashion trends include: quiet luxury with neutral tones, Y2K revival, coquette aesthetic with bows and pastels, utility wear (cargo pockets, functional details), and sheer layering. Sustainable fashion from brands like Everlane and Patagonia is also surging. The key rule this season: wear what makes YOU feel confident.",
-      query,
-    );
-  }
-  if (/outfit|clothes|wardrobe|dress/.test(q)) {
-    return wrapFriendly(
-      "Building a great wardrobe starts with quality basics: white tee, straight-leg jeans, a versatile blazer, simple sneakers, and a few statement accessories. Invest in 'cost per wear' — buy fewer but better pieces. Capsule wardrobes of 30-40 items that mix and match give infinite outfit combinations.",
-      query,
-    );
-  }
-  if (/weight loss|lose weight|fat loss/.test(q)) {
-    return wrapFriendly(
-      "Sustainable weight loss is about a calorie deficit + protein intake + movement. Aim for 0.5–1 lb per week. Prioritize: lean proteins (chicken, eggs, legumes), vegetables, whole grains. Walk 8,000+ steps daily, add 3x strength training per week. Sleep 7–9 hours — poor sleep spikes hunger hormones. No fad diets; consistency wins.",
-      query,
-    );
-  }
-  if (/muscle|build muscle|gym|workout|exercise/.test(q)) {
-    return wrapFriendly(
-      "To build muscle: progressive overload is key — gradually increase weight or reps each session. Focus on compound lifts: squat, bench press, deadlift, rows, overhead press. Eat 0.7–1g of protein per pound of body weight. Rest 48 hours between working the same muscle group. Sleep is when muscles actually grow!",
-      query,
-    );
-  }
-  if (/mental health|anxiety/.test(q)) {
-    return wrapFriendly(
-      "Mental health matters! Daily habits that help: 10 minutes of mindfulness or meditation, regular exercise (proven mood booster), journaling, limiting social media, and staying connected with loved ones. If you're struggling, please reach out to a mental health professional — therapy is a strength, not a weakness.",
-      query,
-    );
-  }
-  if (/nutrition|diet|healthy eating|food health/.test(q)) {
-    return wrapFriendly(
-      "A balanced diet includes: colorful vegetables (fill half your plate), lean proteins, whole grains, healthy fats (avocado, olive oil, nuts), and plenty of water. Minimize ultra-processed foods, added sugars, and excess sodium. The Mediterranean diet is consistently ranked among the healthiest worldwide.",
-      query,
-    );
-  }
-  if (/sleep|insomnia|rest/.test(q)) {
-    return wrapFriendly(
-      "Quality sleep tips: keep a consistent sleep schedule (even weekends), keep your room cool (65–68°F), avoid screens 1 hour before bed, limit caffeine after 2pm, and try a short wind-down routine. Adults need 7–9 hours. Poor sleep impacts mood, metabolism, immunity, and cognitive function.",
-      query,
-    );
-  }
-  if (/artificial intelligence|machine learning|ai|ml/.test(q)) {
-    return wrapFriendly(
-      "Artificial Intelligence (AI) is transforming every industry. Large Language Models (LLMs) like GPT-4 and Gemini can write, code, and reason. Machine Learning lets systems learn from data without explicit programming. Key subfields: NLP (natural language processing), computer vision, reinforcement learning, and generative AI. We're in the most exciting era of AI in history!",
-      query,
-    );
-  }
-  if (/coding|programming|learn to code|software/.test(q)) {
-    return wrapFriendly(
-      "Best languages to learn in 2025: Python (AI/data science/backend), JavaScript/TypeScript (web frontend/backend), Rust (systems/performance), Swift (iOS), Kotlin (Android). Start with Python for beginners — it's readable, versatile, and has a massive community. Free resources: freeCodeCamp, The Odin Project, CS50 on edX.",
-      query,
-    );
-  }
-  if (/blockchain|crypto|bitcoin|web3/.test(q)) {
-    return wrapFriendly(
-      "Blockchain is a decentralized, immutable ledger. Bitcoin is digital gold — a store of value. Ethereum enables smart contracts and DeFi (decentralized finance). NFTs are tokens that prove digital ownership. Web3 envisions a user-owned internet. The space is volatile and evolving — always research before investing.",
-      query,
-    );
-  }
-  if (/smartphone|iphone|android|phone/.test(q)) {
-    return wrapFriendly(
-      "iPhone vs Android in 2025: iPhone (iOS) offers seamless ecosystem integration, strong privacy, consistent updates, and Face ID. Android offers more customization, diverse price points, better file management, and Google integration. iPhone 16 Pro and Samsung Galaxy S25 Ultra are the current flagships. Choose based on your ecosystem preference.",
-      query,
-    );
-  }
-  if (/travel|destination|vacation|trip|visit/.test(q)) {
-    return wrapFriendly(
-      "Top travel destinations for 2025: Japan (cherry blossoms, Tokyo street food, ancient temples), Italy (Amalfi Coast, Florence, Venice), Morocco (Marrakech medinas, Sahara desert), Peru (Machu Picchu, Amazon), Iceland (Northern Lights, midnight sun), and Vietnam (Ha Long Bay, Hoi An). Start with your passport, a flexible mindset, and Google Flights for deals!",
-      query,
-    );
-  }
-  if (/japan|tokyo|kyoto|osaka/.test(q)) {
-    return wrapFriendly(
-      "Japan is a must-visit! Tokyo for futuristic energy, Shibuya crossing, Harajuku fashion, and incredible ramen. Kyoto for temples, geishas, and traditional ryokan stays. Osaka for street food heaven (takoyaki, okonomiyaki) and the Dotonbori entertainment district. Best time to visit: March-May for cherry blossoms or October-November for autumn foliage.",
-      query,
-    );
-  }
-  if (/europe|paris|london|rome|spain/.test(q)) {
-    return wrapFriendly(
-      "Europe's best: Paris (Eiffel Tower, Louvre, café culture), Rome (Colosseum, Vatican, pasta), Barcelona (Sagrada Família, La Boqueria, Gaudí's architecture), London (British Museum, street markets, Notting Hill), and Santorini (whitewashed cliffs, sunset views). Eurail Pass is great for multi-country travel!",
-      query,
-    );
-  }
-  if (/recipe|cook|cooking|how to make|how do i make/.test(q)) {
-    return wrapFriendly(
-      "Great cooking starts with mastering basics: knife skills, heat control, seasoning with salt at each stage, and mise en place (prepping ingredients before cooking). Start with simple recipes: pasta aglio e olio (garlic, olive oil, pasta — 15 minutes), scrambled eggs with butter, and a basic vinaigrette. YouTube channels like Joshua Weissman and Binging with Babish are excellent free resources.",
-      query,
-    );
-  }
-  if (/pizza|pasta|italian food/.test(q)) {
-    return wrapFriendly(
-      "Italian food secrets: use San Marzano tomatoes for sauce, bronze-die extruded pasta (rough texture holds sauce better), always salt your pasta water generously, never rinse cooked pasta, and finish pasta IN the sauce over heat. For pizza: a 72-hour cold-fermented dough, high hydration (65%+), and a very hot oven (500°F+) are the keys.",
-      query,
-    );
-  }
-  if (/space|nasa|mars|moon|planet|galaxy|universe/.test(q)) {
-    return wrapFriendly(
-      "Space is mind-blowing! The observable universe is 93 billion light-years across with 2 trillion galaxies. Mars missions: NASA's Perseverance rover is searching for ancient microbial life. SpaceX Starship aims to take humans to Mars within this decade. The James Webb Space Telescope is revealing galaxies from just 300 million years after the Big Bang. We are made of stardust!",
-      query,
-    );
-  }
-  if (/climate change|global warming|environment/.test(q)) {
-    return wrapFriendly(
-      "Climate change is the defining challenge of our era. Global temperature has risen ~1.2°C since pre-industrial times. Key impacts: extreme weather, sea level rise, coral bleaching, biodiversity loss. Solutions: renewable energy (solar + wind now cheaper than fossil fuels), electric vehicles, regenerative agriculture, and reducing consumption. Individual and systemic change both matter.",
-      query,
-    );
-  }
-  if (/history|ancient|world war|civilization|empire/.test(q)) {
-    return wrapFriendly(
-      "History is the story of humanity's triumphs and failures. Key turning points: the Agricultural Revolution (~10,000 BC), rise of ancient civilizations (Egypt, Greece, Rome), the Renaissance, Industrial Revolution, World Wars I & II, and the Digital Revolution. Understanding history helps us recognize patterns and avoid past mistakes.",
-      query,
-    );
-  }
-  if (/music|song|artist|album|playlist/.test(q)) {
-    return wrapFriendly(
-      "Music in 2025 is incredibly diverse! Trending genres: Afrobeats (Burna Boy, Wizkid), hyperpop, lo-fi hip hop, neo-soul (SZA, Summer Walker), and bedroom pop. Classic recommendations: for focus — lo-fi playlists or classical music. For workouts — hip hop or electronic. For mood lift — reggae or jazz. Music literally changes your brain chemistry!",
-      query,
-    );
-  }
-  if (/business|startup|entrepreneur|career|job/.test(q)) {
-    return wrapFriendly(
-      "To succeed in business: solve a real problem, know your customer deeply, and iterate fast. Key skills for 2025 careers: AI literacy, data analysis, communication, adaptability, and emotional intelligence. For job hunting: LinkedIn optimization, building a portfolio, and warm introductions beat cold applications. The best time to start is now!",
-      query,
-    );
-  }
-  if (/football|soccer|basketball|tennis|sports|athlete/.test(q)) {
-    return wrapFriendly(
-      "Sports are incredible for physical and mental health. In 2025, follow: Premier League football (Arsenal, Manchester City rivalry), NBA (Wembanyama's rise, LeBron's legacy), Wimbledon tennis, and Formula 1 racing (Max Verstappen era). Regular exercise and following a sport you love makes staying active feel effortless!",
+      "Parenting is beautiful and hard at the same time — and no parent has it all figured out. The most important things are consistent love, clear but kind boundaries, and genuinely listening to your children. Put your phone down when you're with them. Validate their feelings even when their behavior needs correcting. And take care of yourself too — you can't pour from an empty cup.",
       query,
     );
   }
 
   return wrapFriendly(
-    "That's a fascinating question! I'd love to explore that with you more. Ask me about fashion & style, health & fitness, technology, travel, food, science & space, history, music, business, or coding — I'm here to help with anything! For even deeper research, try the 'Search Google' or 'Ask ChatGPT' buttons in the chat page.",
+    `I'm NavvGenX AI — your smart companion for any topic! You can ask me about health, fashion, relationships, technology, science, travel, food, business, history, or literally anything. Try asking "what is [topic]" or "how do I [task]". I'm here to help with real answers and friendly advice.`,
     query,
   );
 }
@@ -391,8 +215,166 @@ function SoundWaves() {
   );
 }
 
+// ─── Loading dots ─────────────────────────────────────────────────────────────
+function LoadingDots({ gold }: { gold: string }) {
+  return (
+    <div className="flex items-center gap-1 py-1">
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          className="w-2 h-2 rounded-full"
+          style={{ background: gold }}
+          animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.2, 0.8] }}
+          transition={{
+            duration: 0.8,
+            repeat: Number.POSITIVE_INFINITY,
+            delay: i * 0.2,
+            ease: "easeInOut",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── WikiCard ─────────────────────────────────────────────────────────────────
+function WikiCard({
+  card,
+  gold,
+  navy,
+}: {
+  card: NonNullable<AIResponse["wikiCard"]>;
+  gold: string;
+  navy: string;
+}) {
+  return (
+    <div
+      className="mt-2 rounded-xl overflow-hidden"
+      style={{
+        border: `1px solid ${gold}30`,
+        background: `${navy}60`,
+      }}
+    >
+      {card.thumbnail && (
+        <img
+          src={card.thumbnail}
+          alt={card.title}
+          className="w-full h-28 object-cover"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
+        />
+      )}
+      <div className="p-2.5">
+        <p
+          className="text-xs font-semibold uppercase tracking-widest mb-1"
+          style={{ color: gold }}
+        >
+          {card.title}
+        </p>
+        <p className="text-xs leading-relaxed opacity-80">
+          {card.extract.slice(0, 300)}
+          {card.extract.length > 300 ? "…" : ""}
+        </p>
+        <a
+          href={card.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 mt-2 text-xs hover:opacity-100 opacity-70 transition-opacity"
+          style={{ color: gold }}
+        >
+          Read more on Wikipedia
+          <ExternalLink size={10} />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ─── Image grid ───────────────────────────────────────────────────────────────
+function ImageGrid({
+  images,
+  gold,
+}: {
+  images: NonNullable<AIResponse["imageResults"]>;
+  gold: string;
+}) {
+  const shown = images.slice(0, 3);
+  return (
+    <div className="mt-2 flex gap-1.5">
+      {shown.map((img) => (
+        <a
+          key={img.url}
+          href={img.searchUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 overflow-hidden rounded-lg"
+          style={{ border: `1px solid ${gold}20` }}
+        >
+          <img
+            src={img.url}
+            alt={img.alt}
+            className="w-full object-cover"
+            style={{ height: 60 }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+            }}
+          />
+        </a>
+      ))}
+    </div>
+  );
+}
+
+// ─── Quick link pills ─────────────────────────────────────────────────────────
+function QuickLinks({
+  links,
+  gold,
+  navy,
+}: {
+  links: NonNullable<AIResponse["quickLinks"]>;
+  gold: string;
+  navy: string;
+}) {
+  return (
+    <div className="mt-2 flex gap-1.5">
+      <a
+        href={links.google}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:opacity-100 opacity-75"
+        style={{
+          border: `1px solid ${gold}40`,
+          color: gold,
+          background: `${navy}40`,
+        }}
+      >
+        <ExternalLink size={9} />
+        Search Google
+      </a>
+      <a
+        href={links.chatgpt}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:opacity-100 opacity-75"
+        style={{
+          border: `1px solid ${gold}40`,
+          color: gold,
+          background: `${navy}40`,
+        }}
+      >
+        <ExternalLink size={9} />
+        Ask ChatGPT
+      </a>
+    </div>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────────
 export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
+  const gold = darkMode ? "oklch(0.78 0.15 75)" : "oklch(0.65 0.14 75)";
+  const navy = darkMode ? "oklch(0.08 0.022 265)" : "oklch(0.10 0.020 265)";
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -400,6 +382,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
   const [isListening, setIsListening] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [hasGreeted, setHasGreeted] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -475,10 +458,23 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
     }
   }, [isOpen]);
 
+  // Update suggestions as user types
+  const handleInputChange = (val: string) => {
+    setInputText(val);
+    if (val.trim().length > 1) {
+      setSuggestions(getSuggestions(val, "general").slice(0, 5));
+    } else {
+      setSuggestions([]);
+    }
+  };
+
   const sendMessage = useCallback(
-    (text: string) => {
+    async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed) return;
+
+      setSuggestions([]);
+      setInputText("");
 
       const userMsg: Message = {
         id: `u-${Date.now()}`,
@@ -487,19 +483,48 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, userMsg]);
-      setInputText("");
 
-      setTimeout(() => {
-        const answer = getNavvAnswer(trimmed);
-        const navvMsg: Message = {
-          id: `n-${Date.now()}`,
-          role: "navv",
-          text: answer,
-          timestamp: new Date(),
+      // Loading indicator
+      const loadingId = `loading-${Date.now()}`;
+      const loadingMsg: Message = {
+        id: loadingId,
+        role: "navv",
+        text: "Searching for the best answer…",
+        timestamp: new Date(),
+        isLoading: true,
+      };
+      setMessages((prev) => [...prev, loadingMsg]);
+
+      let aiResult: AIResponse;
+      try {
+        aiResult = await generateAIResponse(trimmed, "general", "adult");
+      } catch {
+        // Fallback to local answer
+        aiResult = {
+          text: getNavvAnswer(trimmed),
+          quickLinks: {
+            google: `https://www.google.com/search?q=${encodeURIComponent(trimmed)}`,
+            chatgpt: `https://chat.openai.com/?q=${encodeURIComponent(trimmed)}`,
+          },
         };
-        setMessages((prev) => [...prev, navvMsg]);
-        speak(answer);
-      }, 500);
+      }
+
+      const navvMsg: Message = {
+        id: `n-${Date.now()}`,
+        role: "navv",
+        text: aiResult.text,
+        timestamp: new Date(),
+        wikiCard: aiResult.wikiCard,
+        images: aiResult.imageResults?.slice(0, 3),
+        quickLinks: aiResult.quickLinks,
+      };
+
+      // Replace loading with actual answer
+      setMessages((prev) =>
+        prev.filter((m) => m.id !== loadingId).concat(navvMsg),
+      );
+
+      speak(aiResult.text.slice(0, 200));
     },
     [speak],
   );
@@ -532,70 +557,47 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
     recognition.interimResults = false;
     recognition.lang = "en-US";
 
-    setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
-    recognition.onresult = (e: SpeechRecognitionEvent) => {
-      const transcript = e.results[0][0].transcript;
-      sendMessage(transcript);
+    recognition.addEventListener("start", () => setIsListening(true));
+    recognition.addEventListener("end", () => setIsListening(false));
+    recognition.addEventListener("error", () => setIsListening(false));
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0]?.[0]?.transcript;
+      if (transcript) sendMessage(transcript);
     };
 
-    recognition.start();
     recognitionRef.current = recognition;
+    recognition.start();
   };
 
   const toggleMute = () => {
-    setIsMuted((m) => {
-      if (!m) window.speechSynthesis?.cancel();
-      return !m;
-    });
+    setIsMuted((prev) => !prev);
+    if (!isMuted) window.speechSynthesis?.cancel();
   };
-
-  // Theme colors
-  const gold = darkMode ? "oklch(0.78 0.15 75)" : "oklch(0.65 0.14 75)";
-  const navy = darkMode ? "oklch(0.08 0.022 265)" : "oklch(0.10 0.020 265)";
-  const goldGlow = darkMode
-    ? "0 0 20px 4px oklch(0.78 0.15 75 / 0.45), 0 0 40px 10px oklch(0.08 0.022 265 / 0.5)"
-    : "0 0 18px 3px oklch(0.65 0.14 75 / 0.4), 0 0 36px 8px oklch(0.10 0.020 265 / 0.35)";
-  const goldGlowActive = darkMode
-    ? "0 0 32px 10px oklch(0.78 0.15 75 / 0.65), 0 0 60px 18px oklch(0.08 0.022 265 / 0.6)"
-    : "0 0 28px 8px oklch(0.65 0.14 75 / 0.55), 0 0 52px 14px oklch(0.10 0.020 265 / 0.45)";
 
   return (
     <>
-      {/* Floating Orb Button */}
+      {/* Floating Orb */}
       <motion.button
-        data-ocid="navv.open_modal_button"
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full flex items-center justify-center cursor-pointer focus-visible:outline-none"
+        type="button"
+        data-ocid="navv.toggle"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl"
         style={{
-          background: navy,
+          background: `linear-gradient(135deg, ${navy}, oklch(0.15 0.028 265))`,
           border: `2px solid ${gold}`,
+          boxShadow: `0 0 24px ${gold}40, 0 8px 32px oklch(0.05 0.02 265 / 0.6)`,
         }}
-        animate={{
-          scale: isSpeaking ? [1, 1.1, 1] : [1, 1.04, 1],
-          boxShadow: isSpeaking
-            ? [goldGlow, goldGlowActive, goldGlow]
-            : [goldGlow, goldGlowActive, goldGlow],
-        }}
+        animate={isOpen ? { scale: 1 } : { scale: [1, 1.05, 1] }}
         transition={{
-          duration: isSpeaking ? 0.6 : 2.5,
+          duration: 3,
           repeat: Number.POSITIVE_INFINITY,
           ease: "easeInOut",
         }}
-        whileHover={{ scale: 1.12 }}
-        whileTap={{ scale: 0.95 }}
-        aria-label="Open Navv AI Assistant"
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.96 }}
+        aria-label="Open Navv AI assistant"
       >
-        <NavvLogo size={36} dark={darkMode} />
-        {isSpeaking && (
-          <motion.div
-            className="absolute inset-0 rounded-full"
-            style={{ border: `2px solid ${gold}` }}
-            animate={{ scale: [1, 1.3, 1.6], opacity: [0.7, 0.3, 0] }}
-            transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
-          />
-        )}
+        <NavvLogo size={36} dark={true} />
       </motion.button>
 
       {/* Chat Panel */}
@@ -607,9 +609,9 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 340, damping: 28 }}
-            className="fixed bottom-28 right-6 z-50 w-[370px] max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden flex flex-col"
+            className="fixed bottom-28 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden flex flex-col"
             style={{
-              maxHeight: "520px",
+              maxHeight: "560px",
               background: darkMode
                 ? "oklch(0.11 0.024 265 / 0.96)"
                 : "oklch(0.99 0.004 80 / 0.97)",
@@ -621,7 +623,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                 : `0 24px 64px oklch(0.3 0.04 265 / 0.25), 0 0 0 1px ${gold}22`,
             }}
           >
-            {/* Header — always navy */}
+            {/* Header */}
             <div
               className="flex items-center justify-between px-4 py-3 flex-shrink-0"
               style={{
@@ -710,7 +712,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                     </div>
                   )}
                   <div
-                    className="max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed"
+                    className="max-w-[82%] rounded-2xl px-3 py-2 text-sm leading-relaxed"
                     style={
                       msg.role === "navv"
                         ? {
@@ -729,12 +731,71 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                           }
                     }
                   >
-                    {msg.text}
+                    {msg.isLoading ? (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs opacity-60">
+                          Searching for the best answer…
+                        </span>
+                        <LoadingDots gold={gold} />
+                      </div>
+                    ) : (
+                      <>
+                        <span>{msg.text}</span>
+
+                        {/* Wiki card */}
+                        {msg.wikiCard && (
+                          <WikiCard
+                            card={msg.wikiCard}
+                            gold={gold}
+                            navy={navy}
+                          />
+                        )}
+
+                        {/* Image grid */}
+                        {msg.images && msg.images.length > 0 && (
+                          <ImageGrid images={msg.images} gold={gold} />
+                        )}
+
+                        {/* Quick links */}
+                        {msg.quickLinks && (
+                          <QuickLinks
+                            links={msg.quickLinks}
+                            gold={gold}
+                            navy={navy}
+                          />
+                        )}
+                      </>
+                    )}
                   </div>
                 </motion.div>
               ))}
               <div ref={messagesEndRef} />
             </div>
+
+            {/* Suggestions */}
+            {suggestions.length > 0 && (
+              <div
+                className="px-3 pb-1 flex flex-wrap gap-1.5 flex-shrink-0"
+                style={{ borderTop: `1px solid ${gold}10` }}
+              >
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => sendMessage(s)}
+                    className="text-xs px-2.5 py-1 rounded-full transition-all hover:opacity-100 opacity-70 truncate max-w-[160px]"
+                    style={{
+                      border: `1px solid ${gold}30`,
+                      color: gold,
+                      background: `${navy}30`,
+                    }}
+                    title={s}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Input Row */}
             <div
@@ -751,7 +812,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                 data-ocid="navv.input"
                 type="text"
                 value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask me anything…"
                 className="flex-1 bg-transparent text-sm outline-none placeholder:opacity-50"
@@ -761,7 +822,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
               />
               <button
                 type="button"
-                data-ocid="navv.toggle"
+                data-ocid="navv.secondary_button"
                 onClick={toggleMic}
                 className="p-2 rounded-xl transition-all flex-shrink-0"
                 style={{

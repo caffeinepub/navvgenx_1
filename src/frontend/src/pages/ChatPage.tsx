@@ -16,7 +16,6 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Logo } from "../components/Logo";
 import { useActor } from "../hooks/useActor";
 import {
   type ImageResult,
@@ -49,7 +48,6 @@ interface ChatMessage {
 
 interface ChatPageProps {
   profile: Profile | null;
-  onProfileSet: (profile: Profile) => void;
   initialCategory?: string;
 }
 
@@ -66,7 +64,6 @@ const categories = [
 
 export function ChatPage({
   profile,
-  onProfileSet,
   initialCategory = "general",
 }: ChatPageProps) {
   const { actor } = useActor();
@@ -96,10 +93,6 @@ export function ChatPage({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
-  const [showAgeDialog, setShowAgeDialog] = useState(!profile);
-  const [ageInput, setAgeInput] = useState("");
-  const [ageError, setAgeError] = useState("");
-  const [ageLoading, setAgeLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [hasSpeechSupport] = useState(
@@ -139,10 +132,6 @@ export function ChatPage({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  useEffect(() => {
-    if (!profile) setShowAgeDialog(true);
-  }, [profile]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: startCamera is stable
   useEffect(() => {
@@ -231,58 +220,6 @@ export function ChatPage({
     },
     [activeCategory, isLoading, actor],
   );
-
-  const validateAge = (val: string): string => {
-    const trimmed = val.trim();
-    if (!trimmed) return "Please enter your age";
-    if (!/^\d+$/.test(trimmed)) return "Age must be a whole number";
-    const num = Number.parseInt(trimmed, 10);
-    if (num < 1 || num > 120) return "Age must be between 1 and 120";
-    return "";
-  };
-
-  const handleAgeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.trim();
-    setAgeInput(val);
-    if (ageError) setAgeError(validateAge(val));
-  };
-
-  const handleAgeSubmit = async () => {
-    const error = validateAge(ageInput);
-    if (error) {
-      setAgeError(error);
-      return;
-    }
-    const age = Number.parseInt(ageInput.trim(), 10);
-    setAgeLoading(true);
-    const ageGroup = age < 26 ? "genz" : age < 45 ? "millennial" : "senior";
-    const newProfile: Profile = { age: BigInt(age), ageGroup };
-
-    if (!actor) {
-      onProfileSet(newProfile);
-      setShowAgeDialog(false);
-      setAgeLoading(false);
-      toast.success("Welcome to NavvGenX! Personalized just for you.");
-      return;
-    }
-
-    try {
-      await actor.createOrUpdateProfile(
-        BigInt(age),
-        ageGroup,
-        [],
-        BigInt(Date.now()),
-      );
-      onProfileSet(newProfile);
-      setShowAgeDialog(false);
-      toast.success("Welcome to NavvGenX! Personalized just for you.");
-    } catch {
-      onProfileSet(newProfile);
-      setShowAgeDialog(false);
-      toast.success("Welcome to NavvGenX!");
-    }
-    setAgeLoading(false);
-  };
 
   const handleVoiceInput = async () => {
     if (!hasSpeechSupport) return;
@@ -382,83 +319,6 @@ export function ChatPage({
 
   return (
     <div className="flex h-[calc(100vh-4rem)] relative">
-      {/* Age onboarding dialog */}
-      <AnimatePresence>
-        {showAgeDialog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-            data-ocid="age.dialog"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="glass-card rounded-3xl p-8 max-w-sm mx-4 w-full"
-            >
-              <div className="text-center mb-6">
-                <div className="flex justify-center mb-4">
-                  <Logo size="lg" />
-                </div>
-                <h2 className="font-bricolage font-bold text-2xl text-foreground mb-2">
-                  Welcome to NavvGenX
-                </h2>
-                <p className="text-muted-foreground text-sm font-space">
-                  Tell me your age so I can personalize your experience
-                </p>
-              </div>
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={ageInput}
-                    onChange={handleAgeInputChange}
-                    placeholder="Enter your age (1–120)"
-                    className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-foreground text-center text-lg outline-none transition-all font-space ${
-                      ageError
-                        ? "border-destructive/70 focus:border-destructive age-input-error"
-                        : "border-border focus:border-primary/60"
-                    }`}
-                    onKeyDown={(e) => e.key === "Enter" && handleAgeSubmit()}
-                    data-ocid="age.input"
-                  />
-                  {ageError && (
-                    <p
-                      className="text-destructive text-xs text-center font-space"
-                      data-ocid="age.error_state"
-                    >
-                      {ageError}
-                    </p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAgeSubmit}
-                  disabled={ageLoading}
-                  className="w-full navvgenx-gradient-btn py-3 rounded-xl font-semibold font-space"
-                  data-ocid="age.submit_button"
-                >
-                  {ageLoading ? "Setting up..." : "Get Started"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onProfileSet({ age: BigInt(25), ageGroup: "millennial" });
-                    setShowAgeDialog(false);
-                  }}
-                  className="w-full text-muted-foreground text-sm hover:text-foreground transition-colors py-1 font-space"
-                >
-                  Skip for now
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Camera modal */}
       <AnimatePresence>
         {showCamera && (
