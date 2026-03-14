@@ -62,6 +62,55 @@ const categories = [
   { key: "search", label: "Search" },
 ];
 
+const categoryGreetings: Record<string, string> = {
+  health:
+    "I am Navv, your health and wellness expert. How can I help you today?",
+  love: "I am Navv, your relationship and love expert. How can I help you today?",
+  study: "I am Navv, your study and learning expert. How can I help you today?",
+  career:
+    "I am Navv, your career and professional development expert. How can I help you today?",
+  fashion: "I am Navv, your fashion expert. How can I help you today?",
+  business:
+    "I am Navv, your business and entrepreneurship expert. How can I help you today?",
+  search: "I am Navv, your search expert. What would you like to find today?",
+  general: "I am Navv, your AI assistant. How can I help you today?",
+};
+
+function speakCategoryGreeting(category: string) {
+  try {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const text =
+      categoryGreetings[category] ??
+      "I am Navv, your AI assistant. How can I help you today?";
+    const speak = () => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.92;
+      utterance.pitch = 1.1;
+      utterance.volume = 1;
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(
+        (v) =>
+          v.name.toLowerCase().includes("google uk english female") ||
+          v.name.toLowerCase().includes("female") ||
+          v.name.toLowerCase().includes("samantha") ||
+          v.name.toLowerCase().includes("karen"),
+      );
+      if (preferred) utterance.voice = preferred;
+      window.speechSynthesis.speak(utterance);
+    };
+    if (window.speechSynthesis.getVoices().length > 0) {
+      speak();
+    } else {
+      window.speechSynthesis.addEventListener("voiceschanged", speak, {
+        once: true,
+      });
+    }
+  } catch {
+    // Speech synthesis not available
+  }
+}
+
 export function ChatPage({
   profile,
   initialCategory = "general",
@@ -123,10 +172,26 @@ export function ChatPage({
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const prevCategoryRef = useRef<string | null>(null);
 
   useEffect(() => {
     setActiveCategory(initialCategory);
   }, [initialCategory]);
+
+  // Speak expert greeting when opening a section
+  useEffect(() => {
+    const isFirstVisit = prevCategoryRef.current === null;
+    const hasChanged = prevCategoryRef.current !== activeCategory;
+    prevCategoryRef.current = activeCategory;
+
+    if (isFirstVisit) {
+      if (activeCategory !== "general") {
+        setTimeout(() => speakCategoryGreeting(activeCategory), 400);
+      }
+    } else if (hasChanged) {
+      setTimeout(() => speakCategoryGreeting(activeCategory), 200);
+    }
+  }, [activeCategory]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll ref doesn't need to be in deps
   useEffect(() => {
@@ -191,7 +256,13 @@ export function ChatPage({
       await new Promise((r) => setTimeout(r, 600 + Math.random() * 600));
 
       const ageGroup = profile?.ageGroup || "millennial";
-      const response = await generateAIResponse(msgText, category, ageGroup);
+      const userAge = profile?.age ? Number(profile.age) : 99;
+      const response = await generateAIResponse(
+        msgText,
+        category,
+        ageGroup,
+        userAge,
+      );
 
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),

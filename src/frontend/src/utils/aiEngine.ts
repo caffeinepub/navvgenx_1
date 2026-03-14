@@ -874,11 +874,66 @@ function shouldShowImages(message: string, category: string): boolean {
   );
 }
 
+// ─────────────────── Age-based Content Filter ───────────────────
+const ADULT_KEYWORDS =
+  /\b(porn|pornography|sex|sexual|nude|naked|explicit|erotic|xxx|hentai|rape|incest|pedophil|adult content|onlyfans|casino|gambling|bet|wager|slot machine|drug|cocaine|heroin|meth|marijuana|weed|alcohol|liquor|beer|wine|whiskey|vodka|smoke|cigarette|tobacco|vape|suicide|self.harm|cutting|kill yourself|how to die|murder|torture|gore|violence|weapon|gun|knife|bomb|terror|hack|darkweb|dark web|human trafficking)\b/i;
+const TEEN_ADULT_KEYWORDS =
+  /\b(porn|pornography|sex|sexual|nude|naked|explicit|erotic|xxx|hentai|rape|incest|pedophil|adult content|onlyfans|cocaine|heroin|meth|suicide|self.harm|cutting|kill yourself|gore|torture|bomb|terror|human trafficking|darkweb|dark web)\b/i;
+
+export function getAgeRestriction(age: number): {
+  level: "child" | "teen" | "adult";
+  blocked: RegExp | null;
+} {
+  if (age < 13) return { level: "child", blocked: ADULT_KEYWORDS };
+  if (age < 18) return { level: "teen", blocked: TEEN_ADULT_KEYWORDS };
+  return { level: "adult", blocked: null };
+}
+
+export function isContentBlocked(message: string, age: number): boolean {
+  const { blocked } = getAgeRestriction(age);
+  if (!blocked) return false;
+  return blocked.test(message);
+}
+
+function getBlockedMessage(age: number): AIResponse {
+  const level = age < 13 ? "child" : "teen";
+  const msg =
+    level === "child"
+      ? "Hey there! That topic isn't available for your age group. Try asking me about science, animals, space, stories, games, or anything fun and educational! 🌟"
+      : "That topic isn't available for users under 18. You can ask me about career tips, study strategies, fitness, technology, fashion, travel, or anything age-appropriate. What else can I help you with?";
+  return {
+    text: msg,
+    suggestions:
+      level === "child"
+        ? [
+            "Tell me about space",
+            "Fun animal facts",
+            "How does the internet work",
+            "Cool science experiments",
+          ]
+        : [
+            "Career tips for teens",
+            "Study tips for exams",
+            "Healthy lifestyle habits",
+            "Technology trends 2026",
+          ],
+    quickLinks: {
+      google: "https://www.google.com",
+      chatgpt: "https://chat.openai.com",
+    },
+  };
+}
+
 export async function generateAIResponse(
   message: string,
   activeCategory: string,
   ageGroup: string,
+  userAge = 99,
 ): Promise<AIResponse> {
+  // Age-based content filter
+  if (isContentBlocked(message, userAge)) {
+    return getBlockedMessage(userAge);
+  }
   const lower = message.toLowerCase().trim();
   const quickLinks = {
     google: `https://www.google.com/search?q=${encodeURIComponent(message)}`,

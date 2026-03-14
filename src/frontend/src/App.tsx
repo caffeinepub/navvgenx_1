@@ -381,7 +381,10 @@ export default function App() {
           </a>
         </p>
       </footer>
-      <NavvAssistant darkMode={darkMode} />
+      <NavvAssistant
+        darkMode={darkMode}
+        userAge={profile ? Number(profile.age) : 99}
+      />
     </div>
   );
 }

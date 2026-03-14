@@ -29,6 +29,7 @@ interface Message {
 
 interface NavvAssistantProps {
   darkMode?: boolean;
+  userAge?: number;
 }
 
 // ─── NavvLogo SVG ────────────────────────────────────────────────────────────
@@ -71,11 +72,11 @@ function NavvLogo({
         textAnchor="middle"
         fontFamily="'Space Grotesk', Arial, sans-serif"
         fontWeight="700"
-        fontSize="22"
+        fontSize="11"
         fill={gold}
         letterSpacing="-0.5"
       >
-        N
+        Navv
       </text>
     </svg>
   );
@@ -371,7 +372,10 @@ function QuickLinks({
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────────
-export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
+export function NavvAssistant({
+  darkMode = false,
+  userAge = 99,
+}: NavvAssistantProps) {
   const gold = darkMode ? "oklch(0.78 0.15 75)" : "oklch(0.65 0.14 75)";
   const navy = darkMode ? "oklch(0.08 0.022 265)" : "oklch(0.10 0.020 265)";
 
@@ -468,6 +472,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: userAge is stable prop
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
@@ -497,7 +502,12 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
 
       let aiResult: AIResponse;
       try {
-        aiResult = await generateAIResponse(trimmed, "general", "adult");
+        aiResult = await generateAIResponse(
+          trimmed,
+          "general",
+          "adult",
+          userAge,
+        );
       } catch {
         // Fallback to local answer
         aiResult = {
