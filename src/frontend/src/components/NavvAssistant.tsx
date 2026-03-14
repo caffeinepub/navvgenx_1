@@ -15,6 +15,8 @@ import {
   getSuggestions,
 } from "../utils/aiEngine";
 import { wrapFriendly } from "../utils/friendlyTone";
+import { extractUrls } from "../utils/linkUtils";
+import LinkEmbed from "./LinkEmbed";
 
 interface Message {
   id: string;
@@ -774,6 +776,11 @@ export function NavvAssistant({
                             navy={navy}
                           />
                         )}
+
+                        {/* Link Embeds */}
+                        {extractUrls(msg.text).map((url) => (
+                          <LinkEmbed key={url} url={url} />
+                        ))}
                       </>
                     )}
                   </div>

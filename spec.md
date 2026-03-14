@@ -1,24 +1,26 @@
 # NavvGenX
 
 ## Current State
-NavvGenX is a live AI companion app with a Chat page (using `aiEngine.ts` for AI responses) and a floating Navv assistant (`NavvAssistant.tsx` with `getNavvAnswer()`). Both currently give informational/factual answers but lack warm, human-friendly conversational tone and everyday life advice.
+ChatPage and NavvAssistant render AI responses as text, wiki cards, image grids, and quick links. No special handling for URLs (YouTube, social media, or general websites) pasted or returned in messages.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Friendly, human conversational openers/closers in both Navv and Chat responses (e.g. "Hey, good question!", "Honestly...", "Here's what I'd tell a friend:", "Hope that helps!", etc.)
-- Everyday life advice category covering: relationships, stress, money, career, parenting, motivation, productivity, loneliness, self-confidence, daily habits, work-life balance, morning routines
-- Friendly follow-up prompts at the end of answers (e.g. "Want me to go deeper on this?", "Let me know if you have follow-up questions!")
-- Natural casual greetings/small-talk handling ("I'm bored", "I need help", "I'm stressed", "I'm sad", "I'm happy")
+- URL detection utility: scans message text for any URLs (YouTube, other video sites, social media, general websites)
+- `LinkEmbed` component:
+  - YouTube: renders embedded iframe player
+  - Other URLs: renders a styled link preview card with icon, domain name, and clickable link to open in new tab
+- Auto-detect URLs in both ChatPage message bubbles and NavvAssistant message bubbles, and render LinkEmbed below the message text
 
 ### Modify
-- `src/frontend/src/utils/aiEngine.ts`: Wrap all `generateAIResponse` responses with friendly human-like tone. Add everyday advice topics. Add warm openers and follow-up closers.
-- `src/frontend/src/components/NavvAssistant.tsx`: Update `getNavvAnswer()` to use the same friendly tone. Add everyday life advice topics. Add warm closers.
+- ChatPage.tsx: after rendering message text/wiki card, scan message content for URLs and render LinkEmbed components
+- NavvAssistant.tsx: same — detect URLs in Navv message text and render embedded link cards
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. Create a shared `friendlyTone.ts` utility with: friendly openers array, friendly closers array, `wrapWithFriendlyTone(answer, query)` helper that picks a natural opener + closer
-2. Update `aiEngine.ts` `generateAIResponse` to use `wrapWithFriendlyTone` on all responses, and add everyday life advice topics
-3. Update `NavvAssistant.tsx` `getNavvAnswer()` to call the same helper and add everyday advice topics
+1. Create `src/frontend/src/utils/linkUtils.ts` — URL detection and YouTube ID extraction helpers
+2. Create `src/frontend/src/components/LinkEmbed.tsx` — renders YouTube iframe or generic link card
+3. Update `ChatPage.tsx` — integrate LinkEmbed into AI message rendering
+4. Update `NavvAssistant.tsx` — integrate LinkEmbed into Navv message rendering

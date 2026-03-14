@@ -16,6 +16,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import LinkEmbed from "../components/LinkEmbed";
 import { useActor } from "../hooks/useActor";
 import {
   type ImageResult,
@@ -26,6 +27,7 @@ import {
   speakText,
   stopSpeaking,
 } from "../utils/aiEngine";
+import { extractUrls } from "../utils/linkUtils";
 
 interface Profile {
   age: bigint;
@@ -823,6 +825,10 @@ export function ChatPage({
                         </div>
                       </motion.div>
                     )}
+                  {/* Link Embeds */}
+                  {extractUrls(msg.content).map((url) => (
+                    <LinkEmbed key={url} url={url} />
+                  ))}
                 </div>
               </motion.div>
             ))}
