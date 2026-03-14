@@ -9,8 +9,50 @@
   "orientation": "portrait-primary",
   "icons": [
     {
+      "src": "/assets/generated/navvgenx-icon-72.dim_72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/generated/navvgenx-icon-96.dim_96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/generated/navvgenx-icon-128.dim_128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/generated/navvgenx-icon-144.dim_144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/generated/navvgenx-icon-152.dim_152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/generated/navvgenx-icon-180.dim_180x180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/assets/generated/navvgenx-icon-192.dim_192x192.png",
       "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/generated/navvgenx-icon-384.dim_384x384.png",
+      "sizes": "384x384",
       "type": "image/png",
       "purpose": "any maskable"
     },

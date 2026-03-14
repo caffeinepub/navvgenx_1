@@ -1,4 +1,8 @@
 import { wrapFriendly } from "./friendlyTone";
+import {
+  fetchGoogleStyleAnswer,
+  isCountryQuestion,
+} from "./googleAnswerEngine";
 
 export interface SearchResult {
   title: string;
@@ -27,6 +31,7 @@ export interface AIResponse {
   suggestions?: string[];
   wikiCard?: WikiCard;
   quickLinks?: { google: string; chatgpt: string };
+  sources?: string[];
 }
 
 // ─────────────────── Suggestion Generator ───────────────────
@@ -131,23 +136,68 @@ export function getSuggestions(query: string, category = "general"): string[] {
   const matched = pool.filter(
     (s) =>
       s.toLowerCase().includes(q) ||
-      q.split(" ").some((w) => w.length > 2 && s.toLowerCase().includes(w)),
+      q
+        .split(" ")
+        .some((word) => word.length > 3 && s.toLowerCase().includes(word)),
   );
 
-  // Also generate dynamic suggestions based on keywords
+  // Generate dynamic query-based completions for any input
+  const queryWords = q.split(" ").filter((w) => w.length > 1);
   const dynamic: string[] = [];
-  if (q.length > 3) {
-    const keyword = q.charAt(0).toUpperCase() + q.slice(1);
+
+  // Question type completions
+  if (/^what/.test(q)) {
+    dynamic.push(
+      `What is ${q.replace(/^what\s*(is|are)?\s*/i, "") || "artificial intelligence"}`,
+      `What are the benefits of ${q.replace(/^what\s*(is|are)?\s*/i, "") || "meditation"}`,
+      `What causes ${q.replace(/^what\s*(is|are)?\s*/i, "") || "stress"}`,
+    );
+  } else if (/^who/.test(q)) {
+    dynamic.push(
+      `Who is ${q.replace(/^who\s*(is|was)?\s*/i, "") || "Elon Musk"}`,
+      `Who invented ${q.replace(/^who\s*(invented|created|founded)?\s*/i, "") || "the internet"}`,
+    );
+  } else if (/^how/.test(q)) {
+    dynamic.push(
+      `How to ${q.replace(/^how\s*(to|do|does|can|do\s+i)?\s*/i, "") || "learn faster"}`,
+      `How does ${q.replace(/^how\s*(does|do|to)?\s*/i, "") || "the brain work"}`,
+    );
+  } else if (/^why/.test(q)) {
+    dynamic.push(
+      `Why is ${q.replace(/^why\s*(is|are|does|do)?\s*/i, "") || "sleep important"}`,
+      `Why does ${q.replace(/^why\s*(does|do|is)?\s*/i, "") || "stress happen"}`,
+    );
+  } else {
+    // For any other partial input, generate contextual completions
     dynamic.push(
       `What is ${q}`,
-      `How does ${q} work`,
-      `Best tips for ${q}`,
-      `${keyword} ideas and inspiration`,
-      `${keyword} for beginners`,
+      `How to ${q}`,
+      `${q} tips and tricks`,
+      `Best ${q} guide`,
+      `${q} for beginners`,
+      `Why ${q} matters`,
     );
   }
 
-  return [...new Set([...matched, ...dynamic])].slice(0, 6);
+  // Add category-specific dynamic suggestions
+  if (category === "fashion" || /fashion|outfit|style|wear|dress/.test(q)) {
+    dynamic.push(`${q} outfit ideas`, `${q} style guide`, `${q} aesthetic`);
+  }
+  if (category === "health" || /health|fitness|exercise|diet|sleep/.test(q)) {
+    dynamic.push(`${q} health benefits`, `${q} for beginners`, `${q} tips`);
+  }
+  if (category === "career" || /career|job|work|salary|interview/.test(q)) {
+    dynamic.push(`${q} career advice`, `${q} salary guide`, `${q} skills`);
+  }
+
+  // Suppress unused variable warning
+  void queryWords;
+
+  const allSuggestions = [
+    ...matched,
+    ...dynamic.filter((s) => s.toLowerCase() !== q && s.length > q.length),
+  ];
+  return [...new Set(allSuggestions)].slice(0, 8);
 }
 
 // ─────────────────── Image Search Helper ───────────────────
@@ -329,6 +379,68 @@ export async function fetchWikipediaAnswer(
       }
     }
     return null;
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────── DuckDuckGo Instant Answer ───────────────────
+export async function fetchDuckDuckGoAnswer(query: string): Promise<{
+  abstract: string;
+  abstractSource: string;
+  abstractURL: string;
+  relatedTopics: string[];
+  answer: string;
+  answerType: string;
+} | null> {
+  try {
+    const cleanQuery = query.replace(/\?+$/, "").trim();
+    const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(cleanQuery)}&format=json&no_html=1&skip_disambig=1&no_redirect=1`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    const abstractText = data.AbstractText || "";
+    const answer = data.Answer || "";
+    const relatedTopics: string[] = (data.RelatedTopics || [])
+      .slice(0, 4)
+      .map((t: { Text?: string }) => t.Text || "")
+      .filter(Boolean);
+
+    if (abstractText.length > 50 || answer.length > 10) {
+      return {
+        abstract: abstractText,
+        abstractSource: data.AbstractSource || "",
+        abstractURL: data.AbstractURL || "",
+        relatedTopics,
+        answer,
+        answerType: data.AnswerType || "",
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────── Google News RSS Snippet ───────────────────
+export async function fetchGoogleNewsSnippet(
+  query: string,
+): Promise<{ title: string; snippet: string; url: string }[] | null> {
+  try {
+    const rssFeedUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+    const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssFeedUrl)}&count=3`;
+    const res = await fetch(proxyUrl);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.items || data.items.length === 0) return null;
+    return data.items
+      .slice(0, 3)
+      .map((item: { title: string; description: string; link: string }) => ({
+        title: item.title || "",
+        snippet: item.description?.replace(/<[^>]+>/g, "").slice(0, 200) || "",
+        url: item.link || "",
+      }));
   } catch {
     return null;
   }
@@ -957,11 +1069,43 @@ export async function generateAIResponse(
         break;
       }
     }
-    const wikiCardSearch = await fetchWikipediaAnswer(query);
-    const mainText =
-      knowledgeAnswer ||
-      (wikiCardSearch?.extract ??
-        `Here are the top results for "${query}". Explore the links below or ask me to explain any aspect in detail.`);
+    const [googleResultSearch, wikiResultSearch, ddgResultSearch] =
+      await Promise.allSettled([
+        fetchGoogleStyleAnswer(query),
+        fetchWikipediaAnswer(query),
+        fetchDuckDuckGoAnswer(query),
+      ]);
+    const googleAnswerSearch =
+      googleResultSearch.status === "fulfilled"
+        ? googleResultSearch.value
+        : null;
+    const wikiCardSearch =
+      wikiResultSearch.status === "fulfilled" ? wikiResultSearch.value : null;
+    const ddgSearch =
+      ddgResultSearch.status === "fulfilled" ? ddgResultSearch.value : null;
+
+    let mainText = knowledgeAnswer;
+    if (
+      !mainText &&
+      googleAnswerSearch &&
+      googleAnswerSearch.answer.length > 80
+    ) {
+      mainText = googleAnswerSearch.answer;
+    }
+    if (!mainText && ddgSearch?.abstract) {
+      mainText = ddgSearch.abstract;
+      if (ddgSearch.relatedTopics.length > 0) {
+        mainText += `\n\n**Related topics:**\n${ddgSearch.relatedTopics
+          .slice(0, 3)
+          .map((t) => `• ${t}`)
+          .join("\n")}`;
+      }
+    }
+    if (!mainText) {
+      mainText =
+        wikiCardSearch?.extract ??
+        `Here are the top results for "${query}". Explore the links below or ask me to explain any aspect in detail.`;
+    }
     return {
       text: `**Search results for "${query}":**\n\n${mainText}`,
       searchResults: results,
@@ -981,6 +1125,8 @@ export async function generateAIResponse(
   }
 
   // ── Fashion / Lifestyle aesthetics (knowledge base is best source) ──
+
+  // ── Fashion / Lifestyle aesthetics (knowledge base is best source) ──
   const isFashionQuery =
     activeCategory === "fashion" || fashionKeywords.test(lower);
   if (isFashionQuery) {
@@ -992,57 +1138,141 @@ export async function generateAIResponse(
           imageResults,
           suggestions,
           quickLinks,
+          sources: ["Knowledge Base"],
         };
       }
     }
   }
 
-  // ── FACTUAL / KNOWLEDGE QUESTIONS → Wikipedia first ──
-  const isFactualQuestion =
-    /(what is|what are|who is|who was|how does|how do|explain|tell me about|define|describe|why is|why does|when did|where is|what does|capital of|history of|science of|facts about|information about|give me info|how to make|how to build|how to create|how to start|how to learn|who invented|who created|who founded|when was|where was|what happened|how many|how much|what year|what country|what language|what color|which is|which are)/i.test(
-      lower,
-    );
+  // ── Parallel fetch: ALL sources simultaneously ──
+  const [googleResult, wikiResult, ddgResult] = await Promise.allSettled([
+    fetchGoogleStyleAnswer(message),
+    fetchWikipediaAnswer(message),
+    fetchDuckDuckGoAnswer(message),
+  ]);
+  const googleAnswer =
+    googleResult.status === "fulfilled" ? googleResult.value : null;
+  const wikiCard = wikiResult.status === "fulfilled" ? wikiResult.value : null;
+  const ddgData = ddgResult.status === "fulfilled" ? ddgResult.value : null;
 
-  if (isFactualQuestion || activeCategory === "general") {
-    // Check knowledge base first
-    for (const entry of knowledgeBase) {
-      if (entry.keywords.test(lower)) {
-        const imageResults = shouldShowImages(lower, activeCategory)
-          ? getImageResults(message)
-          : undefined;
-        return {
-          text: applyTone(entry.response, ageGroup),
-          imageResults,
-          suggestions,
-          quickLinks,
-        };
+  // ── Aggregate ALL sources ──
+  const sourceParts: string[] = [];
+  const usedSources: string[] = [];
+
+  // 1. Google-style structured answer (country, book, person, definition)
+  if (googleAnswer && googleAnswer.answer.length > 80) {
+    sourceParts.push(googleAnswer.answer);
+    if (googleAnswer.type === "country") usedSources.push("REST Countries API");
+    else if (googleAnswer.source === "Open Library")
+      usedSources.push("Open Library");
+    else usedSources.push("Wikipedia");
+  }
+
+  // 2. DuckDuckGo direct instant answer
+  if (ddgData?.answer && ddgData.answer.length > 5) {
+    const ddgText = `**${ddgData.answer}**${ddgData.abstract ? `\n${ddgData.abstract}` : ""}`;
+    if (!sourceParts.some((p) => p.includes(ddgData.answer ?? ""))) {
+      sourceParts.push(ddgText);
+      usedSources.push("DuckDuckGo");
+    }
+  } else if (ddgData?.abstract && ddgData.abstract.length > 80) {
+    if (!sourceParts.some((p) => p.length > 80)) {
+      sourceParts.push(ddgData.abstract);
+    } else {
+      // Add as additional context if it adds new info
+      const existing = sourceParts[0] ?? "";
+      if (!existing.includes(ddgData.abstract.slice(0, 40))) {
+        sourceParts.push(ddgData.abstract);
       }
     }
+    usedSources.push("DuckDuckGo");
+  }
 
-    // Wikipedia as PRIMARY source for factual questions
-    const wikiCardFactual = await fetchWikipediaAnswer(message);
-    if (wikiCardFactual?.extract && wikiCardFactual.extract.length > 80) {
-      const imageResults: ImageResult[] = wikiCardFactual.thumbnail
-        ? [
-            {
-              url: wikiCardFactual.thumbnail,
-              alt: wikiCardFactual.title,
-              searchUrl: `https://www.google.com/search?q=${encodeURIComponent(message)}&tbm=isch`,
-            },
-            ...getUnsplashImages(message).slice(0, 3),
-          ]
-        : getUnsplashImages(message);
-      return {
-        text: wikiCardFactual.extract,
-        suggestions,
-        imageResults,
-        wikiCard: wikiCardFactual,
-        quickLinks,
-      };
+  // 3. Wikipedia card extract
+  if (wikiCard?.extract && wikiCard.extract.length > 80) {
+    const existing = sourceParts.join(" ");
+    if (!existing.includes(wikiCard.extract.slice(0, 50))) {
+      sourceParts.push(wikiCard.extract);
+      if (!usedSources.includes("Wikipedia")) usedSources.push("Wikipedia");
+    } else if (!usedSources.includes("Wikipedia")) {
+      usedSources.push("Wikipedia");
     }
   }
 
-  // ── Category-specific advice ──
+  // 4. Knowledge base
+  let kbMatch = "";
+  for (const entry of knowledgeBase) {
+    if (entry.keywords.test(lower)) {
+      kbMatch = entry.response;
+      break;
+    }
+  }
+  if (kbMatch) {
+    usedSources.push("Knowledge Base");
+    if (sourceParts.length === 0) {
+      sourceParts.push(kbMatch);
+    }
+  }
+
+  // ── Build aggregated answer ──
+  if (sourceParts.length > 0) {
+    let finalText = sourceParts[0];
+
+    // Merge second source if it adds meaningful new content
+    if (sourceParts.length > 1) {
+      const second = sourceParts[1];
+      const firstWords = finalText.toLowerCase().slice(0, 100);
+      const secondStart = second.toLowerCase().slice(0, 40);
+      if (!firstWords.includes(secondStart) && second.length > 60) {
+        finalText += `\n\n**Additional context:**\n${second}`;
+      }
+    }
+
+    // Add DuckDuckGo related topics
+    if (ddgData?.relatedTopics && ddgData.relatedTopics.length > 0) {
+      finalText += `\n\n**Related topics:**\n${ddgData.relatedTopics
+        .slice(0, 3)
+        .map((t) => `• ${t}`)
+        .join("\n")}`;
+    }
+
+    // Follow-up suggestions from topic
+    const topicWord = message
+      .replace(/^(what|who|how|why|tell me about)\s*/i, "")
+      .slice(0, 30);
+    const followUpSuggestions = [
+      ...suggestions,
+      `Tell me more about ${topicWord}`,
+      `History of ${topicWord}`,
+      `Why is ${topicWord} important`,
+    ]
+      .filter((s, i, a) => a.indexOf(s) === i)
+      .slice(0, 8);
+
+    const imageResults: ImageResult[] = wikiCard?.thumbnail
+      ? [
+          {
+            url: wikiCard.thumbnail,
+            alt: wikiCard.title,
+            searchUrl: `https://www.google.com/search?q=${encodeURIComponent(message)}&tbm=isch`,
+          },
+          ...getUnsplashImages(message).slice(0, 3),
+        ]
+      : shouldShowImages(lower, activeCategory)
+        ? getImageResults(message)
+        : [];
+
+    return {
+      text: wrapFriendly(applyTone(finalText, ageGroup), message),
+      suggestions: followUpSuggestions,
+      imageResults: imageResults.length > 0 ? imageResults : undefined,
+      wikiCard: wikiCard || undefined,
+      quickLinks,
+      sources: usedSources,
+    };
+  }
+
+  // ── Category-specific advice fallback ──
   const buildCatResponse = (responses: string[], cat: string): AIResponse => {
     const r = responses[Math.floor(Math.random() * responses.length)];
     const imageResults = shouldShowImages(lower, cat)
@@ -1053,21 +1283,11 @@ export async function generateAIResponse(
       suggestions,
       imageResults,
       quickLinks,
+      sources: ["Knowledge Base"],
     };
   };
 
   if (activeCategory === "health" || healthKeywords.test(lower)) {
-    const wikiCardHealth = await fetchWikipediaAnswer(message);
-    if (wikiCardHealth?.extract && wikiCardHealth.extract.length > 100) {
-      const imageResults = getUnsplashImages(message);
-      return {
-        text: wikiCardHealth.extract,
-        suggestions,
-        imageResults,
-        wikiCard: wikiCardHealth,
-        quickLinks,
-      };
-    }
     return buildCatResponse(healthResponses, "health");
   }
   if (activeCategory === "love" || loveKeywords.test(lower)) {
@@ -1086,47 +1306,11 @@ export async function generateAIResponse(
     return buildCatResponse(businessResponses, "business");
   }
 
-  // ── Broad knowledge scan ──
-  for (const entry of knowledgeBase) {
-    if (entry.keywords.test(lower)) {
-      const imageResults = shouldShowImages(lower, activeCategory)
-        ? getImageResults(message)
-        : undefined;
-      return {
-        text: applyTone(entry.response, ageGroup),
-        imageResults,
-        suggestions,
-        quickLinks,
-      };
-    }
-  }
-
-  // ── Final: try Wikipedia for anything else ──
-  const wikiCardFinal = await fetchWikipediaAnswer(message);
-  if (wikiCardFinal?.extract && wikiCardFinal.extract.length > 80) {
-    const imageResults: ImageResult[] = wikiCardFinal.thumbnail
-      ? [
-          {
-            url: wikiCardFinal.thumbnail,
-            alt: wikiCardFinal.title,
-            searchUrl: `https://www.google.com/search?q=${encodeURIComponent(message)}&tbm=isch`,
-          },
-          ...getUnsplashImages(message).slice(0, 3),
-        ]
-      : getUnsplashImages(message);
-    return {
-      text: wikiCardFinal.extract,
-      suggestions,
-      imageResults,
-      wikiCard: wikiCardFinal,
-      quickLinks,
-    };
-  }
-
+  // ── Ultimate fallback ──
   return {
     text: wrapFriendly(
       applyTone(
-        `I'm NavvGenX AI — here to help with anything you'd like to know or discuss. Try asking "what is [topic]", "who is [person]", "how does [thing] work", or "explain [concept]". I can also help with health, fashion, career, travel, and more.`,
+        `I searched multiple sources for "${message}" but couldn't find a specific answer. Try rephrasing your question, or use the "Search Google" button below for the most up-to-date results. You can also try asking "what is [topic]", "who is [person]", or "how does [thing] work" for better results.`,
         ageGroup,
       ),
       message,

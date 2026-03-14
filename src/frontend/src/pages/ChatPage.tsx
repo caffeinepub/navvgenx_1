@@ -46,6 +46,7 @@ interface ChatMessage {
   suggestions?: string[];
   wikiCard?: WikiCard;
   quickLinks?: { google: string; chatgpt: string };
+  sources?: string[];
 }
 
 interface ChatPageProps {
@@ -66,16 +67,18 @@ const categories = [
 
 const categoryGreetings: Record<string, string> = {
   health:
-    "I am Navv, your health and wellness expert. How can I help you today?",
-  love: "I am Navv, your relationship and love expert. How can I help you today?",
-  study: "I am Navv, your study and learning expert. How can I help you today?",
+    "Hi! I'm Navv, your health and wellness expert. How can I help you today?",
+  love: "Hi! I'm Navv, your relationship and love expert. How can I help you today?",
+  study:
+    "Hi! I'm Navv, your study and learning expert. How can I help you today?",
   career:
-    "I am Navv, your career and professional development expert. How can I help you today?",
-  fashion: "I am Navv, your fashion expert. How can I help you today?",
+    "Hi! I'm Navv, your career and professional development expert. How can I help you today?",
+  fashion: "Hi! I'm Navv, your fashion expert. How can I help you today?",
   business:
-    "I am Navv, your business and entrepreneurship expert. How can I help you today?",
-  search: "I am Navv, your search expert. What would you like to find today?",
-  general: "I am Navv, your AI assistant. How can I help you today?",
+    "Hi! I'm Navv, your business and entrepreneurship expert. How can I help you today?",
+  search:
+    "Hi! I'm Navv, your search expert. What would you like to find today?",
+  general: "Hi! I'm Navv, your AI assistant. How can I help you today?",
 };
 
 function speakCategoryGreeting(category: string) {
@@ -84,7 +87,7 @@ function speakCategoryGreeting(category: string) {
     window.speechSynthesis.cancel();
     const text =
       categoryGreetings[category] ??
-      "I am Navv, your AI assistant. How can I help you today?";
+      "Hi! I'm Navv, your AI assistant. How can I help you today?";
     const speak = () => {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.92;
@@ -278,6 +281,7 @@ export function ChatPage({
         suggestions: response.suggestions,
         wikiCard: response.wikiCard,
         quickLinks: response.quickLinks,
+        sources: response.sources,
       };
       setMessages((prev) => [...prev, aiMsg]);
       setIsLoading(false);
@@ -718,6 +722,23 @@ export function ChatPage({
                         </span>
                         Ask ChatGPT
                       </a>
+                    </div>
+                  )}
+
+                  {/* Source badges */}
+                  {msg.sources && msg.sources.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      <span className="text-xs text-muted-foreground font-space">
+                        Sources:
+                      </span>
+                      {msg.sources.map((src) => (
+                        <span
+                          key={src}
+                          className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-space font-medium"
+                        >
+                          {src}
+                        </span>
+                      ))}
                     </div>
                   )}
 

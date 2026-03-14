@@ -27,6 +27,7 @@ interface Message {
   wikiCard?: AIResponse["wikiCard"];
   images?: AIResponse["imageResults"];
   quickLinks?: AIResponse["quickLinks"];
+  sources?: string[];
 }
 
 interface NavvAssistantProps {
@@ -446,12 +447,12 @@ export function NavvAssistant({
       const greetMsg: Message = {
         id: "greeting",
         role: "navv",
-        text: "Hey there! I'm Navv — your AI friend. Ask me anything: fashion, health, tech, travel, science, or everyday life advice. What's on your mind?",
+        text: "Hi! I'm Navv, your AI friend. Ask me anything — fashion, health, tech, travel, science, or everyday life advice. What's on your mind?",
         timestamp: new Date(),
       };
       setMessages([greetMsg]);
       setTimeout(() => {
-        speak("Hey there! I am Navv, how can I help you today?");
+        speak("Hi! I'm Navv, how can I help you today?");
         inputRef.current?.focus();
       }, 400);
     }
@@ -529,6 +530,7 @@ export function NavvAssistant({
         wikiCard: aiResult.wikiCard,
         images: aiResult.imageResults?.slice(0, 3),
         quickLinks: aiResult.quickLinks,
+        sources: aiResult.sources,
       };
 
       // Replace loading with actual answer
@@ -775,6 +777,24 @@ export function NavvAssistant({
                             gold={gold}
                             navy={navy}
                           />
+                        )}
+
+                        {/* Source badges */}
+                        {msg.sources && msg.sources.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                            <span className="text-xs opacity-60 font-space">
+                              Sources:
+                            </span>
+                            {msg.sources.map((src) => (
+                              <span
+                                key={src}
+                                className="text-xs px-2 py-0.5 rounded-full font-space font-medium"
+                                style={{ background: `${gold}20`, color: gold }}
+                              >
+                                {src}
+                              </span>
+                            ))}
+                          </div>
                         )}
 
                         {/* Link Embeds */}

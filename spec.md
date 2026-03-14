@@ -1,26 +1,34 @@
 # NavvGenX
 
 ## Current State
-ChatPage and NavvAssistant render AI responses as text, wiki cards, image grids, and quick links. No special handling for URLs (YouTube, social media, or general websites) pasted or returned in messages.
+NavvGenX is a deployed AI companion web app with:
+- Multi-source answer engine (Wikipedia, DuckDuckGo, REST Countries, Open Library, Wikidata, knowledge base)
+- Floating Navv assistant orb + main ChatPage
+- Section-specific voice intros
+- Suggestion dropdown via `getSuggestions()`
+- `generateAIResponse()` that stops at first valid source (no aggregation)
+- Age-based content filtering
 
 ## Requested Changes (Diff)
 
 ### Add
-- URL detection utility: scans message text for any URLs (YouTube, other video sites, social media, general websites)
-- `LinkEmbed` component:
-  - YouTube: renders embedded iframe player
-  - Other URLs: renders a styled link preview card with icon, domain name, and clickable link to open in new tab
-- Auto-detect URLs in both ChatPage message bubbles and NavvAssistant message bubbles, and render LinkEmbed below the message text
+- Multi-source answer aggregation: combine Wikipedia + DuckDuckGo + knowledge base answers into one rich response instead of stopping at first hit
+- Sources panel at bottom of each answer showing which sources contributed (Wikipedia, DuckDuckGo, Countries, Books, etc.)
+- Enhanced suggestion generation: pull from all knowledge base categories plus live query context to always show 6-8 highly relevant suggestions
+- "Related questions" suggestions generated from the answer topic
+- Answer sections: main answer paragraph, key facts list (if multiple sources found facts), images, sources
 
 ### Modify
-- ChatPage.tsx: after rendering message text/wiki card, scan message content for URLs and render LinkEmbed components
-- NavvAssistant.tsx: same — detect URLs in Navv message text and render embedded link cards
+- `getSuggestions()` — expand to generate topic-specific follow-up suggestions based on answer keywords, not just prefix matching
+- `generateAIResponse()` — aggregate ALL source results, merge into comprehensive answer with sections
+- NavvAssistant and ChatPage — display source badges on answers
 
 ### Remove
-- Nothing removed
+- Early-exit logic that returns first valid source and ignores others
 
 ## Implementation Plan
-1. Create `src/frontend/src/utils/linkUtils.ts` — URL detection and YouTube ID extraction helpers
-2. Create `src/frontend/src/components/LinkEmbed.tsx` — renders YouTube iframe or generic link card
-3. Update `ChatPage.tsx` — integrate LinkEmbed into AI message rendering
-4. Update `NavvAssistant.tsx` — integrate LinkEmbed into Navv message rendering
+1. Rewrite `aiEngine.ts` `generateAIResponse()` to collect all source results and build a merged answer
+2. Add `buildAggregatedAnswer()` helper that combines text from multiple sources with attribution
+3. Enhance `getSuggestions()` to generate follow-up questions based on matched keywords
+4. Update answer display in ChatPage and NavvAssistant to show source badges
+5. Validate and deploy
