@@ -1,0 +1,934 @@
+export interface SearchResult {
+  title: string;
+  snippet: string;
+  url: string;
+}
+
+export interface ImageResult {
+  url: string;
+  alt: string;
+  searchUrl: string;
+}
+
+export interface WikiCard {
+  title: string;
+  extract: string;
+  thumbnail?: string;
+  url: string;
+}
+
+export interface AIResponse {
+  text: string;
+  searchResults?: SearchResult[];
+  imageResults?: ImageResult[];
+  isSearch?: boolean;
+  suggestions?: string[];
+  wikiCard?: WikiCard;
+  quickLinks?: { google: string; chatgpt: string };
+}
+
+// ─────────────────── Suggestion Generator ───────────────────
+const suggestionMap: Record<string, string[]> = {
+  health: [
+    "How to improve sleep quality naturally",
+    "Best foods for boosting immunity",
+    "Daily exercise routine for beginners",
+    "How to manage stress and anxiety",
+    "Benefits of drinking more water",
+    "How to lose weight healthily",
+    "Best vitamins and supplements to take",
+    "Signs of burnout and how to recover",
+  ],
+  love: [
+    "How to build a strong relationship",
+    "Signs someone likes you",
+    "How to get over a breakup",
+    "Tips for long distance relationships",
+    "How to improve communication with partner",
+    "First date ideas that impress",
+    "How to know if you are in love",
+    "Ways to show someone you care",
+  ],
+  study: [
+    "Best study techniques for exams",
+    "How to improve memory and focus",
+    "Pomodoro technique explained",
+    "How to take better notes in class",
+    "Study schedule template for students",
+    "How to stop procrastinating while studying",
+    "Best apps for studying and productivity",
+    "How to write a good essay fast",
+  ],
+  career: [
+    "How to write a standout resume",
+    "Best questions to ask in a job interview",
+    "How to negotiate a higher salary",
+    "Skills to learn for better career growth",
+    "How to get promoted at work",
+    "Best side hustles to start in 2026",
+    "How to switch careers successfully",
+    "Networking tips for introverts",
+  ],
+  fashion: [
+    "Old money outfit ideas for women",
+    "Old money aesthetic wardrobe essentials",
+    "How to dress quiet luxury style",
+    "Dark academia outfit ideas",
+    "Y2K fashion outfit ideas",
+    "How to build a capsule wardrobe",
+    "Best outfit combinations for work",
+    "Trending fashion styles in 2026",
+    "How to dress for your body type",
+    "Cottagecore outfit ideas",
+    "Preppy style essentials",
+    "Bohemian boho outfit ideas",
+    "Streetwear outfit ideas for men",
+    "How to style casual outfits to look expensive",
+    "Best colour combinations for clothing",
+    "Minimalist wardrobe essentials",
+  ],
+  business: [
+    "How to start a business with no money",
+    "Best business ideas for 2026",
+    "How to write a business plan",
+    "Marketing strategies for small businesses",
+    "How to get your first clients",
+    "Best books for entrepreneurs",
+    "How to scale a business fast",
+    "Tips for managing business finances",
+  ],
+  general: [
+    "What is artificial intelligence",
+    "How does the human brain work",
+    "History of ancient civilisations",
+    "How to learn any skill faster",
+    "What causes climate change",
+    "How does the internet work",
+    "Best countries to visit in 2026",
+    "How to think more creatively",
+  ],
+  search: [
+    "Latest technology trends 2026",
+    "Best movies to watch this year",
+    "How to invest money wisely",
+    "Space exploration discoveries",
+    "Healthiest foods in the world",
+    "Most spoken languages globally",
+    "Future of electric vehicles",
+    "World records broken in 2026",
+  ],
+};
+
+export function getSuggestions(query: string, category = "general"): string[] {
+  const q = query.toLowerCase().trim();
+  if (q.length < 2) return [];
+
+  const pool = [...(suggestionMap[category] || []), ...suggestionMap.general];
+
+  // Filter suggestions that match the typed query
+  const matched = pool.filter(
+    (s) =>
+      s.toLowerCase().includes(q) ||
+      q.split(" ").some((w) => w.length > 2 && s.toLowerCase().includes(w)),
+  );
+
+  // Also generate dynamic suggestions based on keywords
+  const dynamic: string[] = [];
+  if (q.length > 3) {
+    const keyword = q.charAt(0).toUpperCase() + q.slice(1);
+    dynamic.push(
+      `What is ${q}`,
+      `How does ${q} work`,
+      `Best tips for ${q}`,
+      `${keyword} ideas and inspiration`,
+      `${keyword} for beginners`,
+    );
+  }
+
+  return [...new Set([...matched, ...dynamic])].slice(0, 6);
+}
+
+// ─────────────────── Image Search Helper ───────────────────
+export function getImageResults(query: string): ImageResult[] {
+  const cleanQuery = query.replace(/^search[:\s]*/i, "").trim();
+  const lower = cleanQuery.toLowerCase();
+  const googleImagesUrl = `https://www.google.com/search?q=${encodeURIComponent(cleanQuery)}&tbm=isch`;
+
+  const getKeywords = (q: string): string[] => {
+    if (/old money|old-money/.test(q))
+      return [
+        "old money fashion",
+        "preppy elegant style",
+        "classic menswear",
+        "ivy league style",
+      ];
+    if (/quiet luxury|stealth wealth/.test(q))
+      return [
+        "quiet luxury fashion",
+        "minimalist luxury style",
+        "neutral tones fashion",
+        "designer minimal outfit",
+      ];
+    if (/dark academia/.test(q))
+      return [
+        "dark academia fashion",
+        "tweed blazer bookish",
+        "vintage intellectual style",
+        "academia aesthetic",
+      ];
+    if (/streetwear|street wear/.test(q))
+      return [
+        "streetwear fashion",
+        "urban street style",
+        "hypebeast outfit",
+        "sneaker culture fashion",
+      ];
+    if (/cottagecore/.test(q))
+      return [
+        "cottagecore aesthetic",
+        "floral cottage dress",
+        "cottage garden fashion",
+        "whimsical nature style",
+      ];
+    if (/y2k/.test(q))
+      return [
+        "y2k fashion",
+        "2000s style outfit",
+        "y2k aesthetic clothing",
+        "millennium fashion",
+      ];
+    if (/fashion|outfit|style|clothing|dress|wear/.test(q))
+      return [
+        `${cleanQuery} fashion`,
+        `${cleanQuery} outfit`,
+        `${cleanQuery} style clothing`,
+        `${cleanQuery} look`,
+      ];
+    if (/workout|exercise|gym|fitness|yoga/.test(q))
+      return [
+        `${cleanQuery}`,
+        "fitness workout gym",
+        "exercise training",
+        "healthy active lifestyle",
+      ];
+    if (/food|diet|nutrition|meal|recipe|eat/.test(q))
+      return [
+        `${cleanQuery} food`,
+        `${cleanQuery} meal`,
+        "healthy food nutrition",
+        "gourmet meal",
+      ];
+    if (/health|wellness|mental health|meditation/.test(q))
+      return [
+        `${cleanQuery}`,
+        "wellness healthy lifestyle",
+        "mindfulness calm",
+        "healthy living",
+      ];
+    if (/travel|trip|destination|vacation|tour/.test(q))
+      return [
+        `${cleanQuery} travel`,
+        `${cleanQuery} landscape`,
+        `${cleanQuery} tourism`,
+        "travel destination scenic",
+      ];
+    if (/nature|forest|mountain|ocean|beach|sky/.test(q))
+      return [
+        `${cleanQuery} nature`,
+        `${cleanQuery} landscape`,
+        "scenic nature photography",
+        `${cleanQuery} outdoor`,
+      ];
+    if (
+      /artificial intelligence|ai|machine learning|technology|tech|robot|computer/.test(
+        q,
+      )
+    )
+      return [
+        "artificial intelligence technology",
+        "futuristic technology digital",
+        "ai robot computer",
+        "tech innovation digital",
+      ];
+    if (/space|galaxy|universe|planet|star|nasa/.test(q))
+      return [
+        `${cleanQuery} space`,
+        "galaxy stars universe",
+        "space exploration nasa",
+        "cosmos nebula",
+      ];
+    if (/business|startup|entrepreneur|company|career|work/.test(q))
+      return [
+        `${cleanQuery}`,
+        "business professional office",
+        "entrepreneur startup success",
+        "career professional growth",
+      ];
+    const words = q.split(/\s+/).filter((w) => w.length > 3);
+    const main = words.slice(0, 3).join(" ") || q;
+    return [
+      cleanQuery,
+      main,
+      `${words[0] || q} ${words[1] || ""}`.trim(),
+      `${cleanQuery} background`,
+    ];
+  };
+
+  const keywords = getKeywords(lower);
+
+  return keywords.map((kw, i) => ({
+    url: `https://source.unsplash.com/400x300/?${encodeURIComponent(kw)}&sig=${i + Math.floor(Math.random() * 1000)}`,
+    alt: `${cleanQuery} image ${i + 1}`,
+    searchUrl: googleImagesUrl,
+  }));
+}
+
+// ─────────────────── Wikipedia API ───────────────────
+export async function fetchWikipediaAnswer(
+  query: string,
+): Promise<WikiCard | null> {
+  try {
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=1&format=json&origin=*`;
+    const searchRes = await fetch(searchUrl);
+    const searchData = await searchRes.json();
+    const titles: string[] = searchData[1];
+    if (!titles || titles.length === 0) return null;
+    const title = titles[0];
+    const summaryRes = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
+    );
+    if (!summaryRes.ok) return null;
+    const summary = await summaryRes.json();
+    return {
+      title: summary.title || title,
+      extract: summary.extract || "",
+      thumbnail: summary.thumbnail?.source,
+      url:
+        summary.content_urls?.desktop?.page ||
+        `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────── Unsplash Images ───────────────────
+export function getUnsplashImages(query: string): ImageResult[] {
+  const cleanQuery = query.replace(/^search[:\s]*/i, "").trim();
+  const lower = cleanQuery.toLowerCase();
+  const googleImagesUrl = `https://www.google.com/search?q=${encodeURIComponent(cleanQuery)}&tbm=isch`;
+
+  const getTopicKeywords = (q: string): string[] => {
+    if (/old money|old-money/.test(q))
+      return [
+        "old money fashion",
+        "preppy classic style",
+        "ivy league menswear",
+      ];
+    if (/quiet luxury|stealth wealth/.test(q))
+      return [
+        "quiet luxury fashion",
+        "minimalist designer style",
+        "neutral luxury outfit",
+      ];
+    if (/dark academia/.test(q))
+      return [
+        "dark academia aesthetic",
+        "vintage academic style",
+        "tweed bookish fashion",
+      ];
+    if (/streetwear|street wear/.test(q))
+      return [
+        "streetwear urban style",
+        "hypebeast sneaker outfit",
+        "street fashion culture",
+      ];
+    if (/fashion|outfit|style|clothing|dress|wear/.test(q))
+      return [
+        `${cleanQuery} fashion`,
+        `${cleanQuery} outfit look`,
+        `${cleanQuery} style`,
+      ];
+    if (/food|recipe|meal|eat|cook/.test(q))
+      return [
+        `${cleanQuery} food`,
+        `${cleanQuery} dish`,
+        `${cleanQuery} cuisine`,
+      ];
+    if (/travel|trip|destination|vacation/.test(q))
+      return [
+        `${cleanQuery} travel scenery`,
+        `${cleanQuery} landmark`,
+        `${cleanQuery} tourism`,
+      ];
+    if (/nature|landscape|outdoor|forest|mountain|beach/.test(q))
+      return [
+        `${cleanQuery} landscape`,
+        `${cleanQuery} nature scenery`,
+        `${cleanQuery} outdoor`,
+      ];
+    if (/space|galaxy|cosmos|planet|star/.test(q))
+      return [
+        `${cleanQuery} astronomy`,
+        "galaxy nebula cosmos",
+        "space stars universe",
+      ];
+    if (/tech|technology|ai|computer|digital/.test(q))
+      return [
+        "technology futuristic digital",
+        `${cleanQuery} tech`,
+        "innovation digital abstract",
+      ];
+    if (/health|fitness|workout|gym|yoga|wellness/.test(q))
+      return [
+        `${cleanQuery}`,
+        "fitness healthy lifestyle",
+        "wellness active life",
+      ];
+    const words = q.split(/\s+/).filter((w) => w.length > 2);
+    return [
+      cleanQuery,
+      words.slice(0, 2).join(" ") || cleanQuery,
+      `${words[0] || cleanQuery} photography`,
+    ];
+  };
+
+  const keywords = getTopicKeywords(lower);
+  return keywords.map((kw, i) => ({
+    url: `https://source.unsplash.com/400x300/?${encodeURIComponent(kw)}&sig=${i + Math.floor(Math.random() * 1000)}`,
+    alt: `${cleanQuery} image ${i + 1}`,
+    searchUrl: googleImagesUrl,
+  }));
+}
+
+// ─────────────────── Voice / TTS ───────────────────
+export function speakText(text: string, onEnd?: () => void): void {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  // Strip markdown-like formatting
+  const clean = text
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/#+\s/g, "")
+    .replace(/•/g, "")
+    .replace(/\n\n/g, ". ")
+    .replace(/\n/g, ". ")
+    .slice(0, 500); // Limit for usability
+  const utterance = new SpeechSynthesisUtterance(clean);
+  utterance.lang = "en-US";
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+  // Pick a good voice if available
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(
+    (v) =>
+      v.lang === "en-US" &&
+      (v.name.includes("Google") ||
+        v.name.includes("Samantha") ||
+        v.name.includes("Daniel")),
+  );
+  if (preferred) utterance.voice = preferred;
+  if (onEnd) utterance.onend = onEnd;
+  window.speechSynthesis.speak(utterance);
+}
+
+export function stopSpeaking(): void {
+  window.speechSynthesis?.cancel();
+}
+
+// ─────────────────── Greeting / small-talk patterns ───────────────────
+const greetingPatterns: { pattern: RegExp; response: string }[] = [
+  {
+    pattern: /how are you|how r u|how's it going|how are things|how do you do/i,
+    response:
+      "I'm doing great, thanks for asking! Ready to help you with anything — questions, research, advice, or just a chat. How can I help you today?",
+  },
+  {
+    pattern: /^(hello|hi|hey|sup|what's up|whats up|yo)\b/i,
+    response:
+      "Hello! Welcome to NavvGenX. I'm your AI companion — ask me anything from science and history to life advice or just have a conversation. What would you like to explore?",
+  },
+  {
+    pattern: /good morning/i,
+    response:
+      "Good morning! Hope your day is off to a great start. I'm here to help — feel free to ask me anything you'd like to know or talk about.",
+  },
+  {
+    pattern: /good afternoon/i,
+    response:
+      "Good afternoon! I'm NavvGenX, your AI companion. Whether you need information, advice, or just someone to talk to, I've got you covered.",
+  },
+  {
+    pattern: /good evening|good night/i,
+    response:
+      "Good evening! I'm available around the clock. What's on your mind tonight — a question, some research, or maybe career or health advice?",
+  },
+  {
+    pattern: /what('s| is) your name|who are you|what are you/i,
+    response:
+      "I'm NavvGenX AI — a smart assistant inspired by the best of ChatGPT and Google Search. I can answer general knowledge questions, search any topic, give personal advice on health, career, love, and more, or just have a casual conversation with you!",
+  },
+  {
+    pattern: /thank(s| you)|much appreciated/i,
+    response:
+      "You're very welcome! I'm always happy to help. Is there anything else you'd like to know or explore?",
+  },
+  {
+    pattern: /^(bye|goodbye|see you|cya|take care|later)\b/i,
+    response:
+      "Goodbye! It was great chatting with you. Come back anytime you have a question or just want to talk. Take care!",
+  },
+  {
+    pattern: /what can you do|what do you know|help me|your capabilities/i,
+    response:
+      "Great question! Here's what I can do:\n\n• **General Knowledge** — Science, history, tech, math, geography, culture, and more\n• **Search Mode** — Type 'search [topic]' for web-style results with images\n• **Suggestions** — Start typing and I'll suggest ideas to explore\n• **Voice Assistant** — I can speak my answers aloud\n• **Personal Advice** — Health, love, career, study, fashion, and business guidance\n• **Casual Chat** — Greetings, small talk, and everyday conversations\n\nJust type anything — I'll give you a helpful, detailed answer!",
+  },
+  {
+    pattern: /are you (real|human|a robot|an ai|a bot)/i,
+    response:
+      "I'm an AI — NavvGenX AI to be precise. I'm not human, but I'm designed to be helpful, knowledgeable, and conversational. I can answer your questions, have a real discussion, or help you find information on virtually any topic.",
+  },
+];
+
+// ─────────────────── Knowledge base ───────────────────
+const knowledgeBase: { keywords: RegExp; response: string }[] = [
+  // FASHION AESTHETICS — OLD MONEY
+  {
+    keywords:
+      /\b(old money|old money outfit|old money aesthetic|old money style|old money fashion|old money look|old money clothing|inherited wealth style|aristocratic style|prep school style|ivy league style)\b/i,
+    response:
+      "The **old money aesthetic** is rooted in understated, inherited wealth — the style of old European aristocracy and East Coast American prep schools. It communicates privilege through quality and restraint, not logos or flashiness.\n\n**Key characteristics:**\n• **Neutral, muted palette** — ivory, cream, camel, navy, forest green, burgundy, chocolate brown, grey\n• **Timeless silhouettes** — nothing trendy, everything classic and enduring\n• **Exceptional fabrics** — cashmere, merino wool, fine linen, silk, Harris Tweed\n• **Minimal branding** — no visible logos; the quality speaks for itself\n\n**Essential pieces:**\n• Tailored blazers (navy, camel, plaid) — the cornerstone of the look\n• Oxford button-down shirts in white or light blue\n• Cable-knit and argyle sweaters, cardigans\n• High-waisted wide-leg or pleated trousers\n• Knee-length A-line or pleated skirts\n• Polo shirts (Ralph Lauren, Lacoste)\n• Loafers — especially penny loafers and horsebit loafers (Gucci style)\n• Ballet flats, boat shoes (Sperry), Oxford shoes\n• Structured handbags — saddle bags, top-handle bags\n• Trench coats, wool overcoats\n\n**Preferred brands:** Ralph Lauren, Brooks Brothers, Loro Piana, Brunello Cucinelli, J.Crew, Barbour, Hermès, Burberry\n\n**Styling tips:**\n• Layer a white Oxford under a navy blazer with pearl accessories\n• Mix textures: tweed jacket + smooth silk blouse\n• Invest in one timeless piece over ten trendy items\n• Grooming and posture are as important as the clothes",
+  },
+  // FASHION AESTHETICS — QUIET LUXURY
+  {
+    keywords:
+      /\b(quiet luxury|quiet luxury outfit|quiet luxury style|quiet luxury aesthetic|stealth wealth|no logo fashion|understated luxury|minimalist luxury)\b/i,
+    response:
+      "**Quiet luxury** (also called stealth wealth) is the fashion philosophy of wearing extremely high-quality items with zero visible branding — the opposite of logomania. Popularised by shows like Succession and worn by figures like Sofia Richie Grainge and Gwyneth Paltrow.\n\n**Core principles:**\n• No visible logos or branding anywhere\n• Impeccable fit and tailoring — clothes that look like they were made for your body\n• Monochromatic or tonal dressing in camel, ivory, navy, grey, and chocolate\n• Exceptional fabrics: cashmere, fine wool, Italian leather, silk\n\n**Key pieces:**\n• Cashmere everything — turtlenecks, cardigans, coats\n• Perfectly tailored wide-leg trousers in neutral tones\n• Silk or satin slip dresses and tops\n• Clean, minimalist leather handbags (The Row, Toteme, Bottega Veneta)\n• Leather loafers and mules\n• Belted trench coats and wool overcoats\n• Simple gold jewellery — thin chains, stud earrings, delicate bracelets\n\n**Best brands:** The Row, Bottega Veneta, Toteme, Loro Piana, Brunello Cucinelli, Céline, Jil Sander\n\nThe message: true wealth doesn't need to advertise itself.",
+  },
+  // FASHION AESTHETICS — DARK ACADEMIA
+  {
+    keywords:
+      /\b(dark academia|dark academia outfit|dark academia aesthetic|dark academia style|dark academia fashion|dark academia look)\b/i,
+    response:
+      "**Dark academia** is a gothic-inspired, literary aesthetic rooted in the visual language of elite British and American universities, classical literature, and autumnal intellectualism.\n\n**Colour palette:** Dark brown, black, forest green, burgundy, deep plum, mustard, cream, and charcoal — always moody and earthy.\n\n**Key pieces:**\n• Tweed and herringbone blazers (oversized for a scholarly look)\n• Oxford shirts — white, black, or dark plaid\n• Knitted vests and cardigans over collared shirts\n• High-waisted pleated trousers (dark colours)\n• Plaid or tartan skirts (knee-length or midi)\n• Turtleneck jumpers — the backbone of the aesthetic\n• Mary Jane shoes, leather Oxfords, loafers, ankle boots\n• Long wool coats in dark tones\n• Berets, flat caps, and vintage-style accessories\n• Leather satchels, structured tote bags\n\n**Key details:** Collared shirts under jumpers, vintage brooches, pocket squares, round glasses, layering in earth tones, corduroy fabric\n\n**Style icons:** Characters from Dead Poets Society, The Secret History (Donna Tartt), A Little Life\n\nThe overall mood: a brooding student surrounded by old books in a candlelit library.",
+  },
+  // FASHION AESTHETICS — STREETWEAR
+  {
+    keywords:
+      /\b(streetwear|streetwear outfit|streetwear style|streetwear look|streetwear aesthetic|hypebeast|hype beast|streetwear fashion|urban style|urban fashion)\b/i,
+    response:
+      "**Streetwear** emerged from 1980s–90s skate, surf, and hip-hop cultures in California and New York and has become one of the most influential forces in modern fashion.\n\n**Core elements:**\n• Graphic tees and hoodies — often with bold prints, logos, or artistic imagery\n• Oversized and relaxed fits — comfort is key\n• Sneakers as the centrepiece — Air Jordans, Nike Dunks, Yeezys, New Balance 550s\n• Cargo pants, baggy jeans (wide leg or balloon cut), sweatpants\n• Puffer jackets, varsity/baseball jackets, windbreakers\n• Caps: snapbacks, fitted caps, beanies\n• Layering: hoodie under an oversized jacket, long shirt under short\n\n**Hypebeast sub-culture:** Focuses on limited drops from Supreme, Off-White, BAPE, Palace, Stüssy\n\n**Key brands:** Supreme, Off-White, Stüssy, A Bathing Ape (BAPE), Palace, Carhartt WIP, Jordan Brand, New Balance, Nike, adidas\n\n**How to build a streetwear wardrobe:**\n1. Start with quality basics (plain tees, solid hoodies) in neutral tones\n2. Invest in 1-2 statement sneaker pairs\n3. Add one standout piece per outfit — a graphic tee, bold jacket, or rare cap\n4. Mix high-end with budget pieces for a balanced look",
+  },
+  // FASHION AESTHETICS — Y2K
+  {
+    keywords:
+      /\b(y2k|y2k outfit|y2k style|y2k aesthetic|y2k fashion|y2k look|2000s fashion|early 2000s fashion|2000s aesthetic|two thousands fashion)\b/i,
+    response:
+      "**Y2K fashion** is the nostalgic revival of late 1990s and early 2000s style — the era of pop princesses, early internet culture, and maximalist self-expression.\n\n**Defining characteristics:**\n• Iridescent, metallic, and holographic fabrics\n• Low-rise everything — jeans, skirts, trousers\n• Crop tops, baby tees, tube tops, corset tops\n• Micro-mini skirts and shorts\n• Bold, bright, and contrasting colour combinations (hot pink + lime green, silver + white)\n• Embellishments: rhinestones, butterfly motifs, heart prints, celestial patterns\n• Platform shoes, chunky trainers (Buffalo, Steve Madden), kitten heels, flip flops\n• Spaghetti-strap dresses worn over T-shirts (early 2000s)\n\n**Accessories are key:**\n• Velvet chokers, layered necklaces, letter necklaces\n• Micro handbags, mini backpacks, clear bags\n• Tinted sunglasses (oval, oval-rimmed)\n• Hair: low pigtails, side-part with face-framing layers, frosted tips, crimped hair\n\n**Inspo icons:** Britney Spears, Christina Aguilera, Paris Hilton, Destiny's Child, Lizzie McGuire\n\nY2K is about maximum fun and zero apologies — wear it with confidence.",
+  },
+  // FASHION AESTHETICS — COTTAGECORE
+  {
+    keywords:
+      /\b(cottagecore|cottagecore outfit|cottagecore aesthetic|cottagecore style|cottagecore fashion|fairy core|fairycore|dark cottage|cottage aesthetic|romantic countryside style)\b/i,
+    response:
+      "**Cottagecore** is a romantic, nature-inspired aesthetic rooted in an idealised, pastoral country life — think English countryside cottages, wildflower meadows, and slow living.\n\n**Colour palette:** Soft pastels — dusty rose, sage green, lavender, buttercup yellow, cream, warm white, terracotta\n\n**Key pieces:**\n• Floral and prairie dresses — long, flowing, and always feminine\n• Puff-sleeve blouses (white, cream, pastel)\n• Linen everything — shirts, trousers, dresses\n• Pinafore dresses and aprons worn as fashion\n• Corsets and bodices layered over blouses\n• Knit cardigans with nature motifs (mushrooms, flowers, birds)\n• Mary Jane shoes, ballet flats, heeled boots, wellington boots\n• Long skirts with ruffled hems\n\n**Key details:** Lace trims, embroidery, smocking, vintage-inspired buttons, natural fibres only\n\n**Accessories:** Wicker baskets as bags, straw hats, pressed flower jewellery, pearl hairpins, ribbon headbands\n\n**Fabrics:** Linen, cotton, broderie anglaise, muslin, silk chiffon\n\nCottagecore is as much a lifestyle as a fashion aesthetic — it pairs with baking bread, foraging, reading, and spending time in nature.",
+  },
+  // FASHION AESTHETICS — PREPPY
+  {
+    keywords:
+      /\b(preppy|preppy outfit|preppy style|preppy aesthetic|preppy fashion|preppy look|preppy clothes|classic american style|new england style|ivy league fashion)\b/i,
+    response:
+      "**Preppy style** originated in the American East Coast prep school and Ivy League university culture of the 1950s–80s and remains a beloved, enduring aesthetic.\n\n**Core colours:** Navy, white, red, green, yellow, pink — often in bold colour-blocking or classic stripes\n\n**Key pieces:**\n• Polo shirts (Ralph Lauren is king here) — tucked in\n• Oxford button-down shirts — plain or gingham/plaid\n• Chino trousers and shorts in tan, navy, or pastel\n• Cable-knit or crewneck sweaters (often with varsity-letter motifs)\n• Sweater tied around the shoulders — the ultimate preppy move\n• Blazers — navy blazer with brass buttons is iconic\n• Plaid skirts (pleated, knee-length)\n• Loafers (penny, horsebit) and boat shoes (Sperrys)\n• A-line dresses in pastel or bold stripes\n\n**Pattern play:** Madras plaid, argyle, seersucker, gingham, stripes, houndstooth\n\n**Accessories:** Canvas tote bags, baseball caps, headbands, pearl earrings, gold bangles, belts with novelty buckles\n\n**Key brands:** Ralph Lauren, Vineyard Vines, Lacoste, J.Crew, Brooks Brothers, Lilly Pulitzer, Tommy Hilfiger",
+  },
+  // FASHION AESTHETICS — BOHEMIAN
+  {
+    keywords:
+      /\b(bohemian|boho|boho outfit|bohemian outfit|boho chic|boho style|boho aesthetic|boho fashion|bohemian fashion|festival fashion|free spirit style)\b/i,
+    response:
+      "**Bohemian (boho) style** is a free-spirited aesthetic inspired by 1960s–70s counterculture, folk traditions, and an artistic, nomadic way of life.\n\n**Key characteristics:**\n• Flowing, relaxed silhouettes — nothing tight or structured\n• Rich, earthy palette: terracotta, burnt orange, mustard, olive, rust, cream, deep teal\n• Mixed patterns and prints: paisley, floral, ikat, tie-dye, ethnic prints\n\n**Essential pieces:**\n• Maxi dresses and maxi skirts (tiered, flowing, often with fringe or embroidery)\n• Bell-bottom and wide-leg trousers\n• Off-shoulder and peasant blouses\n• Crochet and knit tops, vests, and dresses\n• Fringed jackets, suede jackets\n• Patchwork and embroidered jeans\n• Flowy kimonos used as outerwear\n\n**Footwear:** Suede ankle boots, huarache sandals, gladiator sandals, espadrilles\n\n**Accessories are everything:**\n• Layered necklaces (long pendant chains, beaded, feather)\n• Stacked bangles and rings on every finger\n• Wide-brim felt or straw hats\n• Fringe bags and woven baskets\n• Hoop earrings and ear cuffs\n\n**Fabrics:** Natural — cotton, linen, suede, leather, crochet, macramé",
+  },
+
+  // SPACE & ASTRONOMY
+  {
+    keywords:
+      /\b(space|planet|solar system|galaxy|universe|cosmos|nasa|astronaut|moon|mars|sun|star|black hole|asteroid|comet|saturn|jupiter|mercury|venus|neptune|uranus|milky way|orbit|gravity in space)\b/i,
+    response:
+      "Our solar system is a fascinating cosmic neighbourhood. It contains eight planets orbiting the Sun — Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune. Jupiter is the largest, with a mass greater than all other planets combined.\n\nBeyond our solar system lies the Milky Way galaxy, containing 200-400 billion stars spread across roughly 100,000 light-years. The universe itself is estimated to be about 13.8 billion years old and contains over two trillion galaxies.\n\nBlack holes are among the most mysterious objects in the cosmos — regions of space where gravity is so strong that not even light can escape. The supermassive black hole at the centre of our galaxy is called Sagittarius A*, with a mass four million times that of our Sun. Space exploration continues to push boundaries, from the James Webb Space Telescope capturing images of the early universe to plans for crewed Mars missions in the coming decades.",
+  },
+  // AI & TECHNOLOGY
+  {
+    keywords:
+      /\b(artificial intelligence|ai|machine learning|deep learning|neural network|chatgpt|gpt|llm|large language model|robot|automation|algorithm|data science|computer vision|natural language processing|nlp|transformer model)\b/i,
+    response:
+      "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines programmed to think, learn, and solve problems. Modern AI is largely driven by machine learning — a technique where systems learn from data rather than being explicitly programmed.\n\nDeep learning, a subset of machine learning, uses neural networks with many layers to process complex patterns. This powers breakthroughs in image recognition, natural language understanding, and speech synthesis. Large Language Models (LLMs) like GPT-4 are trained on vast text datasets and can generate human-like text, answer questions, write code, and more.\n\nAI is transforming every industry — from healthcare (disease diagnosis) to finance (fraud detection), autonomous vehicles, creative arts, and scientific research. Ethical considerations around AI bias, job displacement, and autonomous decision-making are active areas of research and policy debate.",
+  },
+  // CLIMATE & ENVIRONMENT
+  {
+    keywords:
+      /\b(climate change|global warming|greenhouse gas|carbon dioxide|co2|ozone layer|deforestation|renewable energy|solar energy|wind energy|fossil fuel|pollution|biodiversity|ecosystem|rainforest|coral reef|sea level|carbon footprint)\b/i,
+    response:
+      "Climate change refers to long-term shifts in global temperatures and weather patterns, primarily driven since the mid-20th century by human activities — especially the burning of fossil fuels, which releases carbon dioxide and other greenhouse gases into the atmosphere.\n\nThe greenhouse effect is natural and necessary for life, but excessive greenhouse gases trap more heat, raising global temperatures. The effects include rising sea levels, more frequent extreme weather events, melting ice caps, ocean acidification, and threats to biodiversity.\n\nThe Paris Agreement (2015) aims to limit global warming to 1.5°C above pre-industrial levels. Renewable energy sources like solar and wind, electric vehicles, reforestation, and carbon capture technologies are central to climate mitigation strategies. Individual actions — reducing meat consumption, flying less, improving home insulation — also contribute meaningfully.",
+  },
+  // WORLD HISTORY
+  {
+    keywords:
+      /\b(world war|ww1|ww2|world war 1|world war 2|history|historical|ancient rome|ancient greece|egypt|pharaoh|pyramid|renaissance|industrial revolution|french revolution|roman empire|ottoman|mongol|colonialism|cold war|civil war|revolution|empire|dynasty|civilisation|civilization)\b/i,
+    response:
+      "World history spans thousands of years of human civilisation. Ancient civilisations — Mesopotamia, Egypt, Greece, Rome, China, and the Indus Valley — laid the foundations of writing, law, philosophy, and governance.\n\nThe Middle Ages saw the rise of feudalism, the spread of major religions, and the growth of trade routes like the Silk Road. The Renaissance (14th–17th century) brought an explosion of art, science, and humanist thought. The Industrial Revolution (18th–19th century) transformed economies from agrarian to industrial, reshaping society profoundly.\n\nThe 20th century was defined by two devastating World Wars. World War I (1914–1918) ended four major empires. World War II (1939–1945) resulted in over 70 million deaths and led to the founding of the United Nations. The subsequent Cold War (1947–1991) shaped global geopolitics through the rivalry between the USA and USSR until the Soviet Union's dissolution.",
+  },
+  // BIOLOGY & LIFE SCIENCES
+  {
+    keywords:
+      /\b(biology|cell|dna|rna|gene|genetics|evolution|darwin|natural selection|photosynthesis|mitosis|chromosome|protein|virus|bacteria|immune system|vaccine|organism|species|mammal|reptile|amphibian|ecosystem|biodiversity|human body|brain|heart|lungs)\b/i,
+    response:
+      "Biology is the scientific study of life and living organisms. At its core is the cell — the fundamental unit of life. Cells contain DNA (deoxyribonucleic acid), which encodes the genetic instructions for building and running every living organism.\n\nEvolution by natural selection, first described by Charles Darwin, explains how species change over time. Individuals with traits better suited to their environment are more likely to survive and reproduce, passing those traits to offspring. This process over millions of years accounts for the incredible diversity of life on Earth.\n\nThe human body is an extraordinary system of 37 trillion cells organised into tissues, organs, and systems. The brain — with roughly 86 billion neurons — processes sensory information, coordinates movement, regulates body functions, and underpins consciousness, memory, and emotion. Modern biology merges with technology in fields like genetic engineering, CRISPR gene editing, synthetic biology, and personalised medicine.",
+  },
+  // GEOGRAPHY & COUNTRIES
+  {
+    keywords:
+      /\b(country|capital|continent|geography|mountain|river|ocean|lake|desert|population|largest country|smallest country|russia|china|usa|india|africa|europe|asia|australia|south america|north america|amazon|nile|everest|himalayas|pacific|atlantic|sahara)\b/i,
+    response:
+      "Earth's surface is divided into seven continents: Asia, Africa, North America, South America, Antarctica, Europe, and Australia/Oceania. Asia is the largest continent by area and population, home to over 4.7 billion people.\n\nThe world's longest river is the Nile (6,650 km) in Africa, while the Amazon in South America carries the greatest volume of water. Mount Everest in the Himalayas is the world's highest peak at 8,849 metres above sea level. The Pacific Ocean is the largest ocean, covering more area than all the world's landmasses combined.\n\nThe world has 195 countries. Russia is the largest by land area (17.1 million km²), while China and India each have over 1.4 billion people, making them the world's most populous. The smallest country is Vatican City, covering just 0.44 km² within Rome.",
+  },
+  // FOOD & NUTRITION
+  {
+    keywords:
+      /\b(food|nutrition|diet|vitamin|protein|carbohydrate|fat|calorie|metabolism|healthy eating|recipe|cuisine|ingredient|cooking|meal|vegetarian|vegan|gluten|sugar|organic|superfood|mediterranean diet|keto|intermittent fasting)\b/i,
+    response:
+      "Nutrition is the science of how food affects health. Macronutrients — carbohydrates, proteins, and fats — provide energy and building materials for the body. Micronutrients — vitamins and minerals — support countless metabolic processes.\n\nA balanced diet rich in whole foods, vegetables, fruits, lean proteins, and healthy fats forms the foundation of good health. The Mediterranean diet, consistently ranked among the healthiest, emphasises olive oil, fish, legumes, whole grains, nuts, and abundant vegetables, and is associated with lower rates of heart disease, diabetes, and certain cancers.\n\nCalorie needs vary by age, sex, and activity level — the average adult needs roughly 2,000–2,500 calories daily. Ultra-processed foods high in sugar, refined carbs, and trans fats are linked to obesity, inflammation, and chronic disease. Staying hydrated (8 glasses of water daily) and managing portion sizes are simple but powerful habits for long-term health.",
+  },
+  // SPORTS
+  {
+    keywords:
+      /\b(sport|football|soccer|basketball|tennis|cricket|baseball|rugby|athletics|olympics|world cup|fifa|nba|nfl|swimming|cycling|boxing|golf|formula 1|f1|marathon|athlete|championship|tournament)\b/i,
+    response:
+      "Sports are a universal language that transcend culture, geography, and language. Football (soccer) is the world's most popular sport, with over 4 billion fans globally and the FIFA World Cup drawing the largest single-event television audiences in history.\n\nThe Olympics, held every four years (Summer and Winter editions), represent the pinnacle of athletic achievement, bringing together thousands of athletes from over 200 countries. Basketball, driven by the NBA, has grown into a global phenomenon, while cricket commands a massive following in South Asia, Australia, and the UK.\n\nSports science has transformed athletic performance — data analytics, biomechanics, sports psychology, and nutrition science help athletes optimise their training and recovery. Esports has emerged as a massive competitive industry, with tournaments attracting millions of online viewers and prize pools rivalling traditional sports.",
+  },
+  // MUSIC
+  {
+    keywords:
+      /\b(music|song|album|artist|band|genre|rock|pop|hip hop|jazz|classical|beatles|mozart|beethoven|beyonce|taylor swift|spotify|playlist|instrument|guitar|piano|violin|drum|concert|festival|lyrics|melody|rhythm|chord)\b/i,
+    response:
+      "Music is one of humanity's oldest and most universal forms of expression. From ancient drumming rituals to Beethoven's symphonies to modern AI-generated tracks, music continuously evolves while remaining deeply tied to emotion and culture.\n\nClassical music, developed in Europe from the 11th century onwards, produced timeless works by composers like Bach, Mozart, and Beethoven. The 20th century saw explosive diversification — blues and jazz emerged from African-American communities and influenced rock and roll, which then spawned punk, metal, pop, electronic, and hip-hop genres.\n\nToday, streaming platforms like Spotify and Apple Music have democratised music distribution, allowing independent artists to reach global audiences. Music therapy is a recognised clinical practice using music to address physical and mental health conditions. Studies show that music activates multiple brain regions simultaneously — it's uniquely powerful for memory, mood regulation, and even pain management.",
+  },
+  // MOVIES & ENTERTAINMENT
+  {
+    keywords:
+      /\b(movie|film|cinema|actor|actress|director|oscar|hollywood|animation|streaming|netflix|disney|marvel|dc|avengers|pixar|blockbuster|documentary|screenplay|genre|thriller|comedy|drama|horror|sci-fi|fantasy)\b/i,
+    response:
+      "Cinema is both an art form and a multi-billion dollar global industry. Since the Lumière brothers' first public film screening in 1895, movies have evolved from silent black-and-white shorts to immersive high-definition spectacles with cutting-edge special effects.\n\nHollywood remains the world's most influential film industry, producing the majority of the highest-grossing films globally. Marvel's Cinematic Universe (MCU) became the highest-grossing film franchise in history. Independent cinema thrives alongside blockbusters, with films like Parasite (2019) achieving mainstream success while challenging the Hollywood model.\n\nStreaming services like Netflix, Disney+, and Amazon Prime have transformed how we consume entertainment, commissioning original content and delivering global hits. The Academy Awards (Oscars) remain the most prestigious film honours. Modern filmmaking integrates CGI, motion capture, AI-assisted editing, and immersive sound design to create experiences impossible just decades ago.",
+  },
+  // MATHEMATICS
+  {
+    keywords:
+      /\b(math|mathematics|algebra|geometry|calculus|equation|formula|theorem|prime number|fibonacci|pi|infinity|statistics|probability|fraction|percentage|trigonometry|pythagorean|logarithm|derivative|integral|matrix|vector)\b/i,
+    response:
+      "Mathematics is the language of the universe — a precise, logical system used to describe patterns, quantities, structures, and change. It underpins every science and technology.\n\nArithmetic and algebra deal with numbers and equations. Geometry studies shapes and space — the Pythagorean theorem (a² + b² = c²) is one of mathematics' most famous results. Calculus, developed independently by Newton and Leibniz in the 17th century, describes change and motion, powering everything from physics to economics to machine learning.\n\nPi (π ≈ 3.14159...) is a mathematical constant representing the ratio of a circle's circumference to its diameter — it's irrational, meaning its decimal expansion never ends or repeats. Prime numbers (divisible only by 1 and themselves) remain deeply mysterious; the Riemann Hypothesis about their distribution is one of mathematics' greatest unsolved problems, with a $1 million prize for its proof.",
+  },
+  // PHYSICS
+  {
+    keywords:
+      /\b(physics|quantum|relativity|einstein|newton|gravity|energy|force|atom|electron|proton|neutron|thermodynamics|wave|light|speed of light|electromagnetism|nuclear|particle|higgs boson|string theory|entropy|momentum|kinetic|potential energy)\b/i,
+    response:
+      "Physics is the fundamental science that seeks to understand the laws governing matter, energy, space, and time. Classical mechanics, formulated by Isaac Newton in the 17th century, describes the motion of everyday objects with remarkable precision.\n\nAlbert Einstein revolutionised our understanding of space and time with his Special Theory of Relativity (1905) — famously encapsulated in E=mc², showing that mass and energy are interchangeable. His General Theory of Relativity (1915) described gravity not as a force but as the curvature of spacetime caused by mass.\n\nQuantum mechanics describes the behaviour of matter at atomic and subatomic scales, where particles exhibit wave-particle duality and probabilistic behaviour. The Standard Model of particle physics catalogues all known fundamental particles, including the Higgs boson (discovered at CERN in 2012), which gives other particles their mass. Unifying quantum mechanics with general relativity remains one of physics' greatest challenges.",
+  },
+  // CHEMISTRY
+  {
+    keywords:
+      /\b(chemistry|element|periodic table|atom|molecule|compound|reaction|acid|base|pH|oxidation|carbon|hydrogen|oxygen|nitrogen|bond|covalent|ionic|organic chemistry|polymer|catalyst|electrolysis|isotope|radioactive|nuclear reaction)\b/i,
+    response:
+      "Chemistry is the science of matter — its composition, properties, structure, and how it transforms through chemical reactions. All matter is composed of atoms, the smallest units that retain the properties of an element. The periodic table, organised by atomic number, lists 118 known elements from hydrogen (lightest) to oganesson.\n\nChemical bonds — covalent (shared electrons), ionic (electron transfer), and metallic — hold atoms together to form molecules and compounds. Water (H₂O), carbon dioxide (CO₂), and table salt (NaCl) are simple but essential compounds.\n\nOrganic chemistry focuses on carbon-based compounds — the basis of all life and most pharmaceuticals, plastics, and fuels. Green chemistry aims to design processes that minimise hazardous substances and waste. Modern applications include drug development, materials science, nanotechnology, and renewable energy storage through advanced battery chemistry.",
+  },
+  // MEDICINE & HEALTH SCIENCE
+  {
+    keywords:
+      /\b(medicine|disease|symptom|diagnosis|treatment|surgery|vaccine|antibiotic|cancer|diabetes|heart disease|blood pressure|mental health|depression|anxiety|therapy|hospital|doctor|pharmacy|drug|medication|pandemic|epidemic|covid|immune)\b/i,
+    response:
+      "Medicine is the science and practice of diagnosing, treating, and preventing disease. Modern medicine has transformed human health dramatically — average global life expectancy has risen from around 30 years in 1900 to over 73 years today.\n\nVaccines are among medicine's greatest achievements, eradicating smallpox and nearly eliminating polio. Antibiotics, discovered with penicillin in 1928, have saved hundreds of millions of lives, though antibiotic resistance is an emerging crisis. Cancer treatment has advanced through targeted therapies, immunotherapy, and precision medicine based on genetic profiling.\n\nMental health is increasingly recognised as equally important as physical health. Depression and anxiety disorders affect hundreds of millions globally and are leading causes of disability. Treatment combines psychotherapy, medication, lifestyle interventions, and increasingly, digital health tools. Preventive medicine — regular exercise, balanced diet, not smoking, limiting alcohol, and managing stress — remains the most powerful strategy for long-term health.",
+  },
+  // PSYCHOLOGY
+  {
+    keywords:
+      /\b(psychology|behaviour|behavior|mind|cognition|emotion|motivation|personality|freud|jung|maslow|cognitive bias|memory|learning theory|social psychology|therapy|counselling|mental health|consciousness|perception|intelligence|iq|introvert|extrovert)\b/i,
+    response:
+      "Psychology is the scientific study of mind and behaviour, exploring how people think, feel, perceive, and interact. Sigmund Freud pioneered psychoanalysis, emphasising the role of the unconscious mind, while B.F. Skinner's behaviourism focused on observable behaviour and conditioning.\n\nCognitive psychology examines mental processes — memory, problem-solving, language, and decision-making. Cognitive biases — systematic errors in thinking like confirmation bias, anchoring, and the availability heuristic — affect everyone's judgements, even experts. Daniel Kahneman's work on System 1 (fast, intuitive) vs System 2 (slow, deliberate) thinking has been hugely influential.\n\nMaslow's Hierarchy of Needs describes human motivation as a pyramid — from basic physiological needs (food, shelter) through safety, belonging, and esteem to self-actualisation. Social psychology reveals how powerfully our behaviour is shaped by others — conformity experiments like Milgram's obedience studies and Zimbardo's Stanford Prison Experiment showed the disturbing extent of situational influence.",
+  },
+  // PHILOSOPHY
+  {
+    keywords:
+      /\b(philosophy|ethics|morality|logic|epistemology|metaphysics|ontology|plato|aristotle|socrates|kant|nietzsche|existentialism|stoicism|utilitarianism|consciousness|free will|meaning of life|truth|knowledge|justice|democracy|enlightenment)\b/i,
+    response:
+      "Philosophy — from the Greek 'love of wisdom' — is the systematic investigation of fundamental questions about existence, knowledge, ethics, and reason. Ancient Greek philosophers laid foundations still debated today: Socrates' dialectic method, Plato's Theory of Forms, and Aristotle's systematic approach to logic and empirical inquiry.\n\nEpistemology asks what knowledge is and how we obtain it. Metaphysics explores the nature of reality — questions like 'Does free will exist?' and 'What makes personal identity continuous over time?' Ethics examines morality — how should we act? Utilitarianism (maximize well-being) and Kant's deontological ethics (duty-based rules) offer contrasting frameworks.\n\nExistentialism, represented by Sartre, Camus, and Kierkegaard, confronts the challenge of creating meaning in an indifferent universe. Stoicism — enjoying a massive modern revival — teaches that we cannot control external events, only our responses to them, and that virtue (wisdom, courage, justice, temperance) is the only true good.",
+  },
+  // ECONOMICS
+  {
+    keywords:
+      /\b(economics|economy|inflation|gdp|recession|stock market|interest rate|central bank|cryptocurrency|bitcoin|investment|supply and demand|capitalism|socialism|trade|globalisation|unemployment|currency|federal reserve|fiscal policy|monetary policy)\b/i,
+    response:
+      "Economics studies how individuals, businesses, and governments allocate scarce resources. Microeconomics focuses on individual markets and decisions, while macroeconomics examines entire economies — growth, inflation, unemployment, and trade.\n\nKey concepts: Supply and demand determine prices in free markets. Inflation (rising prices) erodes purchasing power; central banks use interest rates to control it. GDP (Gross Domestic Product) measures an economy's total output. Recessions — two consecutive quarters of negative GDP growth — occur in economic cycles and are addressed through fiscal (government spending/taxes) and monetary (interest rates) policy.\n\nCryptocurrencies like Bitcoin introduced decentralised digital money based on blockchain technology, challenging traditional financial systems. Behavioural economics, pioneered by Kahneman and Thaler, incorporates psychology into economic models, showing that humans often make irrational economic decisions. Income inequality, automation's impact on jobs, and sustainable development are central challenges in contemporary economics.",
+  },
+  // PROGRAMMING
+  {
+    keywords:
+      /\b(programming|coding|software|python|javascript|java|typescript|c\+\+|rust|go|html|css|react|angular|vue|node|api|database|sql|git|github|algorithm|data structure|web development|app development|backend|frontend|devops|cloud|aws)\b/i,
+    response:
+      "Programming is the art of giving computers precise instructions to solve problems. Modern software development spans a rich ecosystem of languages — Python dominates data science and AI, JavaScript powers the web (with frameworks like React and Vue), Java and Kotlin are ubiquitous in enterprise and Android, while Rust and Go excel at systems programming with performance and safety.\n\nWeb development divides into frontend (user-facing interfaces with HTML, CSS, JavaScript) and backend (server logic, databases, APIs). Full-stack developers work across both. Databases store and retrieve data — SQL databases (PostgreSQL, MySQL) use relational tables, while NoSQL databases (MongoDB, Redis) offer flexibility for unstructured data.\n\nGit and platforms like GitHub enable version control and collaboration. The software development lifecycle includes planning, design, coding, testing, deployment, and maintenance. Agile methodologies emphasise iterative development and cross-functional teamwork. Cloud platforms (AWS, Google Cloud, Azure) have transformed how software is deployed and scaled.",
+  },
+  // LANGUAGES & LINGUISTICS
+  {
+    keywords:
+      /\b(language|linguistics|grammar|vocabulary|translation|bilingual|dialect|accent|english|spanish|french|mandarin|arabic|hindi|portuguese|russian|japanese|korean|sign language|etymology|phonetics|syntax|semantics|most spoken language)\b/i,
+    response:
+      "Language is humanity's most powerful tool — enabling complex communication, culture, and the transmission of knowledge across generations. There are approximately 7,100 languages spoken worldwide, though half are endangered and may disappear within this century.\n\nMandarin Chinese has the most native speakers (~1 billion), while English is the world's most widely spoken second language and the dominant language of international business, science, and the internet. Spanish is the official language of 21 countries with around 500 million native speakers.\n\nLinguistics studies the structure and evolution of language — phonetics (sounds), morphology (word structure), syntax (sentence grammar), and semantics (meaning). Language shapes thought in subtle ways — the Sapir-Whorf hypothesis suggests that the language you speak influences how you perceive reality. Translation and natural language processing (NLP) are challenging because language is full of ambiguity, idiom, and cultural context that defies literal rendering.",
+  },
+  // MYTHOLOGY & RELIGION
+  {
+    keywords:
+      /\b(mythology|myth|legend|god|goddess|zeus|thor|odin|poseidon|athena|apollo|hercules|norse|greek mythology|roman mythology|egyptian mythology|hinduism|buddhism|christianity|islam|judaism|religion|spiritual|sacred|ritual|creation myth|afterlife)\b/i,
+    response:
+      "Mythology consists of the sacred stories through which cultures have historically explained the world, human experience, and the cosmos. Greek mythology features a pantheon of gods on Mount Olympus — Zeus (king of gods), Athena (wisdom), Poseidon (seas), Apollo (sun/arts) — alongside heroes like Hercules, Achilles, and Odysseus whose stories explore heroism, fate, and human flaws.\n\nNorse mythology, originating with ancient Germanic peoples, features Odin (the Allfather), Thor (god of thunder), Loki (trickster), and a cosmos structured around the world-tree Yggdrasil. It culminates in Ragnarök — a prophesied apocalypse followed by a new world.\n\nThe world's major religions — Christianity (~2.4bn), Islam (~1.9bn), Hinduism (~1.2bn), Buddhism (~500m), Judaism (~15m) — each offer ethical frameworks, cosmologies, and practices that provide meaning, community, and moral guidance to billions. Comparative religion studies the profound similarities and differences in how human cultures have sought to understand the sacred.",
+  },
+];
+
+// ─────────────────── Category keywords ───────────────────
+const healthKeywords =
+  /\b(sleep|tired|pain|exercise|diet|water|steps|blood pressure|weight|stress|health|sick|fitness|calories|workout|feel better|wellness|nutrition)\b/i;
+const loveKeywords =
+  /\b(relationship|crush|dating|lonely|heartbreak|love|partner|ex|breakup|romance|feelings|affection|marriage|miss someone|flirting)\b/i;
+const studyKeywords =
+  /\b(exam|study|focus|notes|homework|concentration|learn|school|college|university|test|grades|assignment|revision|tutor)\b/i;
+const careerKeywords =
+  /\b(job|resume|interview|salary|career|promotion|work|boss|freelance|hire|skills|professional|linkedin|portfolio)\b/i;
+const fashionKeywords =
+  /\b(outfit|clothes|style|wear|trend|fashion|dress|shoes|accessories|wardrobe|aesthetic|look|brand|designer|old money|quiet luxury|dark academia|streetwear|cottagecore|bohemian|preppy|grunge|y2k|athleisure|capsule|minimalist fashion|smart casual|business casual|black tie|formal wear|casual wear|luxury fashion)\b/i;
+const businessKeywords =
+  /\b(startup|business|money|invest|profit|marketing|brand|product|entrepreneur|revenue|funding|pitch|sales|strategy)\b/i;
+
+function applyTone(text: string, ageGroup: string): string {
+  if (ageGroup === "genz") {
+    return `${text}\n\n*(fr no cap, hope that helps! 🔥)*`;
+  }
+  if (ageGroup === "senior") {
+    return `${text}\n\nI hope that answers your question clearly. Please feel free to ask if you'd like more detail on any point.`;
+  }
+  return text;
+}
+
+const healthResponses = [
+  "Maintaining good health involves three foundational pillars: movement, nutrition, and rest. Aim for at least 150 minutes of moderate aerobic activity per week — brisk walking, cycling, or swimming are excellent options. Strength training twice a week helps preserve muscle mass and boosts metabolism.\n\nNutrition-wise, focus on whole foods: vegetables, fruits, lean proteins, whole grains, and healthy fats like those in olive oil, avocados, and nuts. Minimize ultra-processed foods, excess sugar, and refined carbohydrates, which are linked to inflammation and chronic disease.\n\nSleep is often the most underrated health factor. Adults need 7–9 hours nightly. Poor sleep raises cortisol (stress hormone), increases appetite, impairs immunity, and reduces cognitive function. A consistent sleep schedule — waking and sleeping at the same time daily — dramatically improves sleep quality.",
+  "Managing stress effectively is as important as diet and exercise for long-term health. Chronic stress elevates cortisol, contributes to high blood pressure, disrupts sleep, and weakens immunity. Evidence-based strategies include mindfulness meditation (even 10 minutes daily), regular physical activity, time in nature, strong social connections, and limiting news/social media consumption.\n\nFor blood pressure, the DASH diet (Dietary Approaches to Stop Hypertension) is clinically proven — it emphasizes fruits, vegetables, whole grains, and low-fat dairy while reducing sodium and saturated fat. Regular aerobic exercise, reducing alcohol, not smoking, and managing weight are all highly effective.\n\nPreventive health checks — blood pressure, cholesterol, blood glucose, and cancer screenings appropriate for your age — catch problems early when they're most treatable. Don't wait for symptoms.",
+];
+
+const loveResponses = [
+  "Healthy relationships are built on five foundations: honest communication, mutual respect, trust, shared values, and individual autonomy. The ability to have difficult conversations calmly — expressing needs without blame — is probably the single most important relationship skill.\n\nPsychologist John Gottman's research identified the 'Four Horsemen' that predict relationship breakdown: criticism (attacking character), contempt (eye-rolling, mockery), defensiveness (denying responsibility), and stonewalling (shutting down). Learning to replace these with gentle start-up, appreciation, responsibility, and self-regulation transforms relationship quality.\n\nIf you're navigating a breakup or loneliness, know that grief over a relationship is entirely normal. Allow yourself to process it — suppressing emotions prolongs recovery. Reconnect with your own identity, interests, and friendships. Most people find that the clarity gained after a relationship ends eventually makes space for something healthier.",
+  "Attraction and love involve fascinating neuroscience. Early romantic love activates the brain's reward system, flooding it with dopamine — creating the intense focus and euphoria associated with new relationships. Over time, this transitions to attachment, maintained by oxytocin and vasopressin.\n\nFor those wanting to meet someone, authentic connection matters far more than playing games. Shared activities, genuine curiosity about others, and being present in conversations are more attractive than any pickup technique. Online dating works best when you move to video calls quickly and meet in person early — extended text-only communication builds a false sense of intimacy.\n\nSelf-love isn't a cliché — it's practical. Understanding your own needs, values, and patterns through therapy or reflection makes you a better partner and helps you choose more compatible people.",
+];
+
+const studyResponses = [
+  "The most effective study techniques are backed by cognitive science. Active recall — testing yourself rather than re-reading — is far superior for long-term retention. Spaced repetition, reviewing material at increasing intervals (apps like Anki automate this), exploits how memory consolidates during sleep.\n\nThe Feynman technique is powerful for deep understanding: explain a concept in simple terms as if teaching a child. Wherever you struggle to explain clearly reveals exactly what you haven't truly understood. Interleaved practice — mixing different problem types rather than massing identical ones — feels harder but produces better learning.\n\nFor focus, the Pomodoro technique (25-minute focused blocks with 5-minute breaks) helps manage attention. Eliminate phone notifications — each interruption costs an average 23 minutes to fully regain deep focus. Study in a consistent, dedicated space; the brain associates environments with mental states.",
+  "Exam preparation works best when started early. Cramming the night before can help with short-term recall but produces poor long-term retention and increases anxiety. Create a revision schedule working backward from exam dates, allocating more time to weaker areas.\n\nPast papers are invaluable — they reveal the actual style and difficulty of questions and make the exam format familiar. Practice under timed conditions at least once. Mind maps and concept diagrams suit visual learners and help reveal connections between ideas.\n\nExam anxiety is common and manageable. Preparation reduces it significantly. On exam day: deep breathing activates the parasympathetic nervous system and reduces cortisol. Read all questions first, tackle known questions first to build confidence, and manage time carefully.",
+];
+
+const careerResponses = [
+  "Career growth in the modern economy increasingly depends on building a visible personal brand alongside technical skills. Update your LinkedIn with specific achievements (metrics matter: 'increased sales by 40%' not 'improved sales'), contribute to your field through writing or speaking, and cultivate a genuine network — people hire and recommend those they know and trust.\n\nThe most transferable meta-skills are communication (written and spoken), problem-solving, adaptability, and collaboration. Hard skills in data analysis, project management, and digital literacy are in high demand across virtually every industry.\n\nFor interviews, the STAR method (Situation, Task, Action, Result) structures compelling answers to behavioural questions. Research the company thoroughly — understand their business model, competitors, and recent news. Thoughtful questions at interview's end signal genuine interest and intelligence.",
+  "Salary negotiation is a skill most people never practice but all should. Research market rates on Glassdoor, LinkedIn Salary, and industry surveys before any negotiation. Never give the first number if you can avoid it — ask what their budgeted range is.\n\nWhen negotiating, anchor high (above your actual target) to allow movement, and justify with specific market data and your unique contributions. Remember that total compensation includes benefits, flexibility, development budget, and equity — sometimes negotiating these is easier than base salary.\n\nFor career transitions, identify transferable skills from your current role, fill knowledge gaps through targeted courses (Coursera, edX, LinkedIn Learning), and lean on network connections in your target field for informational interviews. Most roles are filled before they're publicly advertised.",
+];
+
+const fashionResponses = [
+  "Building a versatile wardrobe starts with mastering fit — a well-tailored basic piece always outperforms an ill-fitting designer item. Invest in quality essentials that transcend trends: a crisp white shirt, dark denim, a well-cut blazer, a merino wool jumper, and clean leather shoes or trainers in neutral tones.\n\nThe capsule wardrobe concept — 30–40 versatile pieces that combine into 100+ outfits — saves money, decision fatigue, and closet space. A cohesive 3-colour palette (two neutrals + one accent) makes mixing and matching effortless and ensures everything works together.\n\nSustainable fashion is increasingly important: fast fashion accounts for 10% of global carbon emissions and produces 92 million tons of textile waste annually. Second-hand platforms like Depop and Vinted offer great-quality pieces at fraction of retail price. Buying fewer, better items and caring for them properly (following care labels, using quality hangers, storing properly) extends their life significantly.",
+];
+
+const businessResponses = [
+  "Building a successful business begins with solving a genuine problem for a specific, well-defined customer. Many startups fail not from poor execution but from building something people don't actually want. Validate your idea before investing heavily: interview potential customers, build an MVP (Minimum Viable Product), and get real users before optimising.\n\nDistribution is often underestimated relative to product. The best product doesn't win — the best-distributed product does. Define your customer acquisition channels early: SEO/content, social media, partnerships, paid advertising, or sales. Know your unit economics: customer acquisition cost (CAC) and lifetime value (LTV) must make mathematical sense.\n\nCash flow, not profit, kills most businesses. Keep overheads lean, especially in the early stages, and maintain at least 6 months of operating capital as runway. Revenue solves most startup problems — prioritise it over premature scaling.",
+];
+
+export function generateSearchResults(query: string): SearchResult[] {
+  const cleanQuery = query.replace(/^search[:\s]*/i, "").trim();
+  return [
+    {
+      title: `${cleanQuery} - Complete Guide 2026`,
+      snippet: `Discover everything about ${cleanQuery}. Our comprehensive guide covers the latest insights, expert tips, and actionable strategies to help you succeed.`,
+      url: `https://www.wikipedia.org/wiki/${encodeURIComponent(cleanQuery)}`,
+    },
+    {
+      title: `Top Facts About ${cleanQuery}`,
+      snippet: `Explore the most important aspects of ${cleanQuery}. From fundamentals to advanced concepts, this resource covers it all with clear explanations and examples.`,
+      url: `https://www.google.com/search?q=${encodeURIComponent(cleanQuery)}`,
+    },
+    {
+      title: `${cleanQuery}: Latest News & Updates 2026`,
+      snippet: `Stay up-to-date with the latest developments in ${cleanQuery}. Breaking news, expert analysis, and community discussions all in one place.`,
+      url: `https://news.google.com/search?q=${encodeURIComponent(cleanQuery)}`,
+    },
+    {
+      title: `${cleanQuery} — In-Depth Analysis`,
+      snippet: `A deep dive into ${cleanQuery}, covering history, current state, key players, and future outlook. Essential reading for anyone wanting to understand this topic fully.`,
+      url: `https://scholar.google.com/scholar?q=${encodeURIComponent(cleanQuery)}`,
+    },
+  ];
+}
+
+// ─────────────────── Detect if query warrants images ───────────────────
+function shouldShowImages(message: string, category: string): boolean {
+  const visualTopics =
+    /\b(fashion|outfit|clothes|style|food|recipe|travel|nature|space|planet|animal|art|design|architecture|city|landscape|sport|fitness|workout|health tips|beauty|makeup|hairstyle|interior|car|technology|gadget|plant|flower|ocean|mountain|beach|forest|sunset|sunrise|old money|quiet luxury|dark academia|streetwear|cottagecore|bohemian|preppy|aesthetic|look|hair|room decor|nails|jewelry|sneakers|handbag|luxury|brand)\b/i;
+  return (
+    /^search[:\s]/i.test(message) ||
+    visualTopics.test(message) ||
+    category === "fashion" ||
+    category === "search"
+  );
+}
+
+export async function generateAIResponse(
+  message: string,
+  activeCategory: string,
+  ageGroup: string,
+): Promise<AIResponse> {
+  const lower = message.toLowerCase().trim();
+  const quickLinks = {
+    google: `https://www.google.com/search?q=${encodeURIComponent(message)}`,
+    chatgpt: `https://chat.openai.com/?q=${encodeURIComponent(message)}`,
+  };
+
+  // ── Search mode ──
+  if (/^search[:\s]/i.test(lower) || /\bsearch for\b/i.test(lower)) {
+    const query = message
+      .replace(/^search[:\s]*/i, "")
+      .replace(/search for /i, "")
+      .trim();
+    const results = generateSearchResults(query);
+    const imageResults = getImageResults(query);
+    const suggestions = getSuggestions(query, activeCategory);
+    const knowledgeAnswer = (() => {
+      for (const entry of knowledgeBase) {
+        if (entry.keywords.test(query)) return entry.response;
+      }
+      return `Here are the top results for "${query}". The topic touches on many areas — explore the links below for detailed information, or ask me to explain any aspect in more depth.`;
+    })();
+    return {
+      text: `Here are the best results for "${query}":\n\n${knowledgeAnswer}`,
+      searchResults: results,
+      imageResults,
+      isSearch: true,
+      suggestions,
+    };
+  }
+
+  // ── Greetings & small talk ──
+  for (const { pattern, response } of greetingPatterns) {
+    if (pattern.test(lower)) {
+      return { text: applyTone(response, ageGroup) };
+    }
+  }
+
+  // ── General knowledge lookup ──
+  const isKnowledgeQuestion =
+    /(what is|what are|who is|who was|how does|how do|explain|tell me about|define|describe|why is|why does|when did|where is|history of|science of|facts about)/i.test(
+      lower,
+    );
+
+  if (isKnowledgeQuestion || activeCategory === "general") {
+    for (const entry of knowledgeBase) {
+      if (entry.keywords.test(lower)) {
+        const suggestions = getSuggestions(message, activeCategory);
+        const imageResults = shouldShowImages(lower, activeCategory)
+          ? getImageResults(message)
+          : undefined;
+        return {
+          text: applyTone(entry.response, ageGroup),
+          imageResults,
+          suggestions,
+        };
+      }
+    }
+  }
+
+  // ── Category-specific advice ──
+  const buildCatResponse = (responses: string[], cat: string): AIResponse => {
+    const r = responses[Math.floor(Math.random() * responses.length)];
+    const suggestions = getSuggestions(message, cat);
+    const imageResults = shouldShowImages(lower, cat)
+      ? getImageResults(message)
+      : undefined;
+    return { text: applyTone(r, ageGroup), suggestions, imageResults };
+  };
+
+  if (activeCategory === "health" || healthKeywords.test(lower)) {
+    return buildCatResponse(healthResponses, "health");
+  }
+  if (activeCategory === "love" || loveKeywords.test(lower)) {
+    return buildCatResponse(loveResponses, "love");
+  }
+  if (activeCategory === "study" || studyKeywords.test(lower)) {
+    return buildCatResponse(studyResponses, "study");
+  }
+  if (activeCategory === "career" || careerKeywords.test(lower)) {
+    return buildCatResponse(careerResponses, "career");
+  }
+  if (activeCategory === "fashion" || fashionKeywords.test(lower)) {
+    // Check knowledge base first for specific fashion queries
+    for (const entry of knowledgeBase) {
+      if (entry.keywords.test(lower)) {
+        const suggestions = getSuggestions(message, "fashion");
+        const imageResults = getImageResults(message);
+        return {
+          text: applyTone(entry.response, ageGroup),
+          imageResults,
+          suggestions,
+        };
+      }
+    }
+    return buildCatResponse(fashionResponses, "fashion");
+  }
+  if (activeCategory === "business" || businessKeywords.test(lower)) {
+    return buildCatResponse(businessResponses, "business");
+  }
+
+  // ── Fallback: broad knowledge scan ──
+  for (const entry of knowledgeBase) {
+    if (entry.keywords.test(lower)) {
+      const suggestions = getSuggestions(message, activeCategory);
+      const imageResults = shouldShowImages(lower, activeCategory)
+        ? getImageResults(message)
+        : undefined;
+      return {
+        text: applyTone(entry.response, ageGroup),
+        imageResults,
+        suggestions,
+      };
+    }
+  }
+
+  // ── Last resort: try Wikipedia ──
+  const suggestions = getSuggestions(message, activeCategory);
+  const wikiCard = await fetchWikipediaAnswer(message);
+  if (wikiCard?.extract) {
+    const imageResults = wikiCard.thumbnail
+      ? [
+          {
+            url: wikiCard.thumbnail,
+            alt: wikiCard.title,
+            searchUrl: `https://www.google.com/search?q=${encodeURIComponent(message)}&tbm=isch`,
+          },
+          ...getUnsplashImages(message).slice(0, 3),
+        ]
+      : getUnsplashImages(message);
+    return {
+      text: wikiCard.extract,
+      suggestions,
+      imageResults,
+      wikiCard,
+      quickLinks,
+    };
+  }
+  return {
+    text: applyTone(
+      `I'm NavvGenX AI — here to help with anything you'd like to know or discuss. You can ask me about science, history, technology, health, relationships, career advice, or just have a conversation. What would you like to explore?`,
+      ageGroup,
+    ),
+    suggestions,
+    quickLinks,
+  };
+}

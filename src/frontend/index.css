@@ -1,0 +1,361 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('/assets/fonts/BricolageGrotesque.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('/assets/fonts/PlusJakartaSans.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    /* NavvGenX Light Mode — Midnight Navy + Champagne Gold */
+    --background: 0.98 0.003 80;
+    --foreground: 0.10 0.020 265;
+    --card: 0.97 0.004 80;
+    --card-foreground: 0.10 0.020 265;
+    --popover: 0.98 0.003 80;
+    --popover-foreground: 0.10 0.020 265;
+    --primary: 0.72 0.14 75;
+    --primary-foreground: 0.10 0.020 265;
+    --secondary: 0.14 0.022 265;
+    --secondary-foreground: 0.97 0.004 80;
+    --muted: 0.94 0.005 80;
+    --muted-foreground: 0.46 0.018 265;
+    --accent: 0.72 0.14 75;
+    --accent-foreground: 0.10 0.020 265;
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 1 0 0;
+    --border: 0.90 0.006 80;
+    --input: 0.90 0.006 80;
+    --ring: 0.72 0.14 75;
+    --radius: 1rem;
+    --chart-1: 0.72 0.14 75;
+    --chart-2: 0.14 0.022 265;
+    --chart-3: 0.65 0.10 75;
+    --chart-4: 0.40 0.018 265;
+    --chart-5: 0.80 0.08 75;
+    --sidebar: 0.96 0.004 80;
+    --sidebar-foreground: 0.10 0.020 265;
+    --sidebar-primary: 0.72 0.14 75;
+    --sidebar-primary-foreground: 0.10 0.020 265;
+    --sidebar-accent: 0.93 0.005 80;
+    --sidebar-accent-foreground: 0.10 0.020 265;
+    --sidebar-border: 0.90 0.006 80;
+    --sidebar-ring: 0.72 0.14 75;
+  }
+
+  .dark {
+    /* NavvGenX Dark Mode — Rich Deep Navy + Glowing Gold */
+    --background: 0.08 0.022 265;
+    --foreground: 0.96 0.006 80;
+    --card: 0.12 0.024 265;
+    --card-foreground: 0.96 0.006 80;
+    --popover: 0.12 0.024 265;
+    --popover-foreground: 0.96 0.006 80;
+    --primary: 0.78 0.15 75;
+    --primary-foreground: 0.08 0.022 265;
+    --secondary: 0.18 0.026 265;
+    --secondary-foreground: 0.96 0.006 80;
+    --muted: 0.16 0.024 265;
+    --muted-foreground: 0.62 0.018 265;
+    --accent: 0.78 0.15 75;
+    --accent-foreground: 0.08 0.022 265;
+    --destructive: 0.50 0.22 27;
+    --destructive-foreground: 1 0 0;
+    --border: 0.20 0.024 265;
+    --input: 0.20 0.024 265;
+    --ring: 0.78 0.15 75;
+    --chart-1: 0.78 0.15 75;
+    --chart-2: 0.55 0.022 265;
+    --chart-3: 0.68 0.10 75;
+    --chart-4: 0.40 0.018 265;
+    --chart-5: 0.84 0.08 75;
+    --sidebar: 0.10 0.022 265;
+    --sidebar-foreground: 0.96 0.006 80;
+    --sidebar-primary: 0.78 0.15 75;
+    --sidebar-primary-foreground: 0.08 0.022 265;
+    --sidebar-accent: 0.15 0.024 265;
+    --sidebar-accent-foreground: 0.96 0.006 80;
+    --sidebar-border: 0.20 0.024 265;
+    --sidebar-ring: 0.78 0.15 75;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+  }
+}
+
+/* ─── NavvGenX Animations ─── */
+@keyframes float-particle {
+  0%, 100% { transform: translateY(0px) translateX(0px) scale(1); opacity: 0.5; }
+  25% { transform: translateY(-18px) translateX(8px) scale(1.06); opacity: 0.8; }
+  50% { transform: translateY(-8px) translateX(-6px) scale(0.96); opacity: 0.6; }
+  75% { transform: translateY(-24px) translateX(4px) scale(1.08); opacity: 0.7; }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes mesh-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(20px, -14px) scale(1.05); }
+  66% { transform: translate(-14px, 20px) scale(0.96); }
+}
+
+@keyframes fade-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes score-fill {
+  from { stroke-dashoffset: 440; }
+}
+
+@keyframes logo-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px oklch(0.78 0.15 75 / 0.40)); }
+  50% { filter: drop-shadow(0 0 14px oklch(0.78 0.15 75 / 0.65)) drop-shadow(0 0 24px oklch(0.78 0.15 75 / 0.20)); }
+}
+
+@keyframes orb-float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-16px) scale(1.06); }
+}
+
+@keyframes hex-shimmer {
+  0% { opacity: 0.03; }
+  50% { opacity: 0.07; }
+  100% { opacity: 0.03; }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
+}
+
+.animate-fade-up {
+  animation: fade-slide-up 0.4s ease forwards;
+}
+
+.animate-logo-pulse {
+  animation: logo-pulse 2.5s ease-in-out infinite;
+}
+
+/* ─── NavvGenX Design System — Midnight Navy + Champagne Gold ─── */
+
+.navvgenx-gradient-text {
+  background: linear-gradient(135deg, oklch(0.62 0.16 75), oklch(0.75 0.15 75), oklch(0.65 0.12 68));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Headline gradient */
+.navvgenx-rainbow-gradient-text {
+  background: linear-gradient(135deg,
+    oklch(0.10 0.020 265),
+    oklch(0.25 0.022 265),
+    oklch(0.62 0.16 75)
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 6s ease infinite;
+}
+
+.navvgenx-gradient-btn {
+  background: oklch(0.10 0.020 265);
+  color: white;
+  transition: all 0.25s ease;
+}
+
+.navvgenx-gradient-btn:hover {
+  background: oklch(0.18 0.026 265);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px oklch(0.10 0.020 265 / 0.28);
+}
+
+/* Legacy alias — maps to navy */
+.navvgenx-rainbow-gradient {
+  background: oklch(0.10 0.020 265);
+  color: white;
+}
+
+.navvgenx-warm-gradient {
+  background: linear-gradient(135deg, oklch(0.68 0.14 75), oklch(0.74 0.12 80));
+}
+
+/* Category cards — all navy */
+.navvgenx-teal-gradient {
+  background: oklch(0.10 0.020 265);
+}
+
+.navvgenx-pink-gradient {
+  background: oklch(0.10 0.020 265);
+}
+
+.navvgenx-amber-gradient {
+  background: oklch(0.10 0.020 265);
+}
+
+.navvgenx-emerald-gradient {
+  background: oklch(0.10 0.020 265);
+}
+
+.navvgenx-gold-gradient {
+  background: linear-gradient(135deg, oklch(0.68 0.14 75), oklch(0.74 0.12 80));
+}
+
+/* ─── Hero decorative orbs ─── */
+.navvgenx-hero-decoration {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.navvgenx-hero-decoration::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%,
+    oklch(0.78 0.15 75 / 0.09) 0%,
+    transparent 70%
+  );
+  animation: orb-float 9s ease-in-out infinite;
+}
+
+.navvgenx-hero-decoration::after {
+  content: '';
+  position: absolute;
+  bottom: -100px;
+  left: -60px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 60% 60%,
+    oklch(0.35 0.06 265 / 0.12) 0%,
+    transparent 70%
+  );
+  animation: orb-float 12s ease-in-out infinite reverse;
+  animation-delay: -4s;
+}
+
+/* Subtle geometric grid background pattern */
+.navvgenx-hex-bg {
+  background-image:
+    repeating-linear-gradient(
+      60deg,
+      oklch(0.10 0.020 265 / 0.04) 0px,
+      transparent 1px,
+      transparent 40px,
+      oklch(0.10 0.020 265 / 0.04) 41px
+    ),
+    repeating-linear-gradient(
+      -60deg,
+      oklch(0.72 0.14 75 / 0.03) 0px,
+      transparent 1px,
+      transparent 40px,
+      oklch(0.72 0.14 75 / 0.03) 41px
+    );
+  animation: hex-shimmer 8s ease-in-out infinite;
+}
+
+/* ─── Glass effects ─── */
+.glass-card {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.dark .glass-card {
+  background: rgba(8, 10, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.50), 0 0 0 1px rgba(180, 150, 80, 0.06);
+}
+
+.glass-header {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+.dark .glass-header {
+  background: rgba(6, 8, 22, 0.97);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 1px 0 rgba(180, 150, 80, 0.08);
+}
+
+/* ─── Chat bubbles ─── */
+.chat-bubble-user {
+  background: oklch(0.10 0.020 265);
+  color: white;
+  border-radius: 18px 18px 4px 18px;
+}
+
+.chat-bubble-ai {
+  border-radius: 18px 18px 18px 4px;
+  border-left: 3px solid oklch(0.72 0.14 75);
+}
+
+.dark .chat-bubble-ai {
+  background: rgba(14, 16, 38, 0.94);
+  color: rgba(245, 242, 235, 0.95);
+  border-left: 3px solid oklch(0.78 0.15 75);
+}
+
+/* ─── Search / result cards ─── */
+.search-result-card {
+  transition: all 0.2s ease;
+}
+
+.search-result-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+}
+
+/* ─── Age input error state ─── */
+.age-input-error {
+  border-color: oklch(0.577 0.245 27.325) !important;
+  box-shadow: 0 0 0 2px oklch(0.577 0.245 27.325 / 0.20);
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: oklch(0.72 0.14 75 / 0.22); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: oklch(0.72 0.14 75 / 0.45); }
