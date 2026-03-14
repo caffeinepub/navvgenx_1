@@ -1,6 +1,7 @@
 import { Mic, MicOff, Send, Volume2, VolumeX, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { wrapFriendly } from "../utils/friendlyTone";
 
 interface Message {
   id: string;
@@ -67,104 +68,305 @@ function NavvLogo({
 function getNavvAnswer(query: string): string {
   const q = query.toLowerCase().trim();
 
+  // Greetings — warm and casual
   if (
-    /^(hi|hello|hey|good morning|good afternoon|good evening|howdy)/.test(q)
+    /^(hi|hello|hey|good morning|good afternoon|good evening|howdy|sup|yo)/.test(
+      q,
+    )
   ) {
-    return "Hello! I'm Navv, your AI assistant. I'm here to help you with anything — fashion, health, tech, travel, science, or just a friendly chat. What's on your mind?";
+    const replies = [
+      "Hey hey! So happy you're here. What's on your mind today?",
+      "Hi there! I'm Navv, your AI bestie. Ask me literally anything!",
+      "Hey! Great to see you. What can I help you with?",
+      "Hello! No question is too big or too small — I'm all yours!",
+    ];
+    return replies[Math.floor(Math.random() * replies.length)];
   }
-  if (/how are you|how do you do|what's up|wassup/.test(q)) {
-    return "I'm doing great, thank you for asking! I'm always ready to assist you. What can I help you with today?";
+
+  // How are you
+  if (/how are you|how do you do|what's up|wassup|how r u/.test(q)) {
+    const replies = [
+      "I'm doing amazing, thanks for asking! That actually means a lot. Now tell me — how are YOU doing? What's going on today?",
+      "Honestly? Pretty great! I love chatting with people. What's on your mind?",
+      "I'm here and ready to help with literally anything! But more importantly — how are you doing?",
+    ];
+    return replies[Math.floor(Math.random() * replies.length)];
   }
+
   if (
     /what can you do|what do you know|your capabilities|help me with/.test(q)
   ) {
-    return "I can help you with a wide range of topics! Ask me about fashion & style, health & fitness, technology, travel destinations, food & recipes, science & space, history, sports, music, business & careers, coding, or any general knowledge question. I also speak my answers aloud — just listen!";
+    return wrapFriendly(
+      "I can help you with a wide range of topics! Ask me about fashion & style, health & fitness, technology, travel destinations, food & recipes, science & space, history, sports, music, business & careers, coding, or any general knowledge question. I also speak my answers aloud — just listen!",
+      query,
+    );
   }
+
+  // Everyday life advice
+  if (/stress|stressed out|too much stress|overwhelmed/.test(q)) {
+    return wrapFriendly(
+      "First off — it's completely normal to feel stressed sometimes. Here's what genuinely helps: take a few slow deep breaths right now (seriously, try it). Then break your to-do list into just 3 priorities for today. Step outside for even 10 minutes. Talk to someone you trust. And remember — you don't have to solve everything today. One step at a time.",
+      query,
+    );
+  }
+  if (/sad|feeling down|depressed|unhappy|crying/.test(q)) {
+    return wrapFriendly(
+      "Hey, I hear you — feeling sad is hard, and it's okay to feel that way. Give yourself permission to feel it without judgment. Talk to someone you trust, even just texting 'I'm having a rough day' can help. Do something small and kind for yourself today: a walk, your favorite food, a show you love. And if it's been going on for a while, please consider speaking with a counselor — that's a real act of strength.",
+      query,
+    );
+  }
+  if (/lonely|alone|no friends|isolated/.test(q)) {
+    return wrapFriendly(
+      "Feeling lonely is one of the most human experiences there is — you're definitely not alone in feeling alone. Start small: reach out to one person this week, even someone you haven't talked to in a while. Join a hobby group, class, or online community around something you love. And be patient with yourself — genuine connections take time to build. You matter more than you know.",
+      query,
+    );
+  }
+  if (/motivation|not motivated|lazy|procrastinat/.test(q)) {
+    return wrapFriendly(
+      "Lack of motivation is so normal — your brain isn't broken, it's just tired or overwhelmed. Here's a trick that actually works: commit to just 2 minutes of the task. That's it. Most of the time, starting is the hardest part and you'll keep going. Also, tie your tasks to your 'why' — why does this matter to you? And celebrate small wins. Progress, not perfection.",
+      query,
+    );
+  }
+  if (/money|saving money|broke|budget|financial|debt/.test(q)) {
+    return wrapFriendly(
+      "Money stress is real, but you can absolutely get on top of it. Start with the 50/30/20 rule: 50% of income on needs, 30% on wants, 20% on savings/debt. Track your spending for just one week — you'll spot leaks fast. Build a small emergency fund first (even $500 helps). Automate your savings so you never miss it. The most important step? Start today, even small.",
+      query,
+    );
+  }
+  if (
+    /relationship|partner|boyfriend|girlfriend|marriage|breakup|heartbreak/.test(
+      q,
+    )
+  ) {
+    return wrapFriendly(
+      "Relationships are one of the most complex and rewarding parts of life. The foundation is always communication — say what you feel using 'I feel...' statements instead of blame. Make time for each other intentionally. If going through a breakup: feel it fully, lean on friends, avoid going back out of loneliness, and give yourself real time to heal. You will feel better — I promise.",
+      query,
+    );
+  }
+  if (/confidence|self confidence|self esteem|insecure|shy/.test(q)) {
+    return wrapFriendly(
+      "Confidence isn't something you either have or don't — it's a skill you build through small actions. Start by doing one thing each day that slightly scares you. Dress in a way that makes YOU feel good. Speak up once in conversations even when nervous. Replace 'I can't' with 'I'm learning to.' And remember: everyone is more focused on themselves than on judging you. You are more capable than you think.",
+      query,
+    );
+  }
+  if (
+    /morning routine|start the day|productive morning|wake up early/.test(q)
+  ) {
+    return wrapFriendly(
+      "A solid morning routine can genuinely change your life. Here's a simple one that works: wake up at a consistent time, drink a glass of water immediately, get 10 minutes of sunlight or a short walk, eat something with protein, and do your hardest task first before checking your phone. Avoid the doom-scroll right after waking up — it sets a reactive tone for the whole day.",
+      query,
+    );
+  }
+  if (/work life balance|work too much|burnout|overworked/.test(q)) {
+    return wrapFriendly(
+      "Burnout is your body and mind saying 'enough.' Real boundaries look like: no work emails after a certain hour, protecting at least one full day off per week, and actually using your vacation time. Communicate your limits at work — most managers respect this more than martyrdom. And invest in something outside of work that genuinely fills you up: a hobby, family time, fitness, anything.",
+      query,
+    );
+  }
+  if (/parenting|kids|children|toddler|teenager/.test(q)) {
+    return wrapFriendly(
+      "Parenting is beautiful and hard at the same time — and no parent has it all figured out. Connection before correction: make sure your child feels safe and heard before discipline. Get on their level, literally — sit on the floor, make eye contact. Consistency matters more than perfection. Be kind to yourself too — a rested, calm parent is the greatest gift to a child.",
+      query,
+    );
+  }
+  if (/habit|build a habit|daily routine|new habit|stop a bad habit/.test(q)) {
+    return wrapFriendly(
+      "Building habits that stick comes down to making them obvious, attractive, easy, and satisfying (the habit loop). Attach your new habit to something you already do — this is called habit stacking. Start ridiculously small: '2 minutes of exercise' instead of '1 hour at the gym.' Track your streak visually — seeing that chain of days is powerful motivation to keep going.",
+      query,
+    );
+  }
+  if (/angry|anger|frustrated|rage|annoyed/.test(q)) {
+    return wrapFriendly(
+      "Anger is completely valid — it's telling you something important. But acting on it impulsively usually makes things worse. Try this: pause before responding (count to 10, take 3 deep breaths, leave the room if needed). Once you're calmer, express how you feel with 'I feel angry when...' rather than attacking the person. Regular exercise and sleep dramatically reduce baseline irritability too.",
+      query,
+    );
+  }
+  if (/bored|nothing to do|kill time/.test(q)) {
+    return wrapFriendly(
+      "Boredom is actually a creative invitation! Try: learning something new on YouTube or an app, starting a small project you've been putting off, going for a walk without headphones, calling someone you haven't talked to in a while, reading the first chapter of a book, or trying a new recipe. Boredom often hits when we're understimulated — it's a sign to create something.",
+      query,
+    );
+  }
+  if (/study|focus|concentrate|distracted|exam/.test(q)) {
+    return wrapFriendly(
+      "Studying smarter beats studying longer every time. Use the Pomodoro method: 25 minutes of focused work, 5 minute break, repeat. Study in a clean, distraction-free space — phone in another room. Use active recall: close your notes and write down everything you remember. Teach the topic out loud to yourself. Sleep is crucial for memory consolidation — all-nighters actually hurt retention.",
+      query,
+    );
+  }
+
   if (/old money|old-money/.test(q)) {
-    return "Old Money aesthetic is about quiet luxury and understated elegance. Key pieces: tailored blazers, cashmere sweaters, Oxford shirts, chino trousers, loafers, and polo shirts. Stick to a neutral palette — cream, navy, camel, burgundy, forest green. Preferred brands include Ralph Lauren, Loro Piana, Brunello Cucinelli, and Brooks Brothers. The rule: quality over logos, always.";
+    return wrapFriendly(
+      "Old Money aesthetic is about quiet luxury and understated elegance. Key pieces: tailored blazers, cashmere sweaters, Oxford shirts, chino trousers, loafers, and polo shirts. Stick to a neutral palette — cream, navy, camel, burgundy, forest green. Preferred brands include Ralph Lauren, Loro Piana, Brunello Cucinelli, and Brooks Brothers. The rule: quality over logos, always.",
+      query,
+    );
   }
   if (/quiet luxury|stealth wealth/.test(q)) {
-    return "Quiet Luxury (Stealth Wealth) is about wearing expensive pieces with no visible branding. Think The Row, Bottega Veneta, Loro Piana. Tonal dressing — one or two neutral colors head-to-toe. Impeccable fit is everything. Materials matter: cashmere, fine wool, supple leather.";
+    return wrapFriendly(
+      "Quiet Luxury (Stealth Wealth) is about wearing expensive pieces with no visible branding. Think The Row, Bottega Veneta, Loro Piana. Tonal dressing — one or two neutral colors head-to-toe. Impeccable fit is everything. Materials matter: cashmere, fine wool, supple leather.",
+      query,
+    );
   }
   if (/dark academia/.test(q)) {
-    return "Dark Academia aesthetic channels scholarly elegance. Essentials: tweed blazers, turtleneck sweaters, Oxford shoes, plaid trousers, long wool coats. Rich autumn tones — brown, burgundy, dark green, ivory. Pair with a leather satchel and round glasses for the full look.";
+    return wrapFriendly(
+      "Dark Academia aesthetic channels scholarly elegance. Essentials: tweed blazers, turtleneck sweaters, Oxford shoes, plaid trousers, long wool coats. Rich autumn tones — brown, burgundy, dark green, ivory. Pair with a leather satchel and round glasses for the full look.",
+      query,
+    );
   }
   if (/streetwear|street style/.test(q)) {
-    return "Streetwear blends comfort and culture. Key brands: Supreme, Off-White, Palace, Stüssy, A Bathing Ape. Essential pieces: graphic tees, hoodies, baggy denim, cargo pants, and sneakers (Nike Air Force 1, Jordan 1, Yeezy). Layer boldly and don't be afraid of statement pieces.";
+    return wrapFriendly(
+      "Streetwear blends comfort and culture. Key brands: Supreme, Off-White, Palace, Stüssy, A Bathing Ape. Essential pieces: graphic tees, hoodies, baggy denim, cargo pants, and sneakers (Nike Air Force 1, Jordan 1, Yeezy). Layer boldly and don't be afraid of statement pieces.",
+      query,
+    );
   }
   if (/y2k|y 2k|2000s fashion/.test(q)) {
-    return "Y2K fashion is back! Think low-rise jeans, butterfly tops, mini skirts, platform shoes, and bold metallics. Key accessories: tinted sunglasses, chunky belts, micro bags. Colors: hot pink, lime green, silver, baby blue. Key brands: Juicy Couture, Von Dutch, and Miss Sixty.";
+    return wrapFriendly(
+      "Y2K fashion is back! Think low-rise jeans, butterfly tops, mini skirts, platform shoes, and bold metallics. Key accessories: tinted sunglasses, chunky belts, micro bags. Colors: hot pink, lime green, silver, baby blue. Key brands: Juicy Couture, Von Dutch, and Miss Sixty.",
+      query,
+    );
   }
   if (/cottagecore|cottage core/.test(q)) {
-    return "Cottagecore celebrates rural romance. Flowy floral dresses, puffed sleeves, linen blouses, prairie skirts, and wicker baskets. Muted earthy tones — sage green, dusty rose, warm cream. Add a straw hat and Mary Jane shoes to complete the enchanting look.";
+    return wrapFriendly(
+      "Cottagecore celebrates rural romance. Flowy floral dresses, puffed sleeves, linen blouses, prairie skirts, and wicker baskets. Muted earthy tones — sage green, dusty rose, warm cream. Add a straw hat and Mary Jane shoes to complete the enchanting look.",
+      query,
+    );
   }
   if (/fashion trend|style trend|what to wear/.test(q)) {
-    return "2025 fashion trends include: quiet luxury with neutral tones, Y2K revival, coquette aesthetic with bows and pastels, utility wear (cargo pockets, functional details), and sheer layering. Sustainable fashion from brands like Everlane and Patagonia is also surging. The key rule this season: wear what makes YOU feel confident.";
+    return wrapFriendly(
+      "2025 fashion trends include: quiet luxury with neutral tones, Y2K revival, coquette aesthetic with bows and pastels, utility wear (cargo pockets, functional details), and sheer layering. Sustainable fashion from brands like Everlane and Patagonia is also surging. The key rule this season: wear what makes YOU feel confident.",
+      query,
+    );
   }
   if (/outfit|clothes|wardrobe|dress/.test(q)) {
-    return "Building a great wardrobe starts with quality basics: white tee, straight-leg jeans, a versatile blazer, simple sneakers, and a few statement accessories. Invest in 'cost per wear' — buy fewer but better pieces. Capsule wardrobes of 30-40 items that mix and match give infinite outfit combinations.";
+    return wrapFriendly(
+      "Building a great wardrobe starts with quality basics: white tee, straight-leg jeans, a versatile blazer, simple sneakers, and a few statement accessories. Invest in 'cost per wear' — buy fewer but better pieces. Capsule wardrobes of 30-40 items that mix and match give infinite outfit combinations.",
+      query,
+    );
   }
   if (/weight loss|lose weight|fat loss/.test(q)) {
-    return "Sustainable weight loss is about a calorie deficit + protein intake + movement. Aim for 0.5–1 lb per week. Prioritize: lean proteins (chicken, eggs, legumes), vegetables, whole grains. Walk 8,000+ steps daily, add 3x strength training per week. Sleep 7–9 hours — poor sleep spikes hunger hormones. No fad diets; consistency wins.";
+    return wrapFriendly(
+      "Sustainable weight loss is about a calorie deficit + protein intake + movement. Aim for 0.5–1 lb per week. Prioritize: lean proteins (chicken, eggs, legumes), vegetables, whole grains. Walk 8,000+ steps daily, add 3x strength training per week. Sleep 7–9 hours — poor sleep spikes hunger hormones. No fad diets; consistency wins.",
+      query,
+    );
   }
   if (/muscle|build muscle|gym|workout|exercise/.test(q)) {
-    return "To build muscle: progressive overload is key — gradually increase weight or reps each session. Focus on compound lifts: squat, bench press, deadlift, rows, overhead press. Eat 0.7–1g of protein per pound of body weight. Rest 48 hours between working the same muscle group. Sleep is when muscles actually grow!";
+    return wrapFriendly(
+      "To build muscle: progressive overload is key — gradually increase weight or reps each session. Focus on compound lifts: squat, bench press, deadlift, rows, overhead press. Eat 0.7–1g of protein per pound of body weight. Rest 48 hours between working the same muscle group. Sleep is when muscles actually grow!",
+      query,
+    );
   }
-  if (/mental health|anxiety|stress|depression/.test(q)) {
-    return "Mental health matters! Daily habits that help: 10 minutes of mindfulness or meditation, regular exercise (proven mood booster), journaling, limiting social media, and staying connected with loved ones. If you're struggling, please reach out to a mental health professional — therapy is a strength, not a weakness.";
+  if (/mental health|anxiety/.test(q)) {
+    return wrapFriendly(
+      "Mental health matters! Daily habits that help: 10 minutes of mindfulness or meditation, regular exercise (proven mood booster), journaling, limiting social media, and staying connected with loved ones. If you're struggling, please reach out to a mental health professional — therapy is a strength, not a weakness.",
+      query,
+    );
   }
   if (/nutrition|diet|healthy eating|food health/.test(q)) {
-    return "A balanced diet includes: colorful vegetables (fill half your plate), lean proteins, whole grains, healthy fats (avocado, olive oil, nuts), and plenty of water. Minimize ultra-processed foods, added sugars, and excess sodium. The Mediterranean diet is consistently ranked among the healthiest worldwide.";
+    return wrapFriendly(
+      "A balanced diet includes: colorful vegetables (fill half your plate), lean proteins, whole grains, healthy fats (avocado, olive oil, nuts), and plenty of water. Minimize ultra-processed foods, added sugars, and excess sodium. The Mediterranean diet is consistently ranked among the healthiest worldwide.",
+      query,
+    );
   }
   if (/sleep|insomnia|rest/.test(q)) {
-    return "Quality sleep tips: keep a consistent sleep schedule (even weekends), keep your room cool (65–68°F), avoid screens 1 hour before bed, limit caffeine after 2pm, and try a short wind-down routine. Adults need 7–9 hours. Poor sleep impacts mood, metabolism, immunity, and cognitive function.";
+    return wrapFriendly(
+      "Quality sleep tips: keep a consistent sleep schedule (even weekends), keep your room cool (65–68°F), avoid screens 1 hour before bed, limit caffeine after 2pm, and try a short wind-down routine. Adults need 7–9 hours. Poor sleep impacts mood, metabolism, immunity, and cognitive function.",
+      query,
+    );
   }
   if (/artificial intelligence|machine learning|ai|ml/.test(q)) {
-    return "Artificial Intelligence (AI) is transforming every industry. Large Language Models (LLMs) like GPT-4 and Gemini can write, code, and reason. Machine Learning lets systems learn from data without explicit programming. Key subfields: NLP (natural language processing), computer vision, reinforcement learning, and generative AI. We're in the most exciting era of AI in history!";
+    return wrapFriendly(
+      "Artificial Intelligence (AI) is transforming every industry. Large Language Models (LLMs) like GPT-4 and Gemini can write, code, and reason. Machine Learning lets systems learn from data without explicit programming. Key subfields: NLP (natural language processing), computer vision, reinforcement learning, and generative AI. We're in the most exciting era of AI in history!",
+      query,
+    );
   }
   if (/coding|programming|learn to code|software/.test(q)) {
-    return "Best languages to learn in 2025: Python (AI/data science/backend), JavaScript/TypeScript (web frontend/backend), Rust (systems/performance), Swift (iOS), Kotlin (Android). Start with Python for beginners — it's readable, versatile, and has a massive community. Free resources: freeCodeCamp, The Odin Project, CS50 on edX.";
+    return wrapFriendly(
+      "Best languages to learn in 2025: Python (AI/data science/backend), JavaScript/TypeScript (web frontend/backend), Rust (systems/performance), Swift (iOS), Kotlin (Android). Start with Python for beginners — it's readable, versatile, and has a massive community. Free resources: freeCodeCamp, The Odin Project, CS50 on edX.",
+      query,
+    );
   }
   if (/blockchain|crypto|bitcoin|web3/.test(q)) {
-    return "Blockchain is a decentralized, immutable ledger. Bitcoin is digital gold — a store of value. Ethereum enables smart contracts and DeFi (decentralized finance). NFTs are tokens that prove digital ownership. Web3 envisions a user-owned internet. The space is volatile and evolving — always research before investing.";
+    return wrapFriendly(
+      "Blockchain is a decentralized, immutable ledger. Bitcoin is digital gold — a store of value. Ethereum enables smart contracts and DeFi (decentralized finance). NFTs are tokens that prove digital ownership. Web3 envisions a user-owned internet. The space is volatile and evolving — always research before investing.",
+      query,
+    );
   }
   if (/smartphone|iphone|android|phone/.test(q)) {
-    return "iPhone vs Android in 2025: iPhone (iOS) offers seamless ecosystem integration, strong privacy, consistent updates, and Face ID. Android offers more customization, diverse price points, better file management, and Google integration. iPhone 16 Pro and Samsung Galaxy S25 Ultra are the current flagships. Choose based on your ecosystem preference.";
+    return wrapFriendly(
+      "iPhone vs Android in 2025: iPhone (iOS) offers seamless ecosystem integration, strong privacy, consistent updates, and Face ID. Android offers more customization, diverse price points, better file management, and Google integration. iPhone 16 Pro and Samsung Galaxy S25 Ultra are the current flagships. Choose based on your ecosystem preference.",
+      query,
+    );
   }
   if (/travel|destination|vacation|trip|visit/.test(q)) {
-    return "Top travel destinations for 2025: Japan (cherry blossoms, Tokyo street food, ancient temples), Italy (Amalfi Coast, Florence, Venice), Morocco (Marrakech medinas, Sahara desert), Peru (Machu Picchu, Amazon), Iceland (Northern Lights, midnight sun), and Vietnam (Ha Long Bay, Hoi An). Start with your passport, a flexible mindset, and Google Flights for deals!";
+    return wrapFriendly(
+      "Top travel destinations for 2025: Japan (cherry blossoms, Tokyo street food, ancient temples), Italy (Amalfi Coast, Florence, Venice), Morocco (Marrakech medinas, Sahara desert), Peru (Machu Picchu, Amazon), Iceland (Northern Lights, midnight sun), and Vietnam (Ha Long Bay, Hoi An). Start with your passport, a flexible mindset, and Google Flights for deals!",
+      query,
+    );
   }
   if (/japan|tokyo|kyoto|osaka/.test(q)) {
-    return "Japan is a must-visit! Tokyo for futuristic energy, Shibuya crossing, Harajuku fashion, and incredible ramen. Kyoto for temples, geishas, and traditional ryokan stays. Osaka for street food heaven (takoyaki, okonomiyaki) and the Dotonbori entertainment district. Best time to visit: March-May for cherry blossoms or October-November for autumn foliage.";
+    return wrapFriendly(
+      "Japan is a must-visit! Tokyo for futuristic energy, Shibuya crossing, Harajuku fashion, and incredible ramen. Kyoto for temples, geishas, and traditional ryokan stays. Osaka for street food heaven (takoyaki, okonomiyaki) and the Dotonbori entertainment district. Best time to visit: March-May for cherry blossoms or October-November for autumn foliage.",
+      query,
+    );
   }
   if (/europe|paris|london|rome|spain/.test(q)) {
-    return "Europe's best: Paris (Eiffel Tower, Louvre, café culture), Rome (Colosseum, Vatican, pasta), Barcelona (Sagrada Família, La Boqueria, Gaudí's architecture), London (British Museum, street markets, Notting Hill), and Santorini (whitewashed cliffs, sunset views). Eurail Pass is great for multi-country travel!";
+    return wrapFriendly(
+      "Europe's best: Paris (Eiffel Tower, Louvre, café culture), Rome (Colosseum, Vatican, pasta), Barcelona (Sagrada Família, La Boqueria, Gaudí's architecture), London (British Museum, street markets, Notting Hill), and Santorini (whitewashed cliffs, sunset views). Eurail Pass is great for multi-country travel!",
+      query,
+    );
   }
   if (/recipe|cook|cooking|how to make|how do i make/.test(q)) {
-    return "Great cooking starts with mastering basics: knife skills, heat control, seasoning with salt at each stage, and mise en place (prepping ingredients before cooking). Start with simple recipes: pasta aglio e olio (garlic, olive oil, pasta — 15 minutes), scrambled eggs with butter, and a basic vinaigrette. YouTube channels like Joshua Weissman and Binging with Babish are excellent free resources.";
+    return wrapFriendly(
+      "Great cooking starts with mastering basics: knife skills, heat control, seasoning with salt at each stage, and mise en place (prepping ingredients before cooking). Start with simple recipes: pasta aglio e olio (garlic, olive oil, pasta — 15 minutes), scrambled eggs with butter, and a basic vinaigrette. YouTube channels like Joshua Weissman and Binging with Babish are excellent free resources.",
+      query,
+    );
   }
   if (/pizza|pasta|italian food/.test(q)) {
-    return "Italian food secrets: use San Marzano tomatoes for sauce, bronze-die extruded pasta (rough texture holds sauce better), always salt your pasta water generously, never rinse cooked pasta, and finish pasta IN the sauce over heat. For pizza: a 72-hour cold-fermented dough, high hydration (65%+), and a very hot oven (500°F+) are the keys.";
+    return wrapFriendly(
+      "Italian food secrets: use San Marzano tomatoes for sauce, bronze-die extruded pasta (rough texture holds sauce better), always salt your pasta water generously, never rinse cooked pasta, and finish pasta IN the sauce over heat. For pizza: a 72-hour cold-fermented dough, high hydration (65%+), and a very hot oven (500°F+) are the keys.",
+      query,
+    );
   }
   if (/space|nasa|mars|moon|planet|galaxy|universe/.test(q)) {
-    return "Space is mind-blowing! The observable universe is 93 billion light-years across with 2 trillion galaxies. Mars missions: NASA's Perseverance rover is searching for ancient microbial life. SpaceX Starship aims to take humans to Mars within this decade. The James Webb Space Telescope is revealing galaxies from just 300 million years after the Big Bang. We are made of stardust!";
+    return wrapFriendly(
+      "Space is mind-blowing! The observable universe is 93 billion light-years across with 2 trillion galaxies. Mars missions: NASA's Perseverance rover is searching for ancient microbial life. SpaceX Starship aims to take humans to Mars within this decade. The James Webb Space Telescope is revealing galaxies from just 300 million years after the Big Bang. We are made of stardust!",
+      query,
+    );
   }
   if (/climate change|global warming|environment/.test(q)) {
-    return "Climate change is the defining challenge of our era. Global temperature has risen ~1.2°C since pre-industrial times. Key impacts: extreme weather, sea level rise, coral bleaching, biodiversity loss. Solutions: renewable energy (solar + wind now cheaper than fossil fuels), electric vehicles, regenerative agriculture, and reducing consumption. Individual and systemic change both matter.";
+    return wrapFriendly(
+      "Climate change is the defining challenge of our era. Global temperature has risen ~1.2°C since pre-industrial times. Key impacts: extreme weather, sea level rise, coral bleaching, biodiversity loss. Solutions: renewable energy (solar + wind now cheaper than fossil fuels), electric vehicles, regenerative agriculture, and reducing consumption. Individual and systemic change both matter.",
+      query,
+    );
   }
   if (/history|ancient|world war|civilization|empire/.test(q)) {
-    return "History is the story of humanity's triumphs and failures. Key turning points: the Agricultural Revolution (~10,000 BC), rise of ancient civilizations (Egypt, Greece, Rome), the Renaissance, Industrial Revolution, World Wars I & II, and the Digital Revolution. Understanding history helps us recognize patterns and avoid past mistakes.";
+    return wrapFriendly(
+      "History is the story of humanity's triumphs and failures. Key turning points: the Agricultural Revolution (~10,000 BC), rise of ancient civilizations (Egypt, Greece, Rome), the Renaissance, Industrial Revolution, World Wars I & II, and the Digital Revolution. Understanding history helps us recognize patterns and avoid past mistakes.",
+      query,
+    );
   }
   if (/music|song|artist|album|playlist/.test(q)) {
-    return "Music in 2025 is incredibly diverse! Trending genres: Afrobeats (Burna Boy, Wizkid), hyperpop, lo-fi hip hop, neo-soul (SZA, Summer Walker), and bedroom pop. Classic recommendations: for focus — lo-fi playlists or classical music. For workouts — hip hop or electronic. For mood lift — reggae or jazz. Music literally changes your brain chemistry!";
+    return wrapFriendly(
+      "Music in 2025 is incredibly diverse! Trending genres: Afrobeats (Burna Boy, Wizkid), hyperpop, lo-fi hip hop, neo-soul (SZA, Summer Walker), and bedroom pop. Classic recommendations: for focus — lo-fi playlists or classical music. For workouts — hip hop or electronic. For mood lift — reggae or jazz. Music literally changes your brain chemistry!",
+      query,
+    );
   }
   if (/business|startup|entrepreneur|career|job/.test(q)) {
-    return "To succeed in business: solve a real problem, know your customer deeply, and iterate fast. Key skills for 2025 careers: AI literacy, data analysis, communication, adaptability, and emotional intelligence. For job hunting: LinkedIn optimization, building a portfolio, and warm introductions beat cold applications. The best time to start is now!";
+    return wrapFriendly(
+      "To succeed in business: solve a real problem, know your customer deeply, and iterate fast. Key skills for 2025 careers: AI literacy, data analysis, communication, adaptability, and emotional intelligence. For job hunting: LinkedIn optimization, building a portfolio, and warm introductions beat cold applications. The best time to start is now!",
+      query,
+    );
   }
   if (/football|soccer|basketball|tennis|sports|athlete/.test(q)) {
-    return "Sports are incredible for physical and mental health. In 2025, follow: Premier League football (Arsenal, Manchester City rivalry), NBA (Wembanyama's rise, LeBron's legacy), Wimbledon tennis, and Formula 1 racing (Max Verstappen era). Regular exercise and following a sport you love makes staying active feel effortless!";
+    return wrapFriendly(
+      "Sports are incredible for physical and mental health. In 2025, follow: Premier League football (Arsenal, Manchester City rivalry), NBA (Wembanyama's rise, LeBron's legacy), Wimbledon tennis, and Formula 1 racing (Max Verstappen era). Regular exercise and following a sport you love makes staying active feel effortless!",
+      query,
+    );
   }
-  return "That's a fascinating question! I'd love to explore that with you more. Ask me about fashion & style, health & fitness, technology, travel, food, science & space, history, music, business, or coding — I'm here to help with anything! For even deeper research, try the 'Search Google' or 'Ask ChatGPT' buttons in the chat page.";
+
+  return wrapFriendly(
+    "That's a fascinating question! I'd love to explore that with you more. Ask me about fashion & style, health & fitness, technology, travel, food, science & space, history, music, business, or coding — I'm here to help with anything! For even deeper research, try the 'Search Google' or 'Ask ChatGPT' buttons in the chat page.",
+    query,
+  );
 }
 
 // ─── Sound wave bars ────────────────────────────────────────────────────────────
@@ -255,12 +457,12 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
       const greetMsg: Message = {
         id: "greeting",
         role: "navv",
-        text: "I am Navv — how can I help you today? Ask me anything about fashion, health, tech, travel, science, or any topic!",
+        text: "Hey there! I'm Navv — your AI friend. Ask me anything: fashion, health, tech, travel, science, or everyday life advice. What's on your mind?",
         timestamp: new Date(),
       };
       setMessages([greetMsg]);
       setTimeout(() => {
-        speak("I am Navv, how can I help you?");
+        speak("Hey there! I am Navv, how can I help you today?");
         inputRef.current?.focus();
       }, 400);
     }
@@ -457,7 +659,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                           className="text-xs"
                           style={{ color: `${gold}90` }}
                         >
-                          Your AI Assistant
+                          Your AI Friend
                         </span>
                       </>
                     )}
@@ -498,7 +700,9 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex ${
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  }`}
                 >
                   {msg.role === "navv" && (
                     <div className="flex-shrink-0 mr-2 mt-0.5">

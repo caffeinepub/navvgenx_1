@@ -1,3 +1,5 @@
+import { wrapFriendly } from "./friendlyTone";
+
 export interface SearchResult {
   title: string;
   snippet: string;
@@ -709,6 +711,77 @@ const knowledgeBase: { keywords: RegExp; response: string }[] = [
     response:
       "Mythology consists of the sacred stories through which cultures have historically explained the world, human experience, and the cosmos. Greek mythology features a pantheon of gods on Mount Olympus — Zeus (king of gods), Athena (wisdom), Poseidon (seas), Apollo (sun/arts) — alongside heroes like Hercules, Achilles, and Odysseus whose stories explore heroism, fate, and human flaws.\n\nNorse mythology, originating with ancient Germanic peoples, features Odin (the Allfather), Thor (god of thunder), Loki (trickster), and a cosmos structured around the world-tree Yggdrasil. It culminates in Ragnarök — a prophesied apocalypse followed by a new world.\n\nThe world's major religions — Christianity (~2.4bn), Islam (~1.9bn), Hinduism (~1.2bn), Buddhism (~500m), Judaism (~15m) — each offer ethical frameworks, cosmologies, and practices that provide meaning, community, and moral guidance to billions. Comparative religion studies the profound similarities and differences in how human cultures have sought to understand the sacred.",
   },
+
+  // EVERYDAY LIFE ADVICE
+  {
+    keywords:
+      /\b(stress|stressed out|too much stress|overwhelmed|overwhelm)\b/i,
+    response:
+      "First off — it's completely normal to feel stressed sometimes. Here's what genuinely helps: take a few slow deep breaths right now (seriously, try it). Then break your to-do list into just 3 priorities for today. Step outside for even 10 minutes. Talk to someone you trust. And remember — you don't have to solve everything today. One step at a time.",
+  },
+  {
+    keywords: /\b(sad|feeling down|depressed|unhappy|crying|depression)\b/i,
+    response:
+      "Hey, I hear you — feeling sad is hard, and it's okay to feel that way. Give yourself permission to feel it without judgment. Talk to someone you trust, even just texting 'I'm having a rough day' can help. Do something small and kind for yourself today: a walk, your favorite food, a show you love. And if it's been going on for a while, please consider speaking with a counselor — that's a real act of strength.",
+  },
+  {
+    keywords: /\b(lonely|alone|no friends|isolated|loneliness)\b/i,
+    response:
+      "Feeling lonely is one of the most human experiences there is — you're definitely not alone in feeling alone. Start small: reach out to one person this week, even someone you haven't talked to in a while. Join a hobby group, class, or online community around something you love. And be patient with yourself — genuine connections take time to build. You matter more than you know.",
+  },
+  {
+    keywords: /\b(motivation|not motivated|lazy|procrastinat)\b/i,
+    response:
+      "Lack of motivation is so normal — your brain isn't broken, it's just tired or overwhelmed. Here's a trick that actually works: commit to just 2 minutes of the task. That's it. Most of the time, starting is the hardest part and you'll keep going. Also, tie your tasks to your 'why' — why does this matter to you? And celebrate small wins. Progress, not perfection.",
+  },
+  {
+    keywords:
+      /\b(saving money|broke|budget|financial stress|debt|money problems)\b/i,
+    response:
+      "Money stress is real, but you can absolutely get on top of it. Start with the 50/30/20 rule: 50% of income on needs, 30% on wants, 20% on savings/debt. Track your spending for just one week — you'll spot leaks fast. Build a small emergency fund first (even $500 helps). Automate your savings so you never miss it. The most important step? Start today, even small.",
+  },
+  {
+    keywords: /\b(breakup|heartbreak|relationship problems|partner issues)\b/i,
+    response:
+      "Relationships are one of the most complex and rewarding parts of life. The foundation is always communication — say what you feel using 'I feel...' statements instead of blame. Make time for each other intentionally. If going through a breakup: feel it fully, lean on friends, avoid going back out of loneliness, and give yourself real time to heal. You will feel better — I promise.",
+  },
+  {
+    keywords: /\b(confidence|self confidence|self esteem|insecure|shyness)\b/i,
+    response:
+      "Confidence isn't something you either have or don't — it's a skill you build through small actions. Start by doing one thing each day that slightly scares you. Dress in a way that makes YOU feel good. Speak up once in conversations even when nervous. Replace 'I can't' with 'I'm learning to.' And remember: everyone is more focused on themselves than on judging you. You are more capable than you think.",
+  },
+  {
+    keywords:
+      /\b(morning routine|productive morning|wake up early|start the day)\b/i,
+    response:
+      "A solid morning routine can genuinely change your life. Here's a simple one that works: wake up at a consistent time, drink a glass of water immediately, get 10 minutes of sunlight or a short walk, eat something with protein, and do your hardest task first before checking your phone. Avoid the doom-scroll right after waking up — it sets a reactive tone for the whole day.",
+  },
+  {
+    keywords: /\b(work life balance|burnout|overworked|work too much)\b/i,
+    response:
+      "Burnout is your body and mind saying 'enough.' Real boundaries look like: no work emails after a certain hour, protecting at least one full day off per week, and actually using your vacation time. Communicate your limits at work — most managers respect this more than martyrdom. And invest in something outside of work that genuinely fills you up: a hobby, family time, fitness, anything.",
+  },
+  {
+    keywords: /\b(parenting|kids|toddler|teenager|children advice)\b/i,
+    response:
+      "Parenting is beautiful and hard at the same time — and no parent has it all figured out. Connection before correction: make sure your child feels safe and heard before discipline. Get on their level, literally — sit on the floor, make eye contact. Consistency matters more than perfection. Be kind to yourself too — a rested, calm parent is the greatest gift to a child.",
+  },
+  {
+    keywords:
+      /\b(build a habit|daily routine|new habit|stop a bad habit|habit stacking)\b/i,
+    response:
+      "Building habits that stick comes down to making them obvious, attractive, easy, and satisfying (the habit loop). Attach your new habit to something you already do — this is called habit stacking. Start ridiculously small: '2 minutes of exercise' instead of '1 hour at the gym.' Track your streak visually — seeing that chain of days is powerful motivation to keep going.",
+  },
+  {
+    keywords: /\b(angry|anger issues|frustrated|rage|annoyed all the time)\b/i,
+    response:
+      "Anger is completely valid — it's telling you something important. But acting on it impulsively usually makes things worse. Try this: pause before responding (count to 10, take 3 deep breaths, leave the room if needed). Once you're calmer, express how you feel with 'I feel angry when...' rather than attacking the person. Regular exercise and sleep dramatically reduce baseline irritability too.",
+  },
+  {
+    keywords: /\b(bored|nothing to do|kill time|boredom)\b/i,
+    response:
+      "Boredom is actually a creative invitation! Try: learning something new on YouTube or an app, starting a small project you've been putting off, going for a walk without headphones, calling someone you haven't talked to in a while, reading the first chapter of a book, or trying a new recipe. Boredom often hits when we're understimulated — it's a sign to create something.",
+  },
 ];
 
 // ─────────────────── Category keywords ───────────────────
@@ -921,7 +994,7 @@ export async function generateAIResponse(
       ? getImageResults(message)
       : undefined;
     return {
-      text: applyTone(r, ageGroup),
+      text: wrapFriendly(applyTone(r, ageGroup), message),
       suggestions,
       imageResults,
       quickLinks,
@@ -996,9 +1069,12 @@ export async function generateAIResponse(
   }
 
   return {
-    text: applyTone(
-      `I'm NavvGenX AI — here to help with anything you'd like to know or discuss. Try asking "what is [topic]", "who is [person]", "how does [thing] work", or "explain [concept]". I can also help with health, fashion, career, travel, and more.`,
-      ageGroup,
+    text: wrapFriendly(
+      applyTone(
+        `I'm NavvGenX AI — here to help with anything you'd like to know or discuss. Try asking "what is [topic]", "who is [person]", "how does [thing] work", or "explain [concept]". I can also help with health, fashion, career, travel, and more.`,
+        ageGroup,
+      ),
+      message,
     ),
     suggestions,
     quickLinks,

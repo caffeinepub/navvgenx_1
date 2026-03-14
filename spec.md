@@ -1,29 +1,24 @@
 # NavvGenX
 
 ## Current State
-NavvGenX is a full-stack AI companion app with Chat, Health, Reminders, and Home pages. It has voice greeting on load, Wikipedia knowledge panels, Unsplash images, and text-to-speech for answers.
+NavvGenX is a live AI companion app with a Chat page (using `aiEngine.ts` for AI responses) and a floating Navv assistant (`NavvAssistant.tsx` with `getNavvAnswer()`). Both currently give informational/factual answers but lack warm, human-friendly conversational tone and everyday life advice.
 
 ## Requested Changes (Diff)
 
 ### Add
-- A floating virtual AI assistant widget ("Navv") visible on all pages, inspired by Gemini/ChatGPT assistant bubbles
-- When the assistant opens/activates, it plays a voice greeting: "I am Navv, how can I help you?"
-- The assistant has a chat interface where the user can type or speak, and Navv responds with text + voice (TTS)
-- The assistant has an animated avatar/orb that pulses when speaking
-- The widget is a floating button (bottom-right) that expands into a full assistant panel
+- Friendly, human conversational openers/closers in both Navv and Chat responses (e.g. "Hey, good question!", "Honestly...", "Here's what I'd tell a friend:", "Hope that helps!", etc.)
+- Everyday life advice category covering: relationships, stress, money, career, parenting, motivation, productivity, loneliness, self-confidence, daily habits, work-life balance, morning routines
+- Friendly follow-up prompts at the end of answers (e.g. "Want me to go deeper on this?", "Let me know if you have follow-up questions!")
+- Natural casual greetings/small-talk handling ("I'm bored", "I need help", "I'm stressed", "I'm sad", "I'm happy")
 
 ### Modify
-- App.tsx: import and render the new NavvAssistant component globally
+- `src/frontend/src/utils/aiEngine.ts`: Wrap all `generateAIResponse` responses with friendly human-like tone. Add everyday advice topics. Add warm openers and follow-up closers.
+- `src/frontend/src/components/NavvAssistant.tsx`: Update `getNavvAnswer()` to use the same friendly tone. Add everyday life advice topics. Add warm closers.
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. Create `src/frontend/src/components/NavvAssistant.tsx` — floating button + expanded chat panel with:
-   - Open/close toggle with animated orb button
-   - On open: speak "I am Navv, how can I help you?"
-   - Chat input (text + voice via Web Speech API)
-   - AI response logic (reusing existing answer/knowledge base patterns from ChatPage)
-   - TTS playback of every response
-   - Animated waveform/pulse when speaking
-2. Wire NavvAssistant into App.tsx (render at root level)
+1. Create a shared `friendlyTone.ts` utility with: friendly openers array, friendly closers array, `wrapWithFriendlyTone(answer, query)` helper that picks a natural opener + closer
+2. Update `aiEngine.ts` `generateAIResponse` to use `wrapWithFriendlyTone` on all responses, and add everyday life advice topics
+3. Update `NavvAssistant.tsx` `getNavvAnswer()` to call the same helper and add everyday advice topics
