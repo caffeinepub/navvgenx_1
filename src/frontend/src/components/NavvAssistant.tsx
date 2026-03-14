@@ -1,4 +1,4 @@
-import { Mic, MicOff, Send, Sparkles, Volume2, VolumeX, X } from "lucide-react";
+import { Mic, MicOff, Send, Volume2, VolumeX, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -13,30 +13,73 @@ interface NavvAssistantProps {
   darkMode?: boolean;
 }
 
+// ─── NavvLogo SVG ────────────────────────────────────────────────────────────
+function NavvLogo({
+  size = 32,
+  dark = false,
+}: { size?: number; dark?: boolean }) {
+  const gold = dark ? "oklch(0.78 0.15 75)" : "oklch(0.65 0.14 75)";
+  const navy = dark ? "oklch(0.08 0.022 265)" : "oklch(0.10 0.020 265)";
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 40 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="Navv logo"
+    >
+      <circle
+        cx="20"
+        cy="20"
+        r="19"
+        stroke={gold}
+        strokeWidth="1.5"
+        fill={navy}
+      />
+      <circle
+        cx="20"
+        cy="20"
+        r="14"
+        stroke={gold}
+        strokeWidth="0.5"
+        strokeOpacity="0.35"
+        fill="none"
+      />
+      <text
+        x="20"
+        y="27"
+        textAnchor="middle"
+        fontFamily="'Space Grotesk', Arial, sans-serif"
+        fontWeight="700"
+        fontSize="22"
+        fill={gold}
+        letterSpacing="-0.5"
+      >
+        N
+      </text>
+    </svg>
+  );
+}
+
 // ─── Knowledge base ────────────────────────────────────────────────────────────
 function getNavvAnswer(query: string): string {
   const q = query.toLowerCase().trim();
 
-  // Greetings
   if (
     /^(hi|hello|hey|good morning|good afternoon|good evening|howdy)/.test(q)
   ) {
     return "Hello! I'm Navv, your AI assistant. I'm here to help you with anything — fashion, health, tech, travel, science, or just a friendly chat. What's on your mind?";
   }
-
-  // How are you
   if (/how are you|how do you do|what's up|wassup/.test(q)) {
     return "I'm doing great, thank you for asking! I'm always ready to assist you. What can I help you with today?";
   }
-
-  // What can you do
   if (
     /what can you do|what do you know|your capabilities|help me with/.test(q)
   ) {
     return "I can help you with a wide range of topics! Ask me about fashion & style, health & fitness, technology, travel destinations, food & recipes, science & space, history, sports, music, business & careers, coding, or any general knowledge question. I also speak my answers aloud — just listen!";
   }
-
-  // ── Fashion ──
   if (/old money|old-money/.test(q)) {
     return "Old Money aesthetic is about quiet luxury and understated elegance. Key pieces: tailored blazers, cashmere sweaters, Oxford shirts, chino trousers, loafers, and polo shirts. Stick to a neutral palette — cream, navy, camel, burgundy, forest green. Preferred brands include Ralph Lauren, Loro Piana, Brunello Cucinelli, and Brooks Brothers. The rule: quality over logos, always.";
   }
@@ -61,8 +104,6 @@ function getNavvAnswer(query: string): string {
   if (/outfit|clothes|wardrobe|dress/.test(q)) {
     return "Building a great wardrobe starts with quality basics: white tee, straight-leg jeans, a versatile blazer, simple sneakers, and a few statement accessories. Invest in 'cost per wear' — buy fewer but better pieces. Capsule wardrobes of 30-40 items that mix and match give infinite outfit combinations.";
   }
-
-  // ── Health & Fitness ──
   if (/weight loss|lose weight|fat loss/.test(q)) {
     return "Sustainable weight loss is about a calorie deficit + protein intake + movement. Aim for 0.5–1 lb per week. Prioritize: lean proteins (chicken, eggs, legumes), vegetables, whole grains. Walk 8,000+ steps daily, add 3x strength training per week. Sleep 7–9 hours — poor sleep spikes hunger hormones. No fad diets; consistency wins.";
   }
@@ -78,8 +119,6 @@ function getNavvAnswer(query: string): string {
   if (/sleep|insomnia|rest/.test(q)) {
     return "Quality sleep tips: keep a consistent sleep schedule (even weekends), keep your room cool (65–68°F), avoid screens 1 hour before bed, limit caffeine after 2pm, and try a short wind-down routine. Adults need 7–9 hours. Poor sleep impacts mood, metabolism, immunity, and cognitive function.";
   }
-
-  // ── Tech ──
   if (/artificial intelligence|machine learning|ai|ml/.test(q)) {
     return "Artificial Intelligence (AI) is transforming every industry. Large Language Models (LLMs) like GPT-4 and Gemini can write, code, and reason. Machine Learning lets systems learn from data without explicit programming. Key subfields: NLP (natural language processing), computer vision, reinforcement learning, and generative AI. We're in the most exciting era of AI in history!";
   }
@@ -92,8 +131,6 @@ function getNavvAnswer(query: string): string {
   if (/smartphone|iphone|android|phone/.test(q)) {
     return "iPhone vs Android in 2025: iPhone (iOS) offers seamless ecosystem integration, strong privacy, consistent updates, and Face ID. Android offers more customization, diverse price points, better file management, and Google integration. iPhone 16 Pro and Samsung Galaxy S25 Ultra are the current flagships. Choose based on your ecosystem preference.";
   }
-
-  // ── Travel ──
   if (/travel|destination|vacation|trip|visit/.test(q)) {
     return "Top travel destinations for 2025: Japan (cherry blossoms, Tokyo street food, ancient temples), Italy (Amalfi Coast, Florence, Venice), Morocco (Marrakech medinas, Sahara desert), Peru (Machu Picchu, Amazon), Iceland (Northern Lights, midnight sun), and Vietnam (Ha Long Bay, Hoi An). Start with your passport, a flexible mindset, and Google Flights for deals!";
   }
@@ -103,44 +140,30 @@ function getNavvAnswer(query: string): string {
   if (/europe|paris|london|rome|spain/.test(q)) {
     return "Europe's best: Paris (Eiffel Tower, Louvre, café culture), Rome (Colosseum, Vatican, pasta), Barcelona (Sagrada Família, La Boqueria, Gaudí's architecture), London (British Museum, street markets, Notting Hill), and Santorini (whitewashed cliffs, sunset views). Eurail Pass is great for multi-country travel!";
   }
-
-  // ── Food & Recipes ──
   if (/recipe|cook|cooking|how to make|how do i make/.test(q)) {
     return "Great cooking starts with mastering basics: knife skills, heat control, seasoning with salt at each stage, and mise en place (prepping ingredients before cooking). Start with simple recipes: pasta aglio e olio (garlic, olive oil, pasta — 15 minutes), scrambled eggs with butter, and a basic vinaigrette. YouTube channels like Joshua Weissman and Binging with Babish are excellent free resources.";
   }
   if (/pizza|pasta|italian food/.test(q)) {
     return "Italian food secrets: use San Marzano tomatoes for sauce, bronze-die extruded pasta (rough texture holds sauce better), always salt your pasta water generously, never rinse cooked pasta, and finish pasta IN the sauce over heat. For pizza: a 72-hour cold-fermented dough, high hydration (65%+), and a very hot oven (500°F+) are the keys.";
   }
-
-  // ── Science & Space ──
   if (/space|nasa|mars|moon|planet|galaxy|universe/.test(q)) {
     return "Space is mind-blowing! The observable universe is 93 billion light-years across with 2 trillion galaxies. Mars missions: NASA's Perseverance rover is searching for ancient microbial life. SpaceX Starship aims to take humans to Mars within this decade. The James Webb Space Telescope is revealing galaxies from just 300 million years after the Big Bang. We are made of stardust!";
   }
   if (/climate change|global warming|environment/.test(q)) {
     return "Climate change is the defining challenge of our era. Global temperature has risen ~1.2°C since pre-industrial times. Key impacts: extreme weather, sea level rise, coral bleaching, biodiversity loss. Solutions: renewable energy (solar + wind now cheaper than fossil fuels), electric vehicles, regenerative agriculture, and reducing consumption. Individual and systemic change both matter.";
   }
-
-  // ── History ──
   if (/history|ancient|world war|civilization|empire/.test(q)) {
     return "History is the story of humanity's triumphs and failures. Key turning points: the Agricultural Revolution (~10,000 BC), rise of ancient civilizations (Egypt, Greece, Rome), the Renaissance, Industrial Revolution, World Wars I & II, and the Digital Revolution. Understanding history helps us recognize patterns and avoid past mistakes.";
   }
-
-  // ── Music ──
   if (/music|song|artist|album|playlist/.test(q)) {
     return "Music in 2025 is incredibly diverse! Trending genres: Afrobeats (Burna Boy, Wizkid), hyperpop, lo-fi hip hop, neo-soul (SZA, Summer Walker), and bedroom pop. Classic recommendations: for focus — lo-fi playlists or classical music. For workouts — hip hop or electronic. For mood lift — reggae or jazz. Music literally changes your brain chemistry!";
   }
-
-  // ── Business & Career ──
   if (/business|startup|entrepreneur|career|job/.test(q)) {
     return "To succeed in business: solve a real problem, know your customer deeply, and iterate fast. Key skills for 2025 careers: AI literacy, data analysis, communication, adaptability, and emotional intelligence. For job hunting: LinkedIn optimization, building a portfolio, and warm introductions beat cold applications. The best time to start is now!";
   }
-
-  // ── Sports ──
   if (/football|soccer|basketball|tennis|sports|athlete/.test(q)) {
     return "Sports are incredible for physical and mental health. In 2025, follow: Premier League football (Arsenal, Manchester City rivalry), NBA (Wembanyama's rise, LeBron's legacy), Wimbledon tennis, and Formula 1 racing (Max Verstappen era). Regular exercise and following a sport you love makes staying active feel effortless!";
   }
-
-  // ── General / Fallback ──
   return "That's a fascinating question! I'd love to explore that with you more. Ask me about fashion & style, health & fitness, technology, travel, food, science & space, history, music, business, or coding — I'm here to help with anything! For even deeper research, try the 'Search Google' or 'Ask ChatGPT' buttons in the chat page.";
 }
 
@@ -151,7 +174,8 @@ function SoundWaves() {
       {[1, 2, 3, 4, 5].map((i) => (
         <motion.div
           key={i}
-          className="w-0.5 bg-navv-gold rounded-full"
+          className="w-0.5 rounded-full"
+          style={{ background: "oklch(0.78 0.15 75)" }}
           animate={{ height: [4, 12, 4, 8, 4] }}
           transition={{
             duration: 0.8,
@@ -186,7 +210,6 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
     scrollToBottom();
   }, [scrollToBottom]);
 
-  // Speak a text aloud
   const speak = useCallback(
     (text: string) => {
       if (isMuted || !window.speechSynthesis) return;
@@ -226,7 +249,6 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
     [isMuted],
   );
 
-  // Greet on open
   useEffect(() => {
     if (isOpen && !hasGreeted) {
       setHasGreeted(true);
@@ -244,7 +266,6 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
     }
   }, [isOpen, hasGreeted, speak]);
 
-  // Stop speech on close
   useEffect(() => {
     if (!isOpen) {
       window.speechSynthesis?.cancel();
@@ -266,7 +287,6 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
       setMessages((prev) => [...prev, userMsg]);
       setInputText("");
 
-      // Simulate brief thinking delay
       setTimeout(() => {
         const answer = getNavvAnswer(trimmed);
         const navvMsg: Message = {
@@ -282,9 +302,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
     [speak],
   );
 
-  const handleSubmit = () => {
-    sendMessage(inputText);
-  };
+  const handleSubmit = () => sendMessage(inputText);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -331,30 +349,32 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
     });
   };
 
+  // Theme colors
+  const gold = darkMode ? "oklch(0.78 0.15 75)" : "oklch(0.65 0.14 75)";
+  const navy = darkMode ? "oklch(0.08 0.022 265)" : "oklch(0.10 0.020 265)";
+  const goldGlow = darkMode
+    ? "0 0 20px 4px oklch(0.78 0.15 75 / 0.45), 0 0 40px 10px oklch(0.08 0.022 265 / 0.5)"
+    : "0 0 18px 3px oklch(0.65 0.14 75 / 0.4), 0 0 36px 8px oklch(0.10 0.020 265 / 0.35)";
+  const goldGlowActive = darkMode
+    ? "0 0 32px 10px oklch(0.78 0.15 75 / 0.65), 0 0 60px 18px oklch(0.08 0.022 265 / 0.6)"
+    : "0 0 28px 8px oklch(0.65 0.14 75 / 0.55), 0 0 52px 14px oklch(0.10 0.020 265 / 0.45)";
+
   return (
     <>
       {/* Floating Orb Button */}
       <motion.button
         data-ocid="navv.open_modal_button"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full flex items-center justify-center cursor-pointer focus-visible:outline-none navv-orb-shadow"
+        className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full flex items-center justify-center cursor-pointer focus-visible:outline-none"
         style={{
-          background:
-            "radial-gradient(circle at 40% 35%, oklch(0.85 0.12 85), oklch(0.55 0.18 260) 80%)",
+          background: navy,
+          border: `2px solid ${gold}`,
         }}
         animate={{
           scale: isSpeaking ? [1, 1.1, 1] : [1, 1.04, 1],
           boxShadow: isSpeaking
-            ? [
-                "0 0 20px 4px oklch(0.85 0.12 85 / 0.5), 0 0 40px 8px oklch(0.55 0.18 260 / 0.3)",
-                "0 0 32px 10px oklch(0.85 0.12 85 / 0.7), 0 0 60px 16px oklch(0.55 0.18 260 / 0.5)",
-                "0 0 20px 4px oklch(0.85 0.12 85 / 0.5), 0 0 40px 8px oklch(0.55 0.18 260 / 0.3)",
-              ]
-            : [
-                "0 0 14px 2px oklch(0.85 0.12 85 / 0.4), 0 0 28px 4px oklch(0.55 0.18 260 / 0.2)",
-                "0 0 22px 6px oklch(0.85 0.12 85 / 0.55), 0 0 40px 8px oklch(0.55 0.18 260 / 0.3)",
-                "0 0 14px 2px oklch(0.85 0.12 85 / 0.4), 0 0 28px 4px oklch(0.55 0.18 260 / 0.2)",
-              ],
+            ? [goldGlow, goldGlowActive, goldGlow]
+            : [goldGlow, goldGlowActive, goldGlow],
         }}
         transition={{
           duration: isSpeaking ? 0.6 : 2.5,
@@ -365,15 +385,11 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
         whileTap={{ scale: 0.95 }}
         aria-label="Open Navv AI Assistant"
       >
-        <span
-          className="text-2xl font-bold select-none"
-          style={{ color: "#0a0e1a", fontFamily: "'Playfair Display', serif" }}
-        >
-          N
-        </span>
+        <NavvLogo size={36} dark={darkMode} />
         {isSpeaking && (
           <motion.div
-            className="absolute inset-0 rounded-full border-2 border-navv-gold"
+            className="absolute inset-0 rounded-full"
+            style={{ border: `2px solid ${gold}` }}
             animate={{ scale: [1, 1.3, 1.6], opacity: [0.7, 0.3, 0] }}
             transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
           />
@@ -389,52 +405,35 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 340, damping: 28 }}
-            className="fixed bottom-28 right-6 z-50 w-[370px] max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden flex flex-col navv-panel-glass"
+            className="fixed bottom-28 right-6 z-50 w-[370px] max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden flex flex-col"
             style={{
               maxHeight: "520px",
               background: darkMode
-                ? "oklch(0.15 0.03 265 / 0.92)"
-                : "oklch(0.98 0.01 85 / 0.92)",
+                ? "oklch(0.11 0.024 265 / 0.96)"
+                : "oklch(0.99 0.004 80 / 0.97)",
               backdropFilter: "blur(20px) saturate(180%)",
               WebkitBackdropFilter: "blur(20px) saturate(180%)",
-              border: darkMode
-                ? "1px solid oklch(0.85 0.12 85 / 0.25)"
-                : "1px solid oklch(0.85 0.12 85 / 0.45)",
+              border: `1px solid ${gold}40`,
               boxShadow: darkMode
-                ? "0 24px 64px oklch(0.05 0.02 265 / 0.7), 0 0 0 1px oklch(0.85 0.12 85 / 0.1)"
-                : "0 24px 64px oklch(0.3 0.04 265 / 0.25), 0 0 0 1px oklch(0.85 0.12 85 / 0.2)",
+                ? `0 24px 64px oklch(0.05 0.02 265 / 0.7), 0 0 0 1px ${gold}18`
+                : `0 24px 64px oklch(0.3 0.04 265 / 0.25), 0 0 0 1px ${gold}22`,
             }}
           >
-            {/* Header */}
+            {/* Header — always navy */}
             <div
               className="flex items-center justify-between px-4 py-3 flex-shrink-0"
               style={{
-                background: darkMode
-                  ? "oklch(0.2 0.05 265 / 0.8)"
-                  : "oklch(0.15 0.06 265 / 0.88)",
-                borderBottom: "1px solid oklch(0.85 0.12 85 / 0.2)",
+                background: navy,
+                borderBottom: `1px solid ${gold}30`,
               }}
             >
               <div className="flex items-center gap-2.5">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background:
-                      "radial-gradient(circle at 40% 35%, oklch(0.85 0.12 85), oklch(0.55 0.18 260))",
-                  }}
-                >
-                  <span
-                    className="text-sm font-bold"
-                    style={{ color: "#0a0e1a" }}
-                  >
-                    N
-                  </span>
-                </div>
+                <NavvLogo size={30} dark={true} />
                 <div>
                   <p
                     className="font-semibold text-sm"
                     style={{
-                      color: "oklch(0.85 0.12 85)",
+                      color: gold,
                       fontFamily: "'Playfair Display', serif",
                     }}
                   >
@@ -446,7 +445,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                         <SoundWaves />
                         <span
                           className="text-xs"
-                          style={{ color: "oklch(0.85 0.12 85 / 0.7)" }}
+                          style={{ color: `${gold}B0` }}
                         >
                           Speaking…
                         </span>
@@ -456,7 +455,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         <span
                           className="text-xs"
-                          style={{ color: "oklch(0.75 0.08 85)" }}
+                          style={{ color: `${gold}90` }}
                         >
                           Your AI Assistant
                         </span>
@@ -470,7 +469,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                   type="button"
                   onClick={toggleMute}
                   className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
-                  style={{ color: "oklch(0.85 0.12 85 / 0.7)" }}
+                  style={{ color: `${gold}B0` }}
                   aria-label={isMuted ? "Unmute" : "Mute"}
                 >
                   {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
@@ -480,7 +479,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                   data-ocid="navv.close_button"
                   onClick={() => setIsOpen(false)}
                   className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
-                  style={{ color: "oklch(0.85 0.12 85 / 0.7)" }}
+                  style={{ color: `${gold}B0` }}
                   aria-label="Close Navv assistant"
                 >
                   <X size={16} />
@@ -499,19 +498,11 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
-                  className={`flex ${
-                    msg.role === "user" ? "justify-end" : "justify-start"
-                  }`}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   {msg.role === "navv" && (
-                    <div
-                      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-0.5"
-                      style={{
-                        background:
-                          "radial-gradient(circle at 40% 35%, oklch(0.85 0.12 85), oklch(0.55 0.18 260))",
-                      }}
-                    >
-                      <Sparkles size={10} style={{ color: "#0a0e1a" }} />
+                    <div className="flex-shrink-0 mr-2 mt-0.5">
+                      <NavvLogo size={22} dark={darkMode} />
                     </div>
                   )}
                   <div
@@ -520,15 +511,16 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                       msg.role === "navv"
                         ? {
                             background: darkMode
-                              ? "oklch(0.22 0.05 265 / 0.9)"
-                              : "oklch(0.18 0.06 265 / 0.85)",
-                            color: "oklch(0.93 0.04 85)",
+                              ? "oklch(0.17 0.024 265)"
+                              : "oklch(0.13 0.022 265)",
+                            color: "oklch(0.93 0.006 80)",
                             borderRadius: "4px 18px 18px 18px",
+                            borderLeft: `2px solid ${gold}60`,
                           }
                         : {
-                            background:
-                              "linear-gradient(135deg, oklch(0.75 0.15 85), oklch(0.65 0.18 75))",
-                            color: "oklch(0.1 0.02 265)",
+                            background: `linear-gradient(135deg, ${navy}, oklch(0.15 0.028 265))`,
+                            color: gold,
+                            border: `1px solid ${gold}30`,
                             borderRadius: "18px 4px 18px 18px",
                           }
                     }
@@ -544,10 +536,10 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
             <div
               className="flex items-center gap-2 px-3 py-3 flex-shrink-0"
               style={{
-                borderTop: "1px solid oklch(0.85 0.12 85 / 0.15)",
+                borderTop: `1px solid ${gold}20`,
                 background: darkMode
-                  ? "oklch(0.17 0.04 265 / 0.9)"
-                  : "oklch(0.96 0.01 85 / 0.9)",
+                  ? "oklch(0.13 0.024 265 / 0.9)"
+                  : "oklch(0.97 0.003 80 / 0.96)",
               }}
             >
               <input
@@ -560,9 +552,7 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                 placeholder="Ask me anything…"
                 className="flex-1 bg-transparent text-sm outline-none placeholder:opacity-50"
                 style={{
-                  color: darkMode
-                    ? "oklch(0.93 0.04 85)"
-                    : "oklch(0.15 0.04 265)",
+                  color: darkMode ? "oklch(0.93 0.006 80)" : navy,
                 }}
               />
               <button
@@ -573,10 +563,8 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                 style={{
                   background: isListening
                     ? "oklch(0.55 0.2 25 / 0.2)"
-                    : "oklch(0.85 0.12 85 / 0.12)",
-                  color: isListening
-                    ? "oklch(0.65 0.2 25)"
-                    : "oklch(0.85 0.12 85 / 0.7)",
+                    : `${gold}1A`,
+                  color: isListening ? "oklch(0.65 0.2 25)" : `${gold}B0`,
                 }}
                 aria-label={
                   isListening ? "Stop listening" : "Start voice input"
@@ -604,11 +592,9 @@ export function NavvAssistant({ darkMode = false }: NavvAssistantProps) {
                 className="p-2 rounded-xl transition-all flex-shrink-0 disabled:opacity-30"
                 style={{
                   background: inputText.trim()
-                    ? "linear-gradient(135deg, oklch(0.75 0.15 85), oklch(0.65 0.18 75))"
-                    : "oklch(0.85 0.12 85 / 0.1)",
-                  color: inputText.trim()
-                    ? "oklch(0.1 0.02 265)"
-                    : "oklch(0.85 0.12 85 / 0.4)",
+                    ? `linear-gradient(135deg, ${gold}, oklch(0.60 0.16 70))`
+                    : `${gold}1A`,
+                  color: inputText.trim() ? navy : `${gold}66`,
                 }}
                 aria-label="Send message"
               >

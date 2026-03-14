@@ -288,25 +288,45 @@ export async function fetchWikipediaAnswer(
   query: string,
 ): Promise<WikiCard | null> {
   try {
-    const searchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=1&format=json&origin=*`;
-    const searchRes = await fetch(searchUrl);
-    const searchData = await searchRes.json();
-    const titles: string[] = searchData[1];
-    if (!titles || titles.length === 0) return null;
-    const title = titles[0];
-    const summaryRes = await fetch(
-      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
+    const cleanQuery = query
+      .replace(
+        /^(what is|what are|who is|who was|how does|how do|explain|tell me about|define|describe|why is|why does|when did|where is|what does|give me info on|give information about|information about|facts about|history of|science of)\s+/i,
+        "",
+      )
+      .replace(/\?+$/, "")
+      .trim();
+
+    const queriesToTry = [cleanQuery, query.replace(/\?+$/, "").trim()].filter(
+      (q, i, arr) => arr.indexOf(q) === i,
     );
-    if (!summaryRes.ok) return null;
-    const summary = await summaryRes.json();
-    return {
-      title: summary.title || title,
-      extract: summary.extract || "",
-      thumbnail: summary.thumbnail?.source,
-      url:
-        summary.content_urls?.desktop?.page ||
-        `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`,
-    };
+
+    for (const q of queriesToTry) {
+      const searchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(q)}&limit=3&format=json&origin=*`;
+      const searchRes = await fetch(searchUrl);
+      const searchData = await searchRes.json();
+      const titles: string[] = searchData[1];
+      if (!titles || titles.length === 0) continue;
+
+      for (const title of titles) {
+        const summaryRes = await fetch(
+          `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
+        );
+        if (!summaryRes.ok) continue;
+        const summary = await summaryRes.json();
+        const extract = summary.extract || "";
+        if (extract.length > 80) {
+          return {
+            title: summary.title || title,
+            extract,
+            thumbnail: summary.thumbnail?.source,
+            url:
+              summary.content_urls?.desktop?.page ||
+              `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`,
+          };
+        }
+      }
+    }
+    return null;
   } catch {
     return null;
   }
@@ -791,6 +811,7 @@ export async function generateAIResponse(
     google: `https://www.google.com/search?q=${encodeURIComponent(message)}`,
     chatgpt: `https://chat.openai.com/?q=${encodeURIComponent(message)}`,
   };
+  const suggestions = getSuggestions(message, activeCategory);
 
   // ── Search mode ──
   if (/^search[:\s]/i.test(lower) || /\bsearch for\b/i.test(lower)) {
@@ -800,39 +821,64 @@ export async function generateAIResponse(
       .trim();
     const results = generateSearchResults(query);
     const imageResults = getImageResults(query);
-    const suggestions = getSuggestions(query, activeCategory);
-    const knowledgeAnswer = (() => {
-      for (const entry of knowledgeBase) {
-        if (entry.keywords.test(query)) return entry.response;
+    const querySuggestions = getSuggestions(query, activeCategory);
+    let knowledgeAnswer = "";
+    for (const entry of knowledgeBase) {
+      if (entry.keywords.test(query)) {
+        knowledgeAnswer = entry.response;
+        break;
       }
-      return `Here are the top results for "${query}". The topic touches on many areas — explore the links below for detailed information, or ask me to explain any aspect in more depth.`;
-    })();
+    }
+    const wikiCardSearch = await fetchWikipediaAnswer(query);
+    const mainText =
+      knowledgeAnswer ||
+      (wikiCardSearch?.extract ??
+        `Here are the top results for "${query}". Explore the links below or ask me to explain any aspect in detail.`);
     return {
-      text: `Here are the best results for "${query}":\n\n${knowledgeAnswer}`,
+      text: `**Search results for "${query}":**\n\n${mainText}`,
       searchResults: results,
       imageResults,
       isSearch: true,
-      suggestions,
+      suggestions: querySuggestions,
+      wikiCard: !knowledgeAnswer && wikiCardSearch ? wikiCardSearch : undefined,
+      quickLinks,
     };
   }
 
   // ── Greetings & small talk ──
   for (const { pattern, response } of greetingPatterns) {
     if (pattern.test(lower)) {
-      return { text: applyTone(response, ageGroup) };
+      return { text: applyTone(response, ageGroup), quickLinks };
     }
   }
 
-  // ── General knowledge lookup ──
-  const isKnowledgeQuestion =
-    /(what is|what are|who is|who was|how does|how do|explain|tell me about|define|describe|why is|why does|when did|where is|history of|science of|facts about)/i.test(
+  // ── Fashion / Lifestyle aesthetics (knowledge base is best source) ──
+  const isFashionQuery =
+    activeCategory === "fashion" || fashionKeywords.test(lower);
+  if (isFashionQuery) {
+    for (const entry of knowledgeBase) {
+      if (entry.keywords.test(lower)) {
+        const imageResults = getImageResults(message);
+        return {
+          text: applyTone(entry.response, ageGroup),
+          imageResults,
+          suggestions,
+          quickLinks,
+        };
+      }
+    }
+  }
+
+  // ── FACTUAL / KNOWLEDGE QUESTIONS → Wikipedia first ──
+  const isFactualQuestion =
+    /(what is|what are|who is|who was|how does|how do|explain|tell me about|define|describe|why is|why does|when did|where is|what does|capital of|history of|science of|facts about|information about|give me info|how to make|how to build|how to create|how to start|how to learn|who invented|who created|who founded|when was|where was|what happened|how many|how much|what year|what country|what language|what color|which is|which are)/i.test(
       lower,
     );
 
-  if (isKnowledgeQuestion || activeCategory === "general") {
+  if (isFactualQuestion || activeCategory === "general") {
+    // Check knowledge base first
     for (const entry of knowledgeBase) {
       if (entry.keywords.test(lower)) {
-        const suggestions = getSuggestions(message, activeCategory);
         const imageResults = shouldShowImages(lower, activeCategory)
           ? getImageResults(message)
           : undefined;
@@ -840,22 +886,60 @@ export async function generateAIResponse(
           text: applyTone(entry.response, ageGroup),
           imageResults,
           suggestions,
+          quickLinks,
         };
       }
+    }
+
+    // Wikipedia as PRIMARY source for factual questions
+    const wikiCardFactual = await fetchWikipediaAnswer(message);
+    if (wikiCardFactual?.extract && wikiCardFactual.extract.length > 80) {
+      const imageResults: ImageResult[] = wikiCardFactual.thumbnail
+        ? [
+            {
+              url: wikiCardFactual.thumbnail,
+              alt: wikiCardFactual.title,
+              searchUrl: `https://www.google.com/search?q=${encodeURIComponent(message)}&tbm=isch`,
+            },
+            ...getUnsplashImages(message).slice(0, 3),
+          ]
+        : getUnsplashImages(message);
+      return {
+        text: wikiCardFactual.extract,
+        suggestions,
+        imageResults,
+        wikiCard: wikiCardFactual,
+        quickLinks,
+      };
     }
   }
 
   // ── Category-specific advice ──
   const buildCatResponse = (responses: string[], cat: string): AIResponse => {
     const r = responses[Math.floor(Math.random() * responses.length)];
-    const suggestions = getSuggestions(message, cat);
     const imageResults = shouldShowImages(lower, cat)
       ? getImageResults(message)
       : undefined;
-    return { text: applyTone(r, ageGroup), suggestions, imageResults };
+    return {
+      text: applyTone(r, ageGroup),
+      suggestions,
+      imageResults,
+      quickLinks,
+    };
   };
 
   if (activeCategory === "health" || healthKeywords.test(lower)) {
+    const wikiCardHealth = await fetchWikipediaAnswer(message);
+    if (wikiCardHealth?.extract && wikiCardHealth.extract.length > 100) {
+      const imageResults = getUnsplashImages(message);
+      return {
+        text: wikiCardHealth.extract,
+        suggestions,
+        imageResults,
+        wikiCard: wikiCardHealth,
+        quickLinks,
+      };
+    }
     return buildCatResponse(healthResponses, "health");
   }
   if (activeCategory === "love" || loveKeywords.test(lower)) {
@@ -867,29 +951,16 @@ export async function generateAIResponse(
   if (activeCategory === "career" || careerKeywords.test(lower)) {
     return buildCatResponse(careerResponses, "career");
   }
-  if (activeCategory === "fashion" || fashionKeywords.test(lower)) {
-    // Check knowledge base first for specific fashion queries
-    for (const entry of knowledgeBase) {
-      if (entry.keywords.test(lower)) {
-        const suggestions = getSuggestions(message, "fashion");
-        const imageResults = getImageResults(message);
-        return {
-          text: applyTone(entry.response, ageGroup),
-          imageResults,
-          suggestions,
-        };
-      }
-    }
+  if (isFashionQuery) {
     return buildCatResponse(fashionResponses, "fashion");
   }
   if (activeCategory === "business" || businessKeywords.test(lower)) {
     return buildCatResponse(businessResponses, "business");
   }
 
-  // ── Fallback: broad knowledge scan ──
+  // ── Broad knowledge scan ──
   for (const entry of knowledgeBase) {
     if (entry.keywords.test(lower)) {
-      const suggestions = getSuggestions(message, activeCategory);
       const imageResults = shouldShowImages(lower, activeCategory)
         ? getImageResults(message)
         : undefined;
@@ -897,35 +968,36 @@ export async function generateAIResponse(
         text: applyTone(entry.response, ageGroup),
         imageResults,
         suggestions,
+        quickLinks,
       };
     }
   }
 
-  // ── Last resort: try Wikipedia ──
-  const suggestions = getSuggestions(message, activeCategory);
-  const wikiCard = await fetchWikipediaAnswer(message);
-  if (wikiCard?.extract) {
-    const imageResults = wikiCard.thumbnail
+  // ── Final: try Wikipedia for anything else ──
+  const wikiCardFinal = await fetchWikipediaAnswer(message);
+  if (wikiCardFinal?.extract && wikiCardFinal.extract.length > 80) {
+    const imageResults: ImageResult[] = wikiCardFinal.thumbnail
       ? [
           {
-            url: wikiCard.thumbnail,
-            alt: wikiCard.title,
+            url: wikiCardFinal.thumbnail,
+            alt: wikiCardFinal.title,
             searchUrl: `https://www.google.com/search?q=${encodeURIComponent(message)}&tbm=isch`,
           },
           ...getUnsplashImages(message).slice(0, 3),
         ]
       : getUnsplashImages(message);
     return {
-      text: wikiCard.extract,
+      text: wikiCardFinal.extract,
       suggestions,
       imageResults,
-      wikiCard,
+      wikiCard: wikiCardFinal,
       quickLinks,
     };
   }
+
   return {
     text: applyTone(
-      `I'm NavvGenX AI — here to help with anything you'd like to know or discuss. You can ask me about science, history, technology, health, relationships, career advice, or just have a conversation. What would you like to explore?`,
+      `I'm NavvGenX AI — here to help with anything you'd like to know or discuss. Try asking "what is [topic]", "who is [person]", "how does [thing] work", or "explain [concept]". I can also help with health, fashion, career, travel, and more.`,
       ageGroup,
     ),
     suggestions,
