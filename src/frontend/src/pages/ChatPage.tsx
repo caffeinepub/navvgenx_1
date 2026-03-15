@@ -67,54 +67,21 @@ const categories = [
 
 const categoryGreetings: Record<string, string> = {
   health:
-    "Hi! I'm Navv, your health and wellness expert. How can I help you today?",
-  love: "Hi! I'm Navv, your relationship and love expert. How can I help you today?",
+    "Hi! I'm NavvGenX, your health and wellness expert. How can I help you today?",
+  love: "Hi! I'm NavvGenX, your relationship coach. How can I help you today?",
   study:
-    "Hi! I'm Navv, your study and learning expert. How can I help you today?",
+    "Hi! I'm NavvGenX, your study and learning expert. How can I help you today?",
   career:
-    "Hi! I'm Navv, your career and professional development expert. How can I help you today?",
-  fashion: "Hi! I'm Navv, your fashion expert. How can I help you today?",
+    "Hi! I'm NavvGenX, your career development expert. How can I help you today?",
+  fashion:
+    "Hi! I'm NavvGenX, your style and fashion expert. How can I help you today?",
   business:
-    "Hi! I'm Navv, your business and entrepreneurship expert. How can I help you today?",
+    "Hi! I'm NavvGenX, your business and entrepreneurship expert. How can I help you today?",
   search:
-    "Hi! I'm Navv, your search expert. What would you like to find today?",
-  general: "Hi! I'm Navv, your AI assistant. How can I help you today?",
+    "Hi! I'm NavvGenX, your search expert. What would you like to find today?",
+  general:
+    "Hi! I'm NavvGenX, your personal AI companion. How can I help you today?",
 };
-
-function speakCategoryGreeting(category: string) {
-  try {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const text =
-      categoryGreetings[category] ??
-      "Hi! I'm Navv, your AI assistant. How can I help you today?";
-    const speak = () => {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.92;
-      utterance.pitch = 1.1;
-      utterance.volume = 1;
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(
-        (v) =>
-          v.name.toLowerCase().includes("google uk english female") ||
-          v.name.toLowerCase().includes("female") ||
-          v.name.toLowerCase().includes("samantha") ||
-          v.name.toLowerCase().includes("karen"),
-      );
-      if (preferred) utterance.voice = preferred;
-      window.speechSynthesis.speak(utterance);
-    };
-    if (window.speechSynthesis.getVoices().length > 0) {
-      speak();
-    } else {
-      window.speechSynthesis.addEventListener("voiceschanged", speak, {
-        once: true,
-      });
-    }
-  } catch {
-    // Speech synthesis not available
-  }
-}
 
 export function ChatPage({
   profile,
@@ -183,7 +150,7 @@ export function ChatPage({
     setActiveCategory(initialCategory);
   }, [initialCategory]);
 
-  // Speak expert greeting when opening a section
+  // Show expert greeting as chat message when section changes
   useEffect(() => {
     const isFirstVisit = prevCategoryRef.current === null;
     const hasChanged = prevCategoryRef.current !== activeCategory;
@@ -191,10 +158,32 @@ export function ChatPage({
 
     if (isFirstVisit) {
       if (activeCategory !== "general") {
-        setTimeout(() => speakCategoryGreeting(activeCategory), 400);
+        const greeting =
+          categoryGreetings[activeCategory] ?? categoryGreetings.general;
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `greeting-${activeCategory}-${Date.now()}`,
+            role: "ai",
+            content: greeting,
+            category: activeCategory,
+            timestamp: Date.now(),
+          },
+        ]);
       }
     } else if (hasChanged) {
-      setTimeout(() => speakCategoryGreeting(activeCategory), 200);
+      const greeting =
+        categoryGreetings[activeCategory] ?? categoryGreetings.general;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `greeting-${activeCategory}-${Date.now()}`,
+          role: "ai",
+          content: greeting,
+          category: activeCategory,
+          timestamp: Date.now(),
+        },
+      ]);
     }
   }, [activeCategory]);
 

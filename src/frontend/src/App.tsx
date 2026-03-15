@@ -15,8 +15,8 @@ import {
   Sun,
   TrendingUp,
 } from "lucide-react";
-import { motion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AgeSetup } from "./components/AgeSetup";
 import { Logo } from "./components/Logo";
@@ -47,6 +47,148 @@ const navItems = [
   { id: "search", Icon: Search, label: "Search" },
 ] as const;
 
+const SECTION_EXPERTS: Record<string, string> = {
+  chat: "AI assistant",
+  general: "AI assistant",
+  health: "health expert",
+  love: "love expert",
+  study: "study expert",
+  career: "career expert",
+  fashion: "fashion expert",
+  business: "business expert",
+  search: "search expert",
+  law: "law expert",
+  reminders: "productivity expert",
+};
+
+function buildGreeting(section: string): string {
+  const expert = SECTION_EXPERTS[section] ?? `${section} expert`;
+  return `I am NavvGenX, your ${expert}. How can I help you?`;
+}
+
+function speakText(text: string) {
+  try {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.92;
+    utterance.pitch = 1.1;
+    utterance.volume = 1;
+    const setVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(
+        (v) =>
+          v.name.toLowerCase().includes("google uk english female") ||
+          v.name.toLowerCase().includes("samantha") ||
+          v.name.toLowerCase().includes("karen") ||
+          v.name.toLowerCase().includes("female") ||
+          v.name.toLowerCase().includes("zira"),
+      );
+      if (preferred) utterance.voice = preferred;
+    };
+    if (window.speechSynthesis.getVoices().length > 0) {
+      setVoice();
+    } else {
+      window.speechSynthesis.addEventListener("voiceschanged", setVoice, {
+        once: true,
+      });
+    }
+    window.speechSynthesis.speak(utterance);
+  } catch {
+    // Speech synthesis not available
+  }
+}
+
+// ─── Section Greeting Banner ────────────────────────────────────────────────
+function SectionGreetingBanner({
+  message,
+  onDone,
+}: { message: string; onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 4000);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -24, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -16, scale: 0.97 }}
+      transition={{ type: "spring", stiffness: 340, damping: 28 }}
+      className="fixed top-20 left-1/2 z-50 -translate-x-1/2 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl"
+      style={{
+        background: "oklch(0.10 0.020 265 / 0.95)",
+        border: "1px solid oklch(0.78 0.15 75 / 0.45)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        boxShadow:
+          "0 8px 40px oklch(0.05 0.02 265 / 0.55), 0 0 0 1px oklch(0.78 0.15 75 / 0.15)",
+        maxWidth: "min(440px, calc(100vw - 2rem))",
+      }}
+    >
+      {/* Navv orb */}
+      <div
+        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+        style={{
+          background:
+            "linear-gradient(135deg, oklch(0.10 0.020 265), oklch(0.15 0.028 265))",
+          border: "1.5px solid oklch(0.78 0.15 75)",
+          boxShadow: "0 0 14px oklch(0.78 0.15 75 / 0.35)",
+        }}
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 40 40"
+          fill="none"
+          aria-hidden="true"
+        >
+          <circle
+            cx="20"
+            cy="20"
+            r="19"
+            stroke="oklch(0.78 0.15 75)"
+            strokeWidth="1.5"
+            fill="oklch(0.10 0.020 265)"
+          />
+          <text
+            x="20"
+            y="27"
+            textAnchor="middle"
+            fontFamily="'Space Grotesk', Arial, sans-serif"
+            fontWeight="700"
+            fontSize="11"
+            fill="oklch(0.78 0.15 75)"
+            letterSpacing="-0.5"
+          >
+            Navv
+          </text>
+        </svg>
+      </div>
+      <div>
+        <p
+          className="text-xs font-semibold uppercase tracking-widest mb-0.5"
+          style={{
+            color: "oklch(0.78 0.15 75)",
+            fontFamily: "'Space Grotesk', sans-serif",
+          }}
+        >
+          NavvGenX
+        </p>
+        <p
+          className="text-sm leading-snug"
+          style={{
+            color: "oklch(0.93 0.006 80)",
+            fontFamily: "'Space Grotesk', sans-serif",
+          }}
+        >
+          {message}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
     () => localStorage.getItem("navvgenx-user") !== null,
@@ -54,6 +196,8 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
   const [activeCategory, setActiveCategory] = useState("general");
   const [darkMode, setDarkMode] = useState(false);
+  const [sectionGreeting, setSectionGreeting] = useState<string | null>(null);
+  const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [profile, setProfile] = useState<Profile | null>(() => {
     const saved = localStorage.getItem("navvgenx-profile");
     if (saved) {
@@ -76,49 +220,16 @@ export default function App() {
     setProfile(p);
   }, []);
 
-  // Welcome speech on site open — runs once on mount
+  // Welcome speech — plays once per session when user is logged in
   useEffect(() => {
+    if (!isLoggedIn) return;
+    if (sessionStorage.getItem("navvgenx-welcomed")) return;
+    sessionStorage.setItem("navvgenx-welcomed", "1");
     const timer = setTimeout(() => {
-      try {
-        if (window.speechSynthesis) {
-          const speak = () => {
-            const utterance = new SpeechSynthesisUtterance(
-              "Welcome to Nav Gen X",
-            );
-            utterance.rate = 0.9;
-            utterance.pitch = 1.1;
-            utterance.volume = 1;
-
-            // Try to pick a natural-sounding female voice
-            const voices = window.speechSynthesis.getVoices();
-            const preferred = voices.find(
-              (v) =>
-                v.name.toLowerCase().includes("google uk english female") ||
-                v.name.toLowerCase().includes("female") ||
-                v.name.toLowerCase().includes("samantha") ||
-                v.name.toLowerCase().includes("karen"),
-            );
-            if (preferred) utterance.voice = preferred;
-
-            window.speechSynthesis.speak(utterance);
-          };
-
-          // Voices may not be loaded yet — wait for them
-          if (window.speechSynthesis.getVoices().length > 0) {
-            speak();
-          } else {
-            window.speechSynthesis.addEventListener("voiceschanged", speak, {
-              once: true,
-            });
-          }
-        }
-      } catch {
-        // Speech synthesis not available
-      }
-    }, 300);
-
+      speakText("Welcome to NavvGenX");
+    }, 600);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const saved = localStorage.getItem("navvgenx-dark");
@@ -146,6 +257,14 @@ export default function App() {
     localStorage.setItem("navvgenx-dark", String(darkMode));
   }, [darkMode]);
 
+  const triggerSectionGreeting = useCallback((section: string) => {
+    // Clear any existing greeting
+    if (greetingTimeoutRef.current) clearTimeout(greetingTimeoutRef.current);
+    const msg = buildGreeting(section);
+    setSectionGreeting(msg);
+    speakText(msg);
+  }, []);
+
   const handleSignOut = () => {
     localStorage.removeItem("navvgenx-user");
     setIsLoggedIn(false);
@@ -156,7 +275,13 @@ export default function App() {
     return (
       <>
         <Toaster richColors position="top-right" />
-        <LoginPage onLogin={() => setIsLoggedIn(true)} />
+        <LoginPage
+          onLogin={() => {
+            sessionStorage.setItem("navvgenx-welcomed", "1");
+            setTimeout(() => speakText("Welcome to NavvGenX"), 600);
+            setIsLoggedIn(true);
+          }}
+        />
       </>
     );
   }
@@ -212,10 +337,23 @@ export default function App() {
   };
 
   const handleNavClick = (id: string) => {
-    if (id === "home") navigate("home");
-    else if (id === "health") navigate("health");
-    else if (id === "chat") navigate("chat", "general");
-    else navigate("chat", id);
+    if (id === "home") {
+      navigate("home");
+      return;
+    }
+    if (id === "health") {
+      navigate("health");
+      triggerSectionGreeting("health");
+      return;
+    }
+    if (id === "chat") {
+      navigate("chat", "general");
+      triggerSectionGreeting("general");
+      return;
+    }
+    // All other sections (love, study, career, fashion, business, search)
+    navigate("chat", id);
+    triggerSectionGreeting(id);
   };
 
   const handleShare = () => {
@@ -235,6 +373,17 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300 flex flex-col">
       <Toaster richColors position="top-right" />
+
+      {/* Section Greeting Banner */}
+      <AnimatePresence>
+        {sectionGreeting && (
+          <SectionGreetingBanner
+            key={sectionGreeting}
+            message={sectionGreeting}
+            onDone={() => setSectionGreeting(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Header */}
       <header
