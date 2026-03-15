@@ -28,6 +28,53 @@ import {
   stopSpeaking,
 } from "../utils/aiEngine";
 import { extractUrls } from "../utils/linkUtils";
+// ─── NavvLogoN ────────────────────────────────────────────────────────────────
+function NavvLogoN({ size = 32 }: { size?: number }) {
+  const gold = "oklch(0.78 0.15 75)";
+  const navy = "oklch(0.08 0.022 265)";
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 40 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="NavvGenX N logo"
+    >
+      <title>NavvGenX N</title>
+      <circle
+        cx="20"
+        cy="20"
+        r="19"
+        stroke={gold}
+        strokeWidth="1.5"
+        fill={navy}
+      />
+      <circle
+        cx="20"
+        cy="20"
+        r="14"
+        stroke={gold}
+        strokeWidth="0.5"
+        strokeOpacity="0.35"
+        fill="none"
+      />
+      <text
+        x="20"
+        y="26"
+        textAnchor="middle"
+        fontFamily="'Space Grotesk', Arial, sans-serif"
+        fontWeight="700"
+        fontSize="17"
+        fill={gold}
+        letterSpacing="-0.5"
+      >
+        N
+      </text>
+    </svg>
+  );
+}
 
 interface Profile {
   age: bigint;
@@ -582,23 +629,15 @@ export function ChatPage({
                 }`}
                 data-ocid={`chat.item.${i + 1}`}
               >
-                <div
-                  className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden ${
-                    msg.role === "ai"
-                      ? "bg-gradient-to-br from-sky-400 to-blue-600"
-                      : "bg-muted"
-                  }`}
-                >
+                <div className="shrink-0">
                   {msg.role === "ai" ? (
-                    <img
-                      src="/assets/generated/navvgenx-ai-logo-transparent.dim_200x200.png"
-                      alt="NavvGenX"
-                      className="w-5 h-5 object-contain"
-                    />
+                    <NavvLogoN size={32} />
                   ) : (
-                    <span className="text-xs font-bricolage font-bold text-muted-foreground">
-                      U
-                    </span>
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                      <span className="text-xs font-bricolage font-bold text-muted-foreground">
+                        U
+                      </span>
+                    </div>
                   )}
                 </div>
 
@@ -846,12 +885,8 @@ export function ChatPage({
 
           {isLoading && (
             <div className="flex gap-3 items-start">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center overflow-hidden">
-                <img
-                  src="/assets/generated/navvgenx-ai-logo-transparent.dim_200x200.png"
-                  alt="NavvGenX"
-                  className="w-5 h-5 object-contain"
-                />
+              <div className="shrink-0">
+                <NavvLogoN size={32} />
               </div>
               <div
                 className="glass-card border border-border rounded-2xl rounded-tl-sm px-4 py-3"
