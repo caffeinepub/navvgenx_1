@@ -1036,6 +1036,470 @@ function getBlockedMessage(age: number): AIResponse {
   };
 }
 
+// ─────────────────── Recommendation Engine ───────────────────
+const recommendations: Record<
+  string,
+  { keywords: RegExp; response: string }[]
+> = {
+  music: [
+    {
+      keywords:
+        /punjabi|bhangra|ap dhillon|sidhu moosewala|diljit|karan aujla|shubh|gurnam bhullar|babbu maan|jazzy b|gippy|harrdy sandhu/i,
+      response: `Here are some awesome Punjabi songs you'll love! 🎵
+
+**Top Punjabi Hits:**
+• **Lover** – Diljit Dosanjh
+• **Brown Munde** – AP Dhillon, Gurinder Gill
+• **295** – Sidhu Moosewala
+• **Softly** – Karan Aujla
+• **Levels** – Sidhu Moosewala
+• **Excuses** – AP Dhillon
+• **Attention** – AP Dhillon
+• **Ikk Pal** – AP Dhillon
+• **Yeah Baby** – Garry Sandhu
+• **Tere Te** – AP Dhillon
+• **Botal** – Gurnam Bhullar
+• **Vibe** – Sidhu Moosewala
+
+**Rising Artists to Watch:**
+• Shubh – "Elevated", "No Love"
+• Harrdy Sandhu – "Bijlee Bijlee"
+• Jassa Dhillon – "Excuses"
+
+Search any of these on Spotify, YouTube Music, or Gaana for the full experience! Want Bhangra party hits, romantic Punjabi songs, or sad Punjabi tracks?`,
+    },
+    {
+      keywords: /bollywood|hindi song|hindi music|hindi film song|filmi/i,
+      response: `Here are some amazing Bollywood songs across moods! 🎶
+
+**Party Hits:**
+• **Kesariya** – Arijit Singh (Brahmastra)
+• **Srivalli** – Allu Arjun (Pushpa)
+• **Butta Bomma** – Armaan Malik
+• **Manike** – Yohani
+
+**Romantic:**
+• **Raataan Lambiyan** – Jubin Nautiyal
+• **Tere Bin** – Atif Aslam
+• **Tera Ban Jaunga** – Akhil Sachdeva
+• **Pehli Dafa** – Atif Aslam
+
+**Sad / Emotional:**
+• **Arijit Singh Mashup** – Various
+• **Tum Hi Ho** – Aashiqui 2
+• **Channa Mereya** – ADHM
+
+**Retro Classics:**
+• Kishore Kumar, Lata Mangeshkar, Mohammed Rafi timeless hits
+
+Want specific recommendations by mood, era, or artist?`,
+    },
+    {
+      keywords: /english song|english music|pop song|pop music|western music/i,
+      response: `Here are top English songs across genres! 🎵
+
+**Pop Hits 2024-2025:**
+• **Flowers** – Miley Cyrus
+• **Cruel Summer** – Taylor Swift
+• **As It Was** – Harry Styles
+• **Blinding Lights** – The Weeknd
+• **Stay** – Kid Laroi & Justin Bieber
+
+**R&B / Soul:**
+• **Golden Hour** – JVKE
+• **Ghost** – Justin Bieber
+• **Leave the Door Open** – Bruno Mars
+
+**Hip-Hop:**
+• Drake, Kendrick Lamar, J. Cole latest releases
+• **God's Plan** – Drake
+• **HUMBLE** – Kendrick Lamar
+
+**Indie / Alternative:**
+• **Heat Waves** – Glass Animals
+• **My Universe** – Coldplay x BTS
+
+Want more by artist, genre, or mood?`,
+    },
+    {
+      keywords: /rap song|rap music|hip hop song|hip-hop|drill|trap/i,
+      response: `Here are the hottest rap & hip-hop tracks! 🎤
+
+**Global Rap:**
+• **God's Plan** – Drake
+• **HUMBLE** – Kendrick Lamar
+• **SICKO MODE** – Travis Scott
+• **Rockstar** – Post Malone
+• **Lucid Dreams** – Juice WRLD
+
+**UK Drill / Afrobeats:**
+• **Essence** – Wizkid
+• **Peru** – Fireboy DML
+• **Overdue** – Central Cee
+
+**Desi Rap (Punjabi/Hindi):**
+• **295** – Sidhu Moosewala
+• **Brown Munde** – AP Dhillon
+• **Karan Aujla** – latest mixtapes
+
+Want underground gems or mainstream hits? I can also suggest by era or sub-genre!`,
+    },
+    {
+      keywords:
+        /sad song|sad music|heartbreak song|emotional song|breakup song/i,
+      response: `Here are some beautiful sad songs for when you need to feel it all... 💔
+
+**English:**
+• **Someone Like You** – Adele
+• **The Night We Met** – Lord Huron
+• **Skinny Love** – Bon Iver
+• **Fix You** – Coldplay
+• **Happier** – Ed Sheeran
+
+**Hindi/Bollywood:**
+• **Channa Mereya** – Arijit Singh
+• **Tum Hi Ho** – Arijit Singh
+• **Kabira** – Yeh Jawaani Hai Deewani
+
+**Punjabi:**
+• **295** – Sidhu Moosewala
+• **Kinna Sona** – Suraj Hua Maddham
+• **Yaarian** – Harbhajan Mann
+
+**Late Night Vibes:**
+• **Creepin'** – The Weeknd
+• **Ghost Town** – Post Malone
+
+Want a full playlist by mood? I can suggest more!`,
+    },
+    {
+      keywords:
+        /workout song|gym song|gym music|exercise music|motivational song|hype song/i,
+      response: `Here are the best workout & gym bangers to push harder! 💪🔥
+
+**Hype / Energy:**
+• **POWER** – Kanye West
+• **Till I Collapse** – Eminem
+• **Eye of the Tiger** – Survivor
+• **Lose Yourself** – Eminem
+• **Can't Hold Us** – Macklemore
+
+**EDM / Electronic:**
+• **Levels** – Avicii
+• **Clarity** – Zedd
+• **Animals** – Martin Garrix
+
+**Rap / Hip-Hop:**
+• **HUMBLE** – Kendrick Lamar
+• **Berzerk** – Eminem
+• **Jump** – Kris Kross
+
+**Modern Bangers:**
+• **Blinding Lights** – The Weeknd
+• **Rockstar** – Post Malone
+
+Perfect for warmup, lifting, or cardio – want a tailored playlist?`,
+    },
+    {
+      keywords:
+        /love song|romantic song|song for girlfriend|song for boyfriend|wedding song/i,
+      response: `Here are some beautiful love songs to set the mood! ❤️🎵
+
+**Romantic English:**
+• **Perfect** – Ed Sheeran
+• **All of Me** – John Legend
+• **A Thousand Years** – Christina Perri
+• **Thinking Out Loud** – Ed Sheeran
+• **Can't Help Falling in Love** – Elvis Presley
+
+**Bollywood Romance:**
+• **Raataan Lambiyan** – Jubin Nautiyal
+• **Kesariya** – Arijit Singh
+• **Tera Ban Jaunga** – Akhil Sachdeva
+
+**Punjabi Romance:**
+• **Lover** – Diljit Dosanjh
+• **Pehle Pehle Pyar Mein** – Harshdeep Kaur
+• **Tere Naal Naal** – Jazzy B
+
+Want songs for a specific occasion like wedding, anniversary, or first date?`,
+    },
+  ],
+  movies: [
+    {
+      keywords:
+        /bollywood movie|hindi movie|hindi film|indian movie|desi film/i,
+      response: `Here are must-watch Bollywood movies! 🎬
+
+**Recent Blockbusters:**
+• **Pathaan** (2023) – Action, Shah Rukh Khan
+• **Jawan** (2023) – Shah Rukh Khan
+• **Animal** (2023) – Ranbir Kapoor
+• **Rocky Aur Rani** (2023) – Ranveer Singh
+
+**All-Time Classics:**
+• **3 Idiots** – Comedy/Drama
+• **Dangal** – Sports/Drama
+• **Dilwale Dulhania Le Jayenge** – Romance
+• **Lagaan** – Period Drama
+
+**Thrillers/Action:**
+• **Gangs of Wasseypur** – Crime Saga
+• **Andhadhun** – Psychological Thriller
+• **Drishyam 2** – Mystery
+
+Want recommendations by genre, actor, or era?`,
+    },
+    {
+      keywords:
+        /hollywood movie|english movie|american movie|action movie|superhero movie/i,
+      response: `Here are top Hollywood movies to watch! 🎥
+
+**Action/Superhero:**
+• **Avengers: Endgame** – Marvel epic
+• **Top Gun: Maverick** – Tom Cruise
+• **John Wick** series – Keanu Reeves
+• **Mission: Impossible** series
+
+**Drama/Oscar Winners:**
+• **Oppenheimer** (2023)
+• **Everything Everywhere All at Once** (2022)
+• **Parasite** (2019)
+
+**Sci-Fi/Thriller:**
+• **Inception** – Christopher Nolan
+• **Interstellar** – Christopher Nolan
+• **The Matrix** trilogy
+
+**Comedy:**
+• **The Grand Budapest Hotel**
+• **Game Night**
+• **Knives Out**
+
+Want picks by genre, director, or decade?`,
+    },
+    {
+      keywords: /scary movie|horror movie|horror film|thriller movie/i,
+      response: `Here are the best horror & thriller movies! 😱
+
+**Modern Horror:**
+• **Get Out** (2017) – Jordan Peele
+• **Hereditary** (2018) – Slow burn
+• **A Quiet Place** (2018) – Tense silence
+• **The Conjuring** series
+
+**Psychological Thrillers:**
+• **Parasite** (2019)
+• **Gone Girl** (2014)
+• **Silence of the Lambs** (1991)
+
+**Classic Horror:**
+• **The Shining** – Kubrick
+• **Halloween** (1978)
+• **It** – Stephen King
+
+**Supernatural:**
+• **The Haunting of Hill House** (Netflix)
+• **Sinister** (2012)
+
+Want jumpscares, psychological, or supernatural horror specifically?`,
+    },
+  ],
+  food: [
+    {
+      keywords:
+        /punjabi recipe|punjabi food|punjabi dish|sarson|makki|butter chicken|dal makhani|amritsari/i,
+      response: `Here are amazing Punjabi dishes you should try! 🍛
+
+**Classic Punjabi Meals:**
+• **Butter Chicken** (Murgh Makhani) – creamy tomato curry
+• **Dal Makhani** – slow-cooked black lentils with butter
+• **Sarson Da Saag + Makki Di Roti** – mustard greens + cornbread
+• **Chole Bhature** – chickpea curry + fried bread
+• **Rajma Chawal** – kidney bean curry with rice
+• **Amritsari Kulcha** – stuffed bread from Amritsar
+
+**Street Food:**
+• **Aloo Tikki Chaat** – spiced potato patties
+• **Golgappa/Pani Puri** – crispy shells with tangy water
+• **Lassi** – sweet/salty yogurt drink
+
+**Desserts:**
+• **Phirni** – rice pudding
+• **Gulab Jamun** – milk dumplings in syrup
+• **Pinni** – wheat and jaggery sweet
+
+Want the recipe for any of these? I can walk you through it step by step!`,
+    },
+    {
+      keywords:
+        /breakfast recipe|breakfast idea|what to eat for breakfast|morning food/i,
+      response: `Here are delicious breakfast ideas to start your day right! 🌅
+
+**Quick & Easy (under 10 min):**
+• Scrambled eggs with toast
+• Greek yogurt with berries and honey
+• Overnight oats (prep the night before)
+• Avocado toast with poached egg
+• Banana smoothie with peanut butter
+
+**Desi Breakfasts:**
+• Poha (flattened rice) with onions and peanuts
+• Upma – semolina porridge
+• Paratha with curd and pickle
+• Idli + Sambar + Coconut Chutney
+
+**Weekend Treats:**
+• Pancakes with maple syrup
+• French toast
+• Full English breakfast
+• Masala omelette
+
+Want the recipe for any of these? Or tell me if you want vegetarian, high-protein, or quick options!`,
+    },
+  ],
+  general: [
+    {
+      keywords:
+        /book to read|good book|recommend book|book recommendation|suggest book|reading list/i,
+      response: `Here are some excellent books across genres! 📚
+
+**Personal Growth:**
+• **Atomic Habits** – James Clear
+• **The Psychology of Money** – Morgan Housel
+• **Think Again** – Adam Grant
+• **Deep Work** – Cal Newport
+
+**Fiction/Stories:**
+• **The Alchemist** – Paulo Coelho
+• **Sapiens** – Yuval Noah Harari
+• **The Kite Runner** – Khaled Hosseini
+• **Ikigai** – Héctor García
+
+**Thrillers:**
+• **Gone Girl** – Gillian Flynn
+• **The Girl with the Dragon Tattoo** – Stieg Larsson
+• **Da Vinci Code** – Dan Brown
+
+**Desi Authors:**
+• **The White Tiger** – Aravind Adiga
+• **A Fine Balance** – Rohinton Mistry
+• **2 States** – Chetan Bhagat
+
+Want recommendations by genre, topic, or author?`,
+    },
+    {
+      keywords:
+        /web series|series to watch|tv show|netflix show|what to watch|binge watch/i,
+      response: `Here are must-watch shows and series! 📺
+
+**Netflix Hits:**
+• **Mirzapur** – Indian crime drama (Hindi)
+• **Sacred Games** – Indian thriller
+• **Scam 1992** – Indian finance drama
+• **Money Heist** – Spanish heist drama
+• **Stranger Things** – Sci-fi thriller
+• **Wednesday** – Gothic comedy
+
+**Global Hits:**
+• **Breaking Bad** – Crime drama (GOAT)
+• **Game of Thrones** – Fantasy epic
+• **Squid Game** – Korean survival
+• **The Crown** – British royals
+
+**Comedy:**
+• **The Office** – Workplace comedy
+• **Brooklyn Nine-Nine** – Cop comedy
+• **Friends** – Classic sitcom
+
+Want picks by language, genre, or platform?`,
+    },
+    {
+      keywords:
+        /travel|place to visit|tourist spot|vacation|holiday destination|where to go/i,
+      response: `Here are amazing places to visit! ✈️
+
+**India Must-Visits:**
+• **Rajasthan** – Forts, palaces, desert
+• **Kerala** – Backwaters, beaches, spice gardens
+• **Himachal Pradesh** – Mountains, snow, trekking
+• **Goa** – Beaches, nightlife, seafood
+• **Varanasi** – Spiritual, ancient ghats
+
+**International Dream Destinations:**
+• **Bali, Indonesia** – Temples, rice terraces, beaches
+• **Tokyo, Japan** – Culture, food, technology
+• **Paris, France** – Art, food, romance
+• **Dubai, UAE** – Luxury, shopping, skyline
+• **Maldives** – Crystal water, overwater bungalows
+
+**Budget Travel:**
+• Vietnam, Thailand, Nepal, Sri Lanka
+
+Want tips for budget travel, best seasons, or a specific country?`,
+    },
+  ],
+};
+
+function getRecommendation(query: string, category: string): string | null {
+  const lower = query.toLowerCase();
+  const suggestWords =
+    /suggest|recommend|give me|list|show me|what are some|best|top|popular/i;
+  const mediaWords =
+    /song|music|movie|film|show|series|book|place|food|dish|recipe|travel|destination|album|artist|playlist|track/i;
+  const isRecommendationQuery =
+    (suggestWords.test(query) && mediaWords.test(query)) ||
+    suggestWords.test(query);
+
+  if (!isRecommendationQuery && category !== "entertainment") return null;
+
+  const allEntries = [
+    ...recommendations.music,
+    ...recommendations.movies,
+    ...recommendations.food,
+    ...recommendations.general,
+  ];
+
+  for (const entry of allEntries) {
+    if (entry.keywords.test(lower) || entry.keywords.test(query)) {
+      return entry.response;
+    }
+  }
+
+  // Category-level match (e.g. "suggest some songs" without specifying genre)
+  if (/(song|music|track|playlist|album)/i.test(lower)) {
+    return `Here are some great songs across popular genres! 🎵
+
+**Punjabi Hits:** Brown Munde (AP Dhillon), 295 (Sidhu Moosewala), Lover (Diljit Dosanjh)
+
+**Bollywood:** Kesariya (Arijit Singh), Raataan Lambiyan (Jubin Nautiyal), Channa Mereya
+
+**English Pop:** Flowers (Miley Cyrus), As It Was (Harry Styles), Cruel Summer (Taylor Swift)
+
+**Hip-Hop/Rap:** God's Plan (Drake), HUMBLE (Kendrick Lamar), Lose Yourself (Eminem)
+
+**Sad Vibes:** Someone Like You (Adele), The Night We Met (Lord Huron), Tum Hi Ho (Arijit)
+
+Tell me your mood or preferred language and I'll give you a more personalised list! 🎧`;
+  }
+
+  if (/(movie|film|watch|cinema)/i.test(lower)) {
+    return `Here are some great movies to watch! 🎬
+
+**Bollywood:** Animal, Pathaan, 3 Idiots, Dangal, Andhadhun
+
+**Hollywood:** Oppenheimer, Top Gun: Maverick, Avengers: Endgame, Inception, Parasite
+
+**South Indian:** RRR, Pushpa, KGF 2, Vikram
+
+**Korean:** Squid Game (series), Parasite, Train to Busan
+
+Want recommendations by genre (action, romance, thriller, comedy) or language?`;
+  }
+
+  return null;
+}
+
 export async function generateAIResponse(
   message: string,
   activeCategory: string,
@@ -1122,6 +1586,19 @@ export async function generateAIResponse(
     if (pattern.test(lower)) {
       return { text: applyTone(response, ageGroup), quickLinks };
     }
+  }
+
+  // ── Recommendation queries (songs, movies, food, travel, etc.) ──
+  const recommendationAnswer = getRecommendation(message, activeCategory);
+  if (recommendationAnswer) {
+    const imageResults = getImageResults(message);
+    return {
+      text: recommendationAnswer,
+      imageResults,
+      suggestions,
+      quickLinks,
+      sources: ["NavvGenX Knowledge Base"],
+    };
   }
 
   // ── Fashion / Lifestyle aesthetics (knowledge base is best source) ──
