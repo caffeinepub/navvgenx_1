@@ -2,6 +2,7 @@ import {
   Activity,
   BookOpen,
   Briefcase,
+  Camera,
   Heart,
   Lightbulb,
   Mic,
@@ -13,6 +14,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { LiveWidget } from "../components/LiveWidget";
 import { getSuggestions } from "../utils/aiEngine";
 
 interface HomePageProps {
@@ -121,7 +123,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
     setShowSuggestions(false);
     if (q) {
       sessionStorage.setItem("navvgenx-initial-query", q);
-      onNavigate("chat", "search");
+      onNavigate("chat", "general");
     } else {
       onNavigate("chat", "general");
     }
@@ -249,12 +251,12 @@ export function HomePage({ onNavigate }: HomePageProps) {
             AI-Powered Intelligence
           </motion.div>
 
-          <h1 className="font-bricolage font-extrabold text-5xl md:text-7xl mb-3 leading-tight">
+          <h1 className="font-bricolage font-extrabold text-3xl sm:text-5xl md:text-7xl mb-3 leading-tight">
             <span className="navvgenx-rainbow-gradient-text">
               Hello, I&apos;m NavvGenX
             </span>
           </h1>
-          <p className="text-muted-foreground text-lg md:text-xl font-jakarta max-w-xl mx-auto leading-relaxed">
+          <p className="text-slate-900 dark:text-white text-lg md:text-xl font-jakarta max-w-xl mx-auto leading-relaxed font-bold">
             Your AI companion — ask anything, get ideas, images, and voice
             answers
           </p>
@@ -296,6 +298,18 @@ export function HomePage({ onNavigate }: HomePageProps) {
                 <X className="w-4 h-4" />
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.setItem("navvgenx-camera-search", "1");
+                onNavigate("chat", "general");
+              }}
+              className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+              title="Search with camera"
+              data-ocid="home.toggle"
+            >
+              <Camera className="w-4 h-4" />
+            </button>
             <button
               type="button"
               onClick={handleVoiceMic}
@@ -386,6 +400,16 @@ export function HomePage({ onNavigate }: HomePageProps) {
           >
             {cyclingTexts[cycleIdx]}
           </p>
+        </motion.div>
+
+        {/* Live Weather & News Widget */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          className="w-full max-w-4xl mb-10"
+        >
+          <LiveWidget onNavigateToLive={() => onNavigate("live")} />
         </motion.div>
 
         {/* Quick category cards */}

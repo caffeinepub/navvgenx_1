@@ -33,6 +33,8 @@ interface Message {
 interface NavvAssistantProps {
   darkMode?: boolean;
   userAge?: number;
+  onNavigate?: (page: string, category?: string) => void;
+  profilePhotoUrl?: string;
 }
 
 // ─── NavvLogo SVG ────────────────────────────────────────────────────────────
@@ -189,6 +191,144 @@ function getNavvAnswer(query: string): string {
       "Parenting is beautiful and hard at the same time — and no parent has it all figured out. The most important things are consistent love, clear but kind boundaries, and genuinely listening to your children. Put your phone down when you're with them. Validate their feelings even when their behavior needs correcting. And take care of yourself too — you can't pour from an empty cup.",
       query,
     );
+  }
+
+  // Study tips
+  if (
+    /how.*(to )?(study|learn|memorize|remember|focus|concentrate)|study tips|learning tips|exam prep|revision/.test(
+      q,
+    )
+  ) {
+    return wrapFriendly(
+      `Here are the most effective study techniques used by top students:
+
+` +
+        `1. **Pomodoro Technique** — Study for 25 minutes, break for 5. After 4 rounds, take a 20-min break. This prevents burnout and keeps focus sharp.
+
+` +
+        `2. **Spaced Repetition** — Review material at increasing intervals (1 day, 3 days, 1 week, 2 weeks). Your brain retains much more this way.
+
+` +
+        `3. **Active Recall** — Close the book and try to recall what you just read. Test yourself with flashcards or write key points from memory.
+
+` +
+        `4. **Feynman Technique** — Explain the concept in simple words as if teaching a 10-year-old. Gaps in your explanation show what you don't know yet.
+
+` +
+        `5. **Mind Mapping** — Draw visual diagrams linking concepts. Great for subjects with many interconnected ideas.
+
+` +
+        `6. **Remove Distractions** — Phone in another room, use apps like Forest or Focus@Will. Even 30 distraction-free minutes beats 2 hours of half-focus.
+
+` +
+        `7. **Study in the same place** — Your brain associates environment with activity. A dedicated study spot trains your mind to focus there.
+
+` +
+        "Which subject are you studying? I can give more specific tips!",
+      query,
+    );
+  }
+
+  // How to questions - actionable advice
+  if (
+    /^how (to|do|can|should|would)|how do i|what steps|guide|tutorial/.test(q)
+  ) {
+    const topic = q
+      .replace(
+        /^how (to |do |can i |should i |would i )|how do i |what steps |guide |tutorial /gi,
+        "",
+      )
+      .trim();
+    if (topic) {
+      return wrapFriendly(
+        `Great question! Here's a step-by-step approach for "${topic}":
+
+**Step 1:** Understand the basics — research what "${topic}" actually involves before starting
+**Step 2:** Set a clear goal — what does success look like for you specifically?
+**Step 3:** Break it into small tasks — what's the very first action you can take today?
+**Step 4:** Take that first action — momentum is everything
+**Step 5:** Review and adjust — track your progress weekly
+
+Want more specific guidance? Tell me more about your situation and I'll give you a tailored plan!`,
+        query,
+      );
+    }
+  }
+
+  // Suggest/recommend queries
+  if (
+    /suggest|recommend|what.*should.*watch|best.*for|good.*movies|good.*songs|good.*books/.test(
+      q,
+    )
+  ) {
+    if (/song|music|track|album|singer|artist|playlist/.test(q)) {
+      if (/punjabi/.test(q)) {
+        return wrapFriendly(
+          `Here are top Punjabi songs right now:
+
+` +
+            `• **Tere Vaaste** — Vaishnav Shukla (emotional, soulful)
+` +
+            `• **Lover** — Diljit Dosanjh (upbeat, feel-good)
+` +
+            `• **96 Neele Ghere** — Sidhu Moosewala (classic hard-hitting)
+` +
+            `• **Jaan Da Aakhdi** — Karan Aujla (melodic, popular)
+` +
+            `• **Softly** — Karan Aujla (international fusion hit)
+` +
+            `• **Sare Aam** — Raftaar ft. Manj Musik (party banger)
+` +
+            `• **Main Bolda** — AP Dhillon (romantic)
+` +
+            `• **Brown Munde** — AP Dhillon, Gurinder Gill (anthem)
+
+` +
+            "Want sad Punjabi, party tracks, or romantic songs specifically?",
+          query,
+        );
+      }
+      if (/hindi|bollywood/.test(q)) {
+        return wrapFriendly(
+          `Top Hindi/Bollywood songs:
+
+` +
+            `• **Kesariya** — Arijit Singh (Animal Era Romantic)
+` +
+            `• **Tum Kya Mile** — Arijit Singh (Rocky Aur Rani)
+` +
+            `• **Arjan Vailly** — Bhupinder Babbal (Animal)
+` +
+            `• **Iktara** — Kavita Seth (timeless)
+` +
+            `• **Raataan Lambiyan** — Jubin Nautiyal (love anthem)
+` +
+            `• **Apna Bana Le** — Arijit Singh (Bhediya)
+
+` +
+            `Tell me your mood and I'll curate a perfect list!`,
+          query,
+        );
+      }
+    }
+    if (/movie|film|watch|series|web series|show/.test(q)) {
+      return wrapFriendly(
+        `Top movies and series to watch right now:
+
+` +
+          `✔️ **Bollywood:** Animal, Jawan, Pathaan, Rocky Aur Rani, 12th Fail, Dunki
+` +
+          `✔️ **Hollywood:** Oppenheimer, Poor Things, Dune Part 2, Civil War, Challengers
+` +
+          `✔️ **Web Series:** Mirzapur S3, Scam 1992, The Family Man, Panchayat, The Bear
+` +
+          `✔️ **Netflix Picks:** Squid Game S2, Wednesday S2, Stranger Things S5
+
+` +
+          "What genre are you in the mood for? Action, romance, thriller, comedy?",
+        query,
+      );
+    }
   }
 
   return wrapFriendly(
@@ -378,6 +518,8 @@ function QuickLinks({
 export function NavvAssistant({
   darkMode = false,
   userAge = 99,
+  onNavigate,
+  profilePhotoUrl,
 }: NavvAssistantProps) {
   const gold = darkMode ? "oklch(0.78 0.15 75)" : "oklch(0.65 0.14 75)";
   const navy = darkMode ? "oklch(0.08 0.022 265)" : "oklch(0.10 0.020 265)";
@@ -503,6 +645,81 @@ export function NavvAssistant({
       };
       setMessages((prev) => [...prev, loadingMsg]);
 
+      // ── App control commands ──
+      const navCmd = /^(go to|open|navigate to|take me to)\s+(.+)/i.exec(
+        trimmed,
+      );
+      if (navCmd) {
+        const target = navCmd[2].toLowerCase().trim();
+        const pageMap: Record<string, [string, string?]> = {
+          home: ["home"],
+          chat: ["chat", "general"],
+          health: ["health"],
+          study: ["chat", "study"],
+          fashion: ["chat", "fashion"],
+          business: ["chat", "business"],
+          career: ["chat", "career"],
+          love: ["chat", "love"],
+          law: ["chat", "law"],
+          reminders: ["reminders"],
+          live: ["live"],
+          account: ["account"],
+        };
+        const found = Object.entries(pageMap).find(([k]) => target.includes(k));
+        if (found && onNavigate) {
+          onNavigate(found[1][0], found[1][1]);
+          const navvMsg: Message = {
+            id: `n-${Date.now()}`,
+            role: "navv",
+            text: `Taking you to ${found[0]}! 🚀`,
+            timestamp: new Date(),
+          };
+          setMessages((prev) =>
+            prev.filter((m) => m.id !== loadingId).concat(navvMsg),
+          );
+          return;
+        }
+      }
+      if (/^go home$/i.test(trimmed) && onNavigate) {
+        onNavigate("home");
+        const navvMsg: Message = {
+          id: `n-${Date.now()}`,
+          role: "navv",
+          text: "Taking you home! 🏠",
+          timestamp: new Date(),
+        };
+        setMessages((prev) =>
+          prev.filter((m) => m.id !== loadingId).concat(navvMsg),
+        );
+        return;
+      }
+      if (/dark mode/i.test(trimmed)) {
+        document.documentElement.classList.add("dark");
+        const navvMsg: Message = {
+          id: `n-${Date.now()}`,
+          role: "navv",
+          text: "Dark mode enabled! 🌙",
+          timestamp: new Date(),
+        };
+        setMessages((prev) =>
+          prev.filter((m) => m.id !== loadingId).concat(navvMsg),
+        );
+        return;
+      }
+      if (/light mode/i.test(trimmed)) {
+        document.documentElement.classList.remove("dark");
+        const navvMsg: Message = {
+          id: `n-${Date.now()}`,
+          role: "navv",
+          text: "Light mode enabled! ☀️",
+          timestamp: new Date(),
+        };
+        setMessages((prev) =>
+          prev.filter((m) => m.id !== loadingId).concat(navvMsg),
+        );
+        return;
+      }
+
       let aiResult: AIResponse;
       try {
         aiResult = await generateAIResponse(
@@ -595,7 +812,7 @@ export function NavvAssistant({
         type="button"
         data-ocid="navv.toggle"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-4 md:bottom-8 md:right-6 z-50 w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center shadow-2xl"
         style={{
           background: `linear-gradient(135deg, ${navy}, oklch(0.15 0.028 265))`,
           border: `2px solid ${gold}`,
@@ -611,7 +828,16 @@ export function NavvAssistant({
         whileTap={{ scale: 0.96 }}
         aria-label="Open Navv AI assistant"
       >
-        <NavvLogo size={36} dark={true} />
+        {profilePhotoUrl ? (
+          <img
+            src={profilePhotoUrl}
+            alt="Profile"
+            className="w-9 h-9 rounded-full object-cover"
+            style={{ border: `1.5px solid ${gold}` }}
+          />
+        ) : (
+          <NavvLogo size={36} dark={true} />
+        )}
       </motion.button>
 
       {/* Chat Panel */}
@@ -623,9 +849,9 @@ export function NavvAssistant({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 340, damping: 28 }}
-            className="fixed bottom-28 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden flex flex-col"
+            className="fixed bottom-[calc(9rem+env(safe-area-inset-bottom,0px))] right-2 md:bottom-28 md:right-6 z-50 w-[calc(100vw-1rem)] md:w-[380px] max-w-[calc(100vw-1rem)] md:max-w-[380px] rounded-2xl overflow-hidden flex flex-col"
             style={{
-              maxHeight: "560px",
+              maxHeight: "min(560px, 70vh)",
               background: darkMode
                 ? "oklch(0.11 0.024 265 / 0.96)"
                 : "oklch(0.99 0.004 80 / 0.97)",

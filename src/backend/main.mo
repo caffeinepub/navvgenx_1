@@ -45,19 +45,33 @@ actor {
   type Profile = {
     userId : Principal;
     age : Nat;
-    ageGroup : Text; // "genz", "millennial", "senior"
+    ageGroup : Text;
     interests : [Text];
     createdAt : Int;
   };
 
+  type UserAccount = {
+    userId : Principal;
+    name : Text;
+    mobile : Text;
+    gender : Text;
+    language : Text;
+    age : Nat;
+    ageGroup : Text;
+    interests : [Text];
+    photoUrl : Text;
+    createdAt : Int;
+  };
+
   module Profile {
-    public func compare(profile1 : Profile, profile2 : Profile) : Order.Order {
-      Int.compare(profile1.createdAt, profile2.createdAt);
+    public func compare(p1 : Profile, p2 : Profile) : Order.Order {
+      Int.compare(p1.createdAt, p2.createdAt);
     };
   };
 
   // Global state
   let profiles = Map.empty<Principal, Profile>();
+  let userAccounts = Map.empty<Principal, UserAccount>();
   let healthEntries = Map.empty<Principal, List.List<HealthEntry>>();
   let chatHistory = Map.empty<Principal, List.List<Message>>();
   let reminders = Map.empty<Principal, List.List<Reminder>>();
@@ -71,39 +85,28 @@ actor {
   include MixinAuthorization(accessControlState);
 
   //////////////////////////
-  // Feature 1: Profile Management
+  // Feature 1: Legacy Profile
   //////////////////////////
 
   public shared ({ caller }) func createOrUpdateProfile(age : Nat, ageGroup : Text, interests : [Text], createdAt : Int) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can modify profiles");
+      Runtime.trap("Unauthorized");
     };
-
-    let profile : Profile = {
-      userId = caller;
-      age;
-      ageGroup;
-      interests;
-      createdAt;
-    };
+    let profile : Profile = { userId = caller; age; ageGroup; interests; createdAt };
     profiles.add(caller, profile);
   };
 
-  // Required by frontend: get caller's own profile
   public query ({ caller }) func getCallerUserProfile() : async ?Profile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view profiles");
+      Runtime.trap("Unauthorized");
     };
     profiles.get(caller);
   };
 
-  // Required by frontend: save caller's own profile
   public shared ({ caller }) func saveCallerUserProfile(profile : Profile) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
+      Runtime.trap("Unauthorized");
     };
-
-    // Ensure the profile userId matches the caller
     let updatedProfile : Profile = {
       userId = caller;
       age = profile.age;
@@ -114,20 +117,50 @@ actor {
     profiles.add(caller, updatedProfile);
   };
 
-  // Required by frontend: get any user's profile (with authorization)
   public query ({ caller }) func getUserProfile(userId : Principal) : async ?Profile {
     if (caller != userId and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
+      Runtime.trap("Unauthorized");
     };
     profiles.get(userId);
   };
 
-  // Legacy function - kept for backward compatibility but with proper authorization
   public query ({ caller }) func getProfile(userId : Principal) : async ?Profile {
     if (caller != userId and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
+      Runtime.trap("Unauthorized");
     };
     profiles.get(userId);
+  };
+
+  //////////////////////////
+  // Feature 1b: Extended User Account
+  //////////////////////////
+
+  public shared ({ caller }) func saveUserAccount(name : Text, mobile : Text, gender : Text, language : Text, age : Nat, ageGroup : Text, interests : [Text], photoUrl : Text, createdAt : Int) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized");
+    };
+    let account : UserAccount = {
+      userId = caller;
+      name;
+      mobile;
+      gender;
+      language;
+      age;
+      ageGroup;
+      interests;
+      photoUrl;
+      createdAt;
+    };
+    userAccounts.add(caller, account);
+    let profile : Profile = { userId = caller; age; ageGroup; interests; createdAt };
+    profiles.add(caller, profile);
+  };
+
+  public query ({ caller }) func getUserAccount() : async ?UserAccount {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized");
+    };
+    userAccounts.get(caller);
   };
 
   //////////////////////////
@@ -136,14 +169,12 @@ actor {
 
   public shared ({ caller }) func addHealthEntry(entry : HealthEntry) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can add health entries");
+      Runtime.trap("Unauthorized");
     };
-
     let existingEntries = switch (healthEntries.get(caller)) {
       case (null) { List.empty<HealthEntry>() };
       case (?entries) { entries };
     };
-
     existingEntries.add(entry);
     if (existingEntries.size() > 30) {
       let lastThirty = existingEntries.toArray().sliceToArray(0, 30);
@@ -155,7 +186,7 @@ actor {
 
   public query ({ caller }) func getHealthEntries() : async [HealthEntry] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view health entries");
+      Runtime.trap("Unauthorized");
     };
     switch (healthEntries.get(caller)) {
       case (null) { [] };
@@ -165,37 +196,20 @@ actor {
 
   public query ({ caller }) func computeHealthScore() : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can compute health score");
+      Runtime.trap("Unauthorized");
     };
-
     let entries = switch (healthEntries.get(caller)) {
       case (null) { return 0 };
       case (?e) { e };
     };
-
     if (entries.isEmpty()) { return 0 };
-
     let latestEntry = entries.at(0);
-
     var score : Float = 0;
-
-    // BP check
     if (latestEntry.bp == "120/80") { score += 30 } else { score += 15 };
-
-    // Steps
     if (latestEntry.steps >= 8000) { score += 20 } else { score += 10 };
-
-    // Sleep
-    if (latestEntry.sleepHours >= 7 and latestEntry.sleepHours <= 9) {
-      score += 20;
-    } else { score += 10 };
-
-    // Water
+    if (latestEntry.sleepHours >= 7 and latestEntry.sleepHours <= 9) { score += 20 } else { score += 10 };
     if (latestEntry.waterIntake >= 2.0) { score += 15 } else { score += 5 };
-
-    // Weight (very simplified)
     score += 15;
-
     score.toInt().toNat();
   };
 
@@ -205,14 +219,12 @@ actor {
 
   public shared ({ caller }) func addMessage(message : Message) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can add messages");
+      Runtime.trap("Unauthorized");
     };
-
     let existingMessages = switch (chatHistory.get(caller)) {
       case (null) { List.empty<Message>() };
       case (?msgs) { msgs };
     };
-
     existingMessages.add(message);
     if (existingMessages.size() > 50) {
       let lastFifty = existingMessages.toArray().sliceToArray(0, 50);
@@ -224,7 +236,7 @@ actor {
 
   public query ({ caller }) func getChatHistory() : async [Message] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view chat history");
+      Runtime.trap("Unauthorized");
     };
     switch (chatHistory.get(caller)) {
       case (null) { [] };
@@ -234,7 +246,7 @@ actor {
 
   public shared ({ caller }) func clearChatHistory() : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can clear messages");
+      Runtime.trap("Unauthorized");
     };
     chatHistory.remove(caller);
   };
@@ -245,32 +257,22 @@ actor {
 
   public shared ({ caller }) func addReminder(title : Text, time : Text, createdAt : Int) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can add reminders");
+      Runtime.trap("Unauthorized");
     };
-
-    let reminder : Reminder = {
-      id = nextReminderId;
-      title;
-      time;
-      active = true;
-      createdAt;
-    };
-
+    let reminder : Reminder = { id = nextReminderId; title; time; active = true; createdAt };
     let existingReminders = switch (reminders.get(caller)) {
       case (null) { List.empty<Reminder>() };
       case (?rem) { rem };
     };
-
     existingReminders.add(reminder);
     reminders.add(caller, existingReminders);
-
     nextReminderId += 1;
     nextReminderId - 1;
   };
 
   public query ({ caller }) func getReminders() : async [Reminder] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view reminders");
+      Runtime.trap("Unauthorized");
     };
     switch (reminders.get(caller)) {
       case (null) { [] };
@@ -280,39 +282,27 @@ actor {
 
   public shared ({ caller }) func toggleReminder(reminderId : Nat) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can toggle reminders");
+      Runtime.trap("Unauthorized");
     };
-
     let existingReminders = switch (reminders.get(caller)) {
       case (null) { [] };
       case (?rem) { rem.toArray() };
     };
-
-    let updatedReminders = existingReminders.map(
-      func(r) {
-        if (r.id == reminderId) {
-          { r with active = not r.active };
-        } else { r };
-      }
-    );
-
+    let updatedReminders = existingReminders.map(func(r) {
+      if (r.id == reminderId) { { r with active = not r.active } } else { r };
+    });
     reminders.add(caller, List.fromArray<Reminder>(updatedReminders));
   };
 
   public shared ({ caller }) func deleteReminder(reminderId : Nat) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can delete reminders");
+      Runtime.trap("Unauthorized");
     };
-
     let existingReminders = switch (reminders.get(caller)) {
       case (null) { List.empty<Reminder>() };
       case (?rem) { rem };
     };
-
-    let filtered = existingReminders.filter(
-      func(r) { r.id != reminderId }
-    );
-
+    let filtered = existingReminders.filter(func(r) { r.id != reminderId });
     reminders.add(caller, filtered);
   };
 };

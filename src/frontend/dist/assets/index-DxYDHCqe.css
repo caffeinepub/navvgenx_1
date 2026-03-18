@@ -1,0 +1,24 @@
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pb-safe-nav {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+  .mb-safe-nav {
+    margin-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+  .bottom-safe-nav {
+    bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+  .bottom-nav-height {
+    height: calc(4rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* Mobile bottom nav padding for main content */
+@media (max-width: 767px) {
+  .mobile-main-pb {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+}

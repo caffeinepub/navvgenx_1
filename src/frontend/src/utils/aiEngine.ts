@@ -34,6 +34,21 @@ export interface AIResponse {
   sources?: string[];
 }
 
+// ─────────────────── Live Weather Context ───────────────────
+interface LiveWeatherCtx {
+  temp: number;
+  condition: string;
+  location: string;
+  humidity: number;
+  wind: number;
+}
+
+let _liveWeatherCtx: LiveWeatherCtx | null = null;
+
+export function setLiveWeatherContext(data: LiveWeatherCtx): void {
+  _liveWeatherCtx = data;
+}
+
 // ─────────────────── Suggestion Generator ───────────────────
 const suggestionMap: Record<string, string[]> = {
   health: [
@@ -1500,6 +1515,221 @@ Want recommendations by genre (action, romance, thriller, comedy) or language?`;
   return null;
 }
 
+// ─────────────────── Content Creation Detector ───────────────────
+export function detectContentCreation(query: string): string | null {
+  const q = query.toLowerCase().trim();
+  const isCreate =
+    /make|create|write|prepare|build|generate|draft|compose|produce|help me (with|make)|do my/.test(
+      q,
+    );
+  if (!isCreate) return null;
+
+  let type = "";
+  let topic = query;
+
+  if (/presentation|ppt|powerpoint|slides?/.test(q)) {
+    type = "Presentation";
+    topic =
+      query
+        .replace(
+          /make|create|write|prepare|build|generate|draft|a |an |the |presentation|ppt|powerpoint|slides?/gi,
+          "",
+        )
+        .trim() || "the requested topic";
+  } else if (/speech|talk|address/.test(q)) {
+    type = "Speech";
+    topic =
+      query
+        .replace(
+          /make|create|write|prepare|draft|a |an |speech|talk|address|on|about/gi,
+          "",
+        )
+        .trim() || "the requested topic";
+  } else if (/essay|article|write-up/.test(q)) {
+    type = "Essay";
+    topic =
+      query
+        .replace(
+          /write|draft|create|an? |essay|article|write-up|on|about/gi,
+          "",
+        )
+        .trim() || "the requested topic";
+  } else if (/homework|assignment/.test(q)) {
+    type = "Homework Answer";
+    topic =
+      query
+        .replace(/do|complete|help|my|homework|assignment|on|about/gi, "")
+        .trim() || "the requested topic";
+  } else if (/notes?/.test(q) && /make|create|write|prepare/.test(q)) {
+    type = "Study Notes";
+    topic =
+      query.replace(/make|create|write|prepare|notes?|on|about/gi, "").trim() ||
+      "the requested topic";
+  } else if (/report|summary/.test(q)) {
+    type = "Report";
+    topic =
+      query
+        .replace(/make|create|write|prepare|report|summary|on|about/gi, "")
+        .trim() || "the requested topic";
+  } else if (/letter|email/.test(q)) {
+    type = "Letter / Email";
+    topic =
+      query
+        .replace(/write|draft|create|a |an |letter|email|on|about/gi, "")
+        .trim() || "the requested topic";
+  } else {
+    return null;
+  }
+
+  const topicCap = topic.charAt(0).toUpperCase() + topic.slice(1);
+
+  if (type === "Presentation") {
+    return [
+      `<div class="presentation-slides">`,
+      `<div class="slide slide-title" style="background:oklch(0.10 0.020 265);border:1.5px solid oklch(0.78 0.15 75 / 0.4);border-radius:16px;padding:24px;margin-bottom:12px;">`,
+      `<p style="color:oklch(0.78 0.15 75);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">SLIDE 1 — TITLE</p>`,
+      `<h2 style="color:oklch(0.93 0.006 80);font-size:20px;font-weight:800;margin-bottom:6px;">${topicCap}</h2>`,
+      `<p style="color:oklch(0.55 0.02 265);font-size:13px;">A comprehensive presentation</p>`,
+      "</div>",
+      `<div class="slide" style="background:oklch(0.11 0.018 265);border:1px solid oklch(0.78 0.15 75 / 0.2);border-radius:14px;padding:20px;margin-bottom:10px;">`,
+      `<p style="color:oklch(0.78 0.15 75);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">SLIDE 2 — INTRODUCTION</p>`,
+      `<p style="color:oklch(0.80 0.02 265);font-size:14px;line-height:1.6;">${topicCap} is a significant and fascinating subject. Understanding it deeply helps you make informed decisions and communicate effectively with others.</p>`,
+      "</div>",
+      `<div class="slide" style="background:oklch(0.11 0.018 265);border:1px solid oklch(0.78 0.15 75 / 0.2);border-radius:14px;padding:20px;margin-bottom:10px;">`,
+      `<p style="color:oklch(0.78 0.15 75);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">SLIDE 3 — KEY FACTS</p>`,
+      `<ul style="color:oklch(0.80 0.02 265);font-size:13px;line-height:2;padding-left:16px;">`,
+      `<li>${topicCap} has been an area of growing importance in recent years</li>`,
+      "<li>Multiple factors influence how we understand and apply this concept</li>",
+      "<li>Experts across fields have studied its impact on society and individuals</li>",
+      "<li>Practical applications range from everyday life to professional settings</li>",
+      "</ul>",
+      "</div>",
+      `<div class="slide" style="background:oklch(0.11 0.018 265);border:1px solid oklch(0.78 0.15 75 / 0.2);border-radius:14px;padding:20px;margin-bottom:10px;">`,
+      `<p style="color:oklch(0.78 0.15 75);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">SLIDE 4 — ANALYSIS</p>`,
+      `<p style="color:oklch(0.80 0.02 265);font-size:14px;line-height:1.6;">A thorough analysis of ${topicCap} reveals its layered complexity. The interplay between theory and practice creates a rich landscape for exploration. Understanding both the broader context and specific details is essential for mastery.</p>`,
+      "</div>",
+      `<div class="slide" style="background:oklch(0.11 0.018 265);border:1px solid oklch(0.78 0.15 75 / 0.2);border-radius:14px;padding:20px;margin-bottom:10px;">`,
+      `<p style="color:oklch(0.78 0.15 75);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">SLIDE 5 — CHALLENGES</p>`,
+      `<ul style="color:oklch(0.80 0.02 265);font-size:13px;line-height:2;padding-left:16px;">`,
+      "<li>Common misconceptions that need to be addressed</li>",
+      `<li>Practical obstacles in applying knowledge of ${topicCap}</li>`,
+      "<li>How to overcome these challenges with targeted strategies</li>",
+      "</ul>",
+      "</div>",
+      `<div class="slide slide-conclusion" style="background:oklch(0.12 0.025 265);border:1.5px solid oklch(0.78 0.15 75 / 0.5);border-radius:16px;padding:20px;">`,
+      `<p style="color:oklch(0.78 0.15 75);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">SLIDE 6 — CONCLUSION</p>`,
+      `<p style="color:oklch(0.93 0.006 80);font-size:14px;line-height:1.6;font-weight:600;">${topicCap} is a multifaceted subject. By understanding its core concepts, analyzing its components, and addressing its challenges, you can develop a comprehensive and actionable understanding.</p>`,
+      `<p style="margin-top:12px;color:oklch(0.55 0.02 265);font-size:12px;">💡 Ask me to expand any slide with more detail!</p>`,
+      "</div>",
+      "</div>",
+    ].join("\n");
+  }
+
+  return `<h2>${type}: ${topicCap}</h2>
+
+<p><strong>Introduction</strong></p>
+<p>${topicCap} is an important and fascinating subject. This ${type.toLowerCase()} covers the key aspects, facts, and insights you need to understand and communicate effectively about this topic.</p>
+
+<p><strong>1. Overview & Background</strong></p>
+<p>To begin, it is important to understand the context of ${topicCap}. This section outlines the foundational concepts, historical background, and why this topic matters in today's world.</p>
+
+<p><strong>2. Key Points & Main Ideas</strong></p>
+<ul>
+<li>The core concept of ${topicCap} involves understanding its fundamental principles</li>
+<li>There are multiple perspectives and dimensions to consider</li>
+<li>Recent developments have significantly shaped how we view this topic</li>
+<li>Both short-term and long-term implications are worth analyzing</li>
+<li>Expert opinions and research provide valuable insights</li>
+</ul>
+
+<p><strong>3. Detailed Analysis</strong></p>
+<p>A thorough examination of ${topicCap} reveals its significance across multiple domains. The interplay between various factors creates a complex but understandable picture. When we analyze the available information, several important patterns and themes emerge that are critical to understanding the complete picture.</p>
+
+<p><strong>4. Examples & Applications</strong></p>
+<p>Real-world examples help illustrate the concepts related to ${topicCap}. From practical applications to theoretical frameworks, this topic has relevance in everyday life, academic settings, and professional environments.</p>
+
+<p><strong>5. Challenges & Considerations</strong></p>
+<p>Like any complex topic, ${topicCap} comes with its challenges. Understanding these obstacles and how to address them is key to mastering this subject and applying it effectively.</p>
+
+<p><strong>Conclusion</strong></p>
+<p>In summary, ${topicCap} is a multifaceted subject that requires careful consideration and analysis. By understanding its key components — background, main ideas, applications, and challenges — you can develop a comprehensive understanding and communicate about it effectively.</p>
+
+<p><em>💡 Want more detail on any specific section? Just ask!</em></p>`;
+}
+
+// ─────────────────── AI Image Generation ───────────────────
+export function detectImageRequest(query: string): string | null {
+  const q = query.toLowerCase().trim();
+  if (
+    /^(generate|create|make|draw|show me|give me)\s+(an? |the )?(image|picture|photo|illustration|artwork|drawing|sketch|painting)\s+(of|showing|depicting)?\s*/i.test(
+      q,
+    ) ||
+    /^(imagine|visualize|picture)\s+/i.test(q)
+  ) {
+    return (
+      query
+        .replace(
+          /^(generate|create|make|draw|show me|give me)\s+(an? |the )?(image|picture|photo|illustration|artwork|drawing|sketch|painting)\s+(of|showing|depicting)?\s*/i,
+          "",
+        )
+        .replace(/^(imagine|visualize|picture)\s+/i, "")
+        .trim() || query
+    );
+  }
+  return null;
+}
+
+export function getPollinationsImageUrl(prompt: string): string {
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true&enhance=true`;
+}
+
+// ─────────────────── Shopping Suggestions ───────────────────
+export function detectShoppingQuery(query: string): AIResponse | null {
+  const q = query.toLowerCase().trim();
+  if (
+    !/\b(buy|purchase|where to (get|buy|find)|best price|shop for|suggest product|recommend product|online shopping|order)\b/i.test(
+      q,
+    )
+  )
+    return null;
+
+  const searchTerm =
+    query
+      .replace(
+        /^(i want to |help me |where can i |can you |please )?(buy|purchase|find|get|shop for|suggest|recommend)\s+/i,
+        "",
+      )
+      .trim() || query;
+  const encoded = encodeURIComponent(searchTerm);
+
+  return {
+    text: `Here are some great options for **${searchTerm}**! 🛍️
+
+I've compiled the best places to find this product:
+
+**Top Shopping Links:**
+• [Search on Google Shopping](https://www.google.com/search?q=${encoded}&tbm=shop) — Compare prices from hundreds of sellers
+• [Amazon India](https://www.amazon.in/s?k=${encoded}) — Fast delivery, trusted reviews
+• [Flipkart](https://www.flipkart.com/search?q=${encoded}) — Great deals and offers
+• [Meesho](https://www.meesho.com/search?q=${encoded}) — Budget-friendly options
+• [Snapdeal](https://www.snapdeal.com/search?keyword=${encoded}) — Wide variety
+
+**Tips for smart shopping:**
+✅ Compare prices across platforms before buying
+✅ Read customer reviews carefully
+✅ Check return and refund policies
+✅ Look for discount coupons and cashback offers
+✅ Buy from verified sellers only
+
+Would you like help finding specific features, price ranges, or brand recommendations for ${searchTerm}?`,
+    quickLinks: {
+      google: `https://www.google.com/search?q=${encoded}&tbm=shop`,
+      chatgpt: `https://chat.openai.com/?q=${encodeURIComponent(`Best ${searchTerm} to buy`)}`,
+    },
+    sources: ["Google Shopping", "Amazon", "Flipkart"],
+  };
+}
+
 export async function generateAIResponse(
   message: string,
   activeCategory: string,
@@ -1516,6 +1746,63 @@ export async function generateAIResponse(
     chatgpt: `https://chat.openai.com/?q=${encodeURIComponent(message)}`,
   };
   const suggestions = getSuggestions(message, activeCategory);
+
+  // ── Content creation ──
+  const contentCreationResult = detectContentCreation(message);
+  if (contentCreationResult) {
+    return {
+      text: contentCreationResult,
+      suggestions: getSuggestions(message, activeCategory),
+      quickLinks,
+      sources: ["NavvGenX AI"],
+    };
+  }
+
+  // ── Image generation ──
+  const imagePrompt = detectImageRequest(message);
+  if (imagePrompt) {
+    const imgUrl = getPollinationsImageUrl(imagePrompt);
+    return {
+      text: `Here's an AI-generated image for: **"${imagePrompt}"** 🎨\n\n![Generated: ${imagePrompt}](${imgUrl})\n\nThe image has been generated using AI. You can ask me to generate more images with different prompts!`,
+      imageResults: [
+        {
+          url: imgUrl,
+          alt: imagePrompt,
+          searchUrl: `https://www.google.com/search?q=${encodeURIComponent(imagePrompt)}&tbm=isch`,
+        },
+      ],
+      suggestions: [
+        `Generate image of ${imagePrompt} at sunset`,
+        `Create realistic photo of ${imagePrompt}`,
+        `Draw cartoon version of ${imagePrompt}`,
+        "Generate landscape scenery",
+        "Create abstract art",
+      ],
+      quickLinks,
+      sources: ["Pollinations AI"],
+    };
+  }
+
+  // ── Shopping ──
+  const shoppingResult = detectShoppingQuery(message);
+  if (shoppingResult) return shoppingResult;
+
+  // ── Live weather ──
+  if (
+    _liveWeatherCtx &&
+    /\b(weather|temperature|rain|snow|hot|cold|forecast|humid|wind|climate today)\b/i.test(
+      lower,
+    )
+  ) {
+    const w = _liveWeatherCtx;
+    const weatherText = `Here's the current weather in **${w.location}**: **${w.temp}°C** — ${w.condition}. Humidity is ${w.humidity}% with wind speed of ${w.wind} km/h. Stay prepared! 🌡️`;
+    return {
+      text: weatherText,
+      suggestions: getSuggestions(message, activeCategory),
+      quickLinks,
+      sources: ["Live Weather (Open-Meteo)"],
+    };
+  }
 
   // ── Search mode ──
   if (/^search[:\s]/i.test(lower) || /\bsearch for\b/i.test(lower)) {

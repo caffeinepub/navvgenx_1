@@ -4,16 +4,21 @@ import {
   Bell,
   BookOpen,
   Briefcase,
+  Download,
   Heart,
   Home,
   LogOut,
   MessageSquare,
   Moon,
+  MoreHorizontal,
+  Radio,
   Search,
   Share2,
   Sparkles,
   Sun,
   TrendingUp,
+  UserCircle,
+  X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -22,13 +27,18 @@ import { AgeSetup } from "./components/AgeSetup";
 import { Logo } from "./components/Logo";
 import { NavvAssistant } from "./components/NavvAssistant";
 import { useActor } from "./hooks/useActor";
+import { usePWAInstall } from "./hooks/usePWAInstall";
+import { useServiceWorkerUpdate } from "./hooks/useServiceWorkerUpdate";
+import { AccountPage } from "./pages/AccountPage";
 import { ChatPage } from "./pages/ChatPage";
 import { HealthPage } from "./pages/HealthPage";
 import { HomePage } from "./pages/HomePage";
+import { LivePage } from "./pages/LivePage";
 import { LoginPage } from "./pages/LoginPage";
+import { OnboardingPage } from "./pages/OnboardingPage";
 import { RemindersPage } from "./pages/RemindersPage";
 
-type Page = "home" | "chat" | "health" | "reminders";
+type Page = "home" | "chat" | "health" | "reminders" | "account" | "live";
 
 interface Profile {
   age: bigint;
@@ -45,6 +55,22 @@ const navItems = [
   { id: "fashion", Icon: Sparkles, label: "Fashion" },
   { id: "business", Icon: TrendingUp, label: "Business" },
   { id: "search", Icon: Search, label: "Search" },
+  { id: "live", Icon: Radio, label: "Live" },
+  { id: "account", Icon: UserCircle, label: "Account" },
+] as const;
+
+// Primary nav items shown in mobile bottom bar
+const bottomNavPrimary = ["home", "chat", "health"] as const;
+// Secondary items shown in the "More" drawer
+const bottomNavMore = [
+  "love",
+  "study",
+  "career",
+  "fashion",
+  "business",
+  "search",
+  "live",
+  "account",
 ] as const;
 
 const SECTION_EXPERTS: Record<string, string> = {
@@ -59,11 +85,13 @@ const SECTION_EXPERTS: Record<string, string> = {
   search: "search expert",
   law: "law expert",
   reminders: "productivity expert",
+  account: "account manager",
+  live: "live updates expert",
 };
 
 function buildGreeting(section: string): string {
   const expert = SECTION_EXPERTS[section] ?? `${section} expert`;
-  return `I am NavvGenX, your ${expert}. How can I help you?`;
+  return `I am Nav Gen X, your ${expert}. How can I help you?`;
 }
 
 function speakText(text: string) {
@@ -124,6 +152,7 @@ function SectionGreetingBanner({
         boxShadow:
           "0 8px 40px oklch(0.05 0.02 265 / 0.55), 0 0 0 1px oklch(0.78 0.15 75 / 0.15)",
         maxWidth: "min(440px, calc(100vw - 2rem))",
+        width: "90vw",
       }}
     >
       {/* Navv orb */}
@@ -189,6 +218,110 @@ function SectionGreetingBanner({
   );
 }
 
+// ─── PWA Install Banner ──────────────────────────────────────────────────────
+function InstallBanner({
+  onInstall,
+  onDismiss,
+}: {
+  onInstall: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ type: "spring", stiffness: 320, damping: 28 }}
+      className="w-full flex items-center justify-between gap-3 px-4 py-2.5"
+      style={{
+        background: "oklch(0.10 0.020 265 / 0.97)",
+        borderBottom: "1px solid oklch(0.78 0.15 75 / 0.35)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+      }}
+      data-ocid="install.panel"
+    >
+      {/* Icon + text */}
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{
+            background:
+              "linear-gradient(135deg, oklch(0.15 0.025 265), oklch(0.20 0.030 265))",
+            border: "1.5px solid oklch(0.78 0.15 75 / 0.60)",
+            boxShadow: "0 0 10px oklch(0.78 0.15 75 / 0.25)",
+          }}
+        >
+          <Download
+            className="w-4 h-4"
+            style={{ color: "oklch(0.78 0.15 75)" }}
+          />
+        </div>
+        <div className="min-w-0">
+          <p
+            className="text-xs font-semibold truncate"
+            style={{
+              color: "oklch(0.78 0.15 75)",
+              fontFamily: "'Space Grotesk', sans-serif",
+            }}
+          >
+            Install NavvGenX AI
+          </p>
+          <p
+            className="text-[11px] leading-tight truncate"
+            style={{
+              color: "oklch(0.75 0.006 80)",
+              fontFamily: "'Space Grotesk', sans-serif",
+            }}
+          >
+            Add to your home screen for the best experience
+          </p>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button
+          type="button"
+          onClick={onInstall}
+          className="px-3 py-1 rounded-full text-xs font-semibold transition-all hover:opacity-90 active:scale-95"
+          style={{
+            background:
+              "linear-gradient(135deg, oklch(0.65 0.18 75), oklch(0.72 0.16 80))",
+            color: "oklch(0.10 0.020 265)",
+            fontFamily: "'Space Grotesk', sans-serif",
+            boxShadow: "0 2px 12px oklch(0.65 0.18 75 / 0.40)",
+          }}
+          data-ocid="install.primary_button"
+        >
+          Install
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="p-1 rounded-full transition-all hover:opacity-70"
+          style={{ color: "oklch(0.60 0.006 80)" }}
+          aria-label="Dismiss install banner"
+          data-ocid="install.close_button"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+const SECTION_COLORS: Record<string, string> = {
+  love: "#FF8A65",
+  study: "#4FC3F7",
+  career: "#FFB74D",
+  fashion: "#F48FB1",
+  business: "#FFD54F",
+  search: "oklch(0.78 0.15 75)",
+  live: "#4DD0E1",
+  account: "#CE93D8",
+};
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
     () => localStorage.getItem("navvgenx-user") !== null,
@@ -197,6 +330,10 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState("general");
   const [darkMode, setDarkMode] = useState(false);
   const [sectionGreeting, setSectionGreeting] = useState<string | null>(null);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !localStorage.getItem("navvgenx_onboarding_done"),
+  );
   const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [profile, setProfile] = useState<Profile | null>(() => {
     const saved = localStorage.getItem("navvgenx-profile");
@@ -211,6 +348,24 @@ export default function App() {
     return null;
   });
   const { actor } = useActor();
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>(() => {
+    try {
+      const acc = localStorage.getItem("navvgenx-account");
+      return acc ? JSON.parse(acc).photoUrl || "" : "";
+    } catch {
+      return "";
+    }
+  });
+
+  // PWA install
+  const {
+    canInstall,
+    promptInstall,
+    dismiss: dismissInstall,
+  } = usePWAInstall();
+
+  // Service worker live updates
+  useServiceWorkerUpdate();
 
   const handleProfileSet = useCallback((p: Profile) => {
     localStorage.setItem(
@@ -226,7 +381,15 @@ export default function App() {
     if (sessionStorage.getItem("navvgenx-welcomed")) return;
     sessionStorage.setItem("navvgenx-welcomed", "1");
     const timer = setTimeout(() => {
-      speakText("Welcome to NavvGenX");
+      try {
+        const acc = localStorage.getItem("navvgenx-account");
+        const name = acc ? JSON.parse(acc).name : "";
+        speakText(
+          name ? `Hello ${name}, welcome to Nav Gen X` : "Welcome to Nav Gen X",
+        );
+      } catch {
+        speakText("Welcome to Nav Gen X");
+      }
     }, 600);
     return () => clearTimeout(timer);
   }, [isLoggedIn]);
@@ -258,7 +421,6 @@ export default function App() {
   }, [darkMode]);
 
   const triggerSectionGreeting = useCallback((section: string) => {
-    // Clear any existing greeting
     if (greetingTimeoutRef.current) clearTimeout(greetingTimeoutRef.current);
     const msg = buildGreeting(section);
     setSectionGreeting(msg);
@@ -278,8 +440,37 @@ export default function App() {
         <LoginPage
           onLogin={() => {
             sessionStorage.setItem("navvgenx-welcomed", "1");
-            setTimeout(() => speakText("Welcome to NavvGenX"), 600);
+            setTimeout(() => speakText("Welcome to Nav Gen X"), 600);
             setIsLoggedIn(true);
+          }}
+        />
+      </>
+    );
+  }
+
+  // Show onboarding once after first login
+  if (isLoggedIn && showOnboarding) {
+    return (
+      <>
+        <Toaster richColors position="top-right" />
+        <OnboardingPage
+          onComplete={() => {
+            setShowOnboarding(false);
+            // Try to extract age from onboarding data for backend
+            try {
+              const acc = localStorage.getItem("navvgenx-account");
+              if (acc) {
+                const data = JSON.parse(acc);
+                if (data.age) {
+                  const ageNum = Number.parseInt(data.age, 10);
+                  if (!Number.isNaN(ageNum)) {
+                    const ag =
+                      ageNum < 13 ? "child" : ageNum < 18 ? "teen" : "adult";
+                    handleProfileSet({ age: BigInt(ageNum), ageGroup: ag });
+                  }
+                }
+              }
+            } catch {}
           }}
         />
       </>
@@ -316,6 +507,14 @@ export default function App() {
       setCurrentPage("reminders");
       return;
     }
+    if (page === "account") {
+      setCurrentPage("account");
+      return;
+    }
+    if (page === "live") {
+      setCurrentPage("live");
+      return;
+    }
     if (
       page === "chat" ||
       [
@@ -337,6 +536,7 @@ export default function App() {
   };
 
   const handleNavClick = (id: string) => {
+    setShowMoreMenu(false);
     if (id === "home") {
       navigate("home");
       return;
@@ -346,12 +546,20 @@ export default function App() {
       triggerSectionGreeting("health");
       return;
     }
+    if (id === "account") {
+      navigate("account");
+      return;
+    }
+    if (id === "live") {
+      navigate("live");
+      triggerSectionGreeting("live");
+      return;
+    }
     if (id === "chat") {
       navigate("chat", "general");
       triggerSectionGreeting("general");
       return;
     }
-    // All other sections (love, study, career, fashion, business, search)
     navigate("chat", id);
     triggerSectionGreeting(id);
   };
@@ -366,6 +574,11 @@ export default function App() {
         toast.info(`NavvGenX: ${window.location.href}`);
       });
   };
+
+  const isNavActive = (id: string) =>
+    currentPage === id ||
+    (id === "chat" && currentPage === "chat" && activeCategory === "general") ||
+    (currentPage === "chat" && activeCategory === id);
 
   const currentYear = new Date().getFullYear();
   const hostname = encodeURIComponent(window.location.hostname);
@@ -398,7 +611,7 @@ export default function App() {
           <Logo size="md" />
         </button>
 
-        {/* Center nav - desktop */}
+        {/* Center nav - desktop only */}
         <nav className="hidden md:flex flex-1 items-center justify-center gap-1 overflow-x-auto">
           {navItems.map((item) => (
             <button
@@ -406,11 +619,7 @@ export default function App() {
               key={item.id}
               onClick={() => handleNavClick(item.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-jakarta font-medium transition-all duration-200 whitespace-nowrap ${
-                currentPage === item.id ||
-                (item.id === "chat" &&
-                  currentPage === "chat" &&
-                  activeCategory === "general") ||
-                (currentPage === "chat" && activeCategory === item.id)
+                isNavActive(item.id)
                   ? "bg-[oklch(0.10_0.020_265)] text-white shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
@@ -423,7 +632,7 @@ export default function App() {
         </nav>
 
         {/* Right actions */}
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-1 sm:gap-2 ml-auto">
           <button
             type="button"
             onClick={() => navigate("reminders")}
@@ -441,6 +650,22 @@ export default function App() {
           >
             <Share2 className="w-4 h-4" />
           </button>
+          {/* PWA Install button — only shown when installable */}
+          {canInstall && (
+            <button
+              type="button"
+              onClick={promptInstall}
+              className="p-2 rounded-full transition-all hover:opacity-80 active:scale-95"
+              title="Install NavvGenX AI"
+              style={{
+                color: "oklch(0.78 0.15 75)",
+                background: "oklch(0.78 0.15 75 / 0.10)",
+              }}
+              data-ocid="header.button"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setDarkMode(!darkMode)}
@@ -466,29 +691,19 @@ export default function App() {
         </div>
       </header>
 
-      {/* Mobile nav */}
-      <div className="md:hidden flex items-center gap-1 px-3 py-2 overflow-x-auto border-b border-border bg-background/80 backdrop-blur-sm">
-        {navItems.map((item) => (
-          <button
-            type="button"
-            key={item.id}
-            onClick={() => handleNavClick(item.id)}
-            className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-jakarta font-medium transition-all ${
-              currentPage === item.id ||
-              (currentPage === "chat" && activeCategory === item.id)
-                ? "bg-[oklch(0.10_0.020_265)] text-white"
-                : "text-muted-foreground bg-muted hover:bg-muted/80"
-            }`}
-            data-ocid="nav.tab"
-          >
-            <item.Icon className="w-3 h-3" />
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </div>
+      {/* PWA Install Banner — below header, above main content */}
+      <AnimatePresence>
+        {canInstall && (
+          <InstallBanner
+            key="install-banner"
+            onInstall={promptInstall}
+            onDismiss={dismissInstall}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Page content */}
-      <main className="flex-1">
+      <main className="flex-1 mobile-main-pb">
         <motion.div
           key={currentPage + activeCategory}
           initial={{ opacity: 0, y: 6 }}
@@ -502,11 +717,23 @@ export default function App() {
           )}
           {currentPage === "health" && <HealthPage />}
           {currentPage === "reminders" && <RemindersPage />}
+          {currentPage === "account" && (
+            <AccountPage
+              onSaved={() => {
+                try {
+                  const acc = localStorage.getItem("navvgenx-account");
+                  if (acc) setProfilePhotoUrl(JSON.parse(acc).photoUrl || "");
+                } catch {}
+                navigate("home");
+              }}
+            />
+          )}
+          {currentPage === "live" && <LivePage />}
         </motion.div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-5 px-6 text-center bg-background/80">
+      {/* Footer - hidden on mobile (bottom nav takes priority) */}
+      <footer className="hidden md:block border-t border-border py-5 px-6 text-center bg-background/80">
         <p className="font-jakarta text-sm text-muted-foreground">
           Powered by{" "}
           <a
@@ -530,9 +757,149 @@ export default function App() {
           </a>
         </p>
       </footer>
+
+      {/* ── Mobile Bottom Navigation (visible only on < md) ── */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-stretch border-t border-border"
+        style={{
+          background: "var(--background, #fff)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}
+        aria-label="Mobile navigation"
+      >
+        {/* Primary nav items */}
+        {bottomNavPrimary.map((id) => {
+          const item = navItems.find((n) => n.id === id)!;
+          const active = isNavActive(id);
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => handleNavClick(id)}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[3.5rem] transition-colors"
+              style={{
+                color: active
+                  ? "oklch(0.78 0.15 75)"
+                  : "var(--muted-foreground)",
+              }}
+              data-ocid="nav.tab"
+            >
+              <item.Icon className="w-5 h-5" />
+              <span className="text-[10px] font-medium font-jakarta">
+                {item.label}
+              </span>
+              {active && (
+                <span
+                  className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+2px)] w-4 h-0.5 rounded-full"
+                  style={{ background: "oklch(0.78 0.15 75)" }}
+                />
+              )}
+            </button>
+          );
+        })}
+
+        {/* More button */}
+        <button
+          type="button"
+          onClick={() => setShowMoreMenu((v) => !v)}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[3.5rem] transition-colors"
+          style={{
+            color: showMoreMenu
+              ? "oklch(0.78 0.15 75)"
+              : "var(--muted-foreground)",
+          }}
+          data-ocid="nav.toggle"
+        >
+          <MoreHorizontal className="w-5 h-5" />
+          <span className="text-[10px] font-medium font-jakarta">More</span>
+        </button>
+      </nav>
+
+      {/* ── More Menu Drawer (mobile) ── */}
+      <AnimatePresence>
+        {showMoreMenu && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="md:hidden fixed inset-0 z-30 bg-black/40"
+              onClick={() => setShowMoreMenu(false)}
+            />
+            {/* Sheet */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 380, damping: 32 }}
+              className="md:hidden fixed bottom-0 left-0 right-0 z-40 rounded-t-3xl border-t border-border"
+              style={{
+                background: "var(--background)",
+                paddingBottom:
+                  "calc(4.5rem + env(safe-area-inset-bottom, 0px))",
+              }}
+            >
+              <div className="flex items-center justify-between px-5 pt-5 pb-4">
+                <p
+                  className="font-semibold text-sm"
+                  style={{
+                    color: "oklch(0.78 0.15 75)",
+                    fontFamily: "'Space Grotesk', sans-serif",
+                  }}
+                >
+                  More Sections
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowMoreMenu(false)}
+                  className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  data-ocid="nav.close_button"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-3 px-5 pb-4">
+                {bottomNavMore.map((id) => {
+                  const item = navItems.find((n) => n.id === id)!;
+                  const active = isNavActive(id);
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => handleNavClick(id)}
+                      className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl transition-all min-h-[5rem]"
+                      style={{
+                        background: active
+                          ? "oklch(0.10 0.020 265)"
+                          : "var(--muted)",
+                        color: active
+                          ? "oklch(0.78 0.15 75)"
+                          : SECTION_COLORS[id as keyof typeof SECTION_COLORS] ||
+                            "oklch(0.75 0.02 265)",
+                      }}
+                      data-ocid="nav.tab"
+                    >
+                      <item.Icon className="w-5 h-5" />
+                      <span className="text-xs font-medium font-jakarta">
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       <NavvAssistant
         darkMode={darkMode}
         userAge={profile ? Number(profile.age) : 99}
+        onNavigate={navigate}
+        profilePhotoUrl={profilePhotoUrl}
       />
     </div>
   );

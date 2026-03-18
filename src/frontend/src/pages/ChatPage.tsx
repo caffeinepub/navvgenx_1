@@ -197,6 +197,22 @@ export function ChatPage({
     setActiveCategory(initialCategory);
   }, [initialCategory]);
 
+  // Auto-submit initial query from home page search
+  // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
+  useEffect(() => {
+    const q = sessionStorage.getItem("navvgenx-initial-query");
+    if (q) {
+      sessionStorage.removeItem("navvgenx-initial-query");
+      setTimeout(() => sendMessage(q, initialCategory || "general"), 800);
+    }
+    // Camera search
+    const cameraSearch = sessionStorage.getItem("navvgenx-camera-search");
+    if (cameraSearch) {
+      sessionStorage.removeItem("navvgenx-camera-search");
+      setTimeout(() => setShowCamera(true), 500);
+    }
+  }, []);
+
   // Show expert greeting as chat message when section changes
   useEffect(() => {
     const isFirstVisit = prevCategoryRef.current === null;
@@ -431,7 +447,7 @@ export function ChatPage({
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] relative">
+    <div className="flex h-[calc(100dvh-8rem)] md:h-[calc(100vh-4rem)] relative">
       {/* Camera modal */}
       <AnimatePresence>
         {showCamera && (
@@ -650,7 +666,7 @@ export function ChatPage({
                     className={`px-4 py-3 text-sm font-space leading-relaxed relative group ${
                       msg.role === "user"
                         ? "chat-bubble-user"
-                        : "chat-bubble-ai glass-card border border-border"
+                        : "chat-bubble-ai glass-card border border-border text-slate-900 dark:text-gray-50"
                     }`}
                   >
                     {msg.content}
@@ -750,6 +766,46 @@ export function ChatPage({
                         </span>
                         Ask ChatGPT
                       </a>
+                    </div>
+                  )}
+
+                  {/* Multi-engine search links */}
+                  {msg.role === "ai" && msg.content.length > 10 && (
+                    <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                      {[
+                        {
+                          label: "Bing",
+                          url: `https://www.bing.com/search?q=${encodeURIComponent(msg.content.slice(0, 100))}`,
+                        },
+                        {
+                          label: "DuckDuckGo",
+                          url: `https://duckduckgo.com/?q=${encodeURIComponent(msg.content.slice(0, 100))}`,
+                        },
+                        {
+                          label: "Yahoo",
+                          url: `https://search.yahoo.com/search?p=${encodeURIComponent(msg.content.slice(0, 100))}`,
+                        },
+                        {
+                          label: "Yandex",
+                          url: `https://yandex.com/search/?text=${encodeURIComponent(msg.content.slice(0, 100))}`,
+                        },
+                      ].map((engine) => (
+                        <a
+                          key={engine.label}
+                          href={engine.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-space font-medium transition-all hover:scale-105"
+                          style={{
+                            border: "1px solid oklch(0.78 0.15 75 / 0.25)",
+                            color: "oklch(0.78 0.15 75)",
+                            background: "oklch(0.78 0.15 75 / 0.07)",
+                          }}
+                          data-ocid="chat.link"
+                        >
+                          {engine.label}
+                        </a>
+                      ))}
                     </div>
                   )}
 
@@ -908,7 +964,7 @@ export function ChatPage({
         </div>
 
         {/* Input area */}
-        <div className="p-3 border-t border-border relative">
+        <div className="p-3 pb-3 border-t border-border relative">
           {/* Suggestions dropdown */}
           <AnimatePresence>
             {showSuggestions && suggestions.length > 0 && (
