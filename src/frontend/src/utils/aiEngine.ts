@@ -4,6 +4,36 @@ import {
   isCountryQuestion,
 } from "./googleAnswerEngine";
 
+// ─────────────────── History Helpers ───────────────────
+export function saveChatHistory(
+  query: string,
+  answer: string,
+  section: string,
+): void {
+  try {
+    const key = "navvgenx-chat-history";
+    const existing = JSON.parse(localStorage.getItem(key) ?? "[]");
+    existing.push({
+      query,
+      answer: answer.slice(0, 500),
+      timestamp: Date.now(),
+      section,
+    });
+    if (existing.length > 50) existing.splice(0, existing.length - 50);
+    localStorage.setItem(key, JSON.stringify(existing));
+  } catch {}
+}
+
+export function saveSearchHistory(query: string): void {
+  try {
+    const key = "navvgenx-search-history";
+    const existing = JSON.parse(localStorage.getItem(key) ?? "[]");
+    existing.push({ query, timestamp: Date.now() });
+    if (existing.length > 100) existing.splice(0, existing.length - 100);
+    localStorage.setItem(key, JSON.stringify(existing));
+  } catch {}
+}
+
 export interface SearchResult {
   title: string;
   snippet: string;
@@ -1584,45 +1614,61 @@ export function detectContentCreation(query: string): string | null {
   const topicCap = topic.charAt(0).toUpperCase() + topic.slice(1);
 
   if (type === "Presentation") {
-    return [
-      `<div class="presentation-slides">`,
-      `<div class="slide slide-title" style="background:oklch(0.10 0.020 265);border:1.5px solid oklch(0.78 0.15 75 / 0.4);border-radius:16px;padding:24px;margin-bottom:12px;">`,
-      `<p style="color:oklch(0.78 0.15 75);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">SLIDE 1 — TITLE</p>`,
-      `<h2 style="color:oklch(0.93 0.006 80);font-size:20px;font-weight:800;margin-bottom:6px;">${topicCap}</h2>`,
-      `<p style="color:oklch(0.55 0.02 265);font-size:13px;">A comprehensive presentation</p>`,
-      "</div>",
-      `<div class="slide" style="background:oklch(0.11 0.018 265);border:1px solid oklch(0.78 0.15 75 / 0.2);border-radius:14px;padding:20px;margin-bottom:10px;">`,
-      `<p style="color:oklch(0.78 0.15 75);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">SLIDE 2 — INTRODUCTION</p>`,
-      `<p style="color:oklch(0.80 0.02 265);font-size:14px;line-height:1.6;">${topicCap} is a significant and fascinating subject. Understanding it deeply helps you make informed decisions and communicate effectively with others.</p>`,
-      "</div>",
-      `<div class="slide" style="background:oklch(0.11 0.018 265);border:1px solid oklch(0.78 0.15 75 / 0.2);border-radius:14px;padding:20px;margin-bottom:10px;">`,
-      `<p style="color:oklch(0.78 0.15 75);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">SLIDE 3 — KEY FACTS</p>`,
-      `<ul style="color:oklch(0.80 0.02 265);font-size:13px;line-height:2;padding-left:16px;">`,
-      `<li>${topicCap} has been an area of growing importance in recent years</li>`,
-      "<li>Multiple factors influence how we understand and apply this concept</li>",
-      "<li>Experts across fields have studied its impact on society and individuals</li>",
-      "<li>Practical applications range from everyday life to professional settings</li>",
-      "</ul>",
-      "</div>",
-      `<div class="slide" style="background:oklch(0.11 0.018 265);border:1px solid oklch(0.78 0.15 75 / 0.2);border-radius:14px;padding:20px;margin-bottom:10px;">`,
-      `<p style="color:oklch(0.78 0.15 75);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">SLIDE 4 — ANALYSIS</p>`,
-      `<p style="color:oklch(0.80 0.02 265);font-size:14px;line-height:1.6;">A thorough analysis of ${topicCap} reveals its layered complexity. The interplay between theory and practice creates a rich landscape for exploration. Understanding both the broader context and specific details is essential for mastery.</p>`,
-      "</div>",
-      `<div class="slide" style="background:oklch(0.11 0.018 265);border:1px solid oklch(0.78 0.15 75 / 0.2);border-radius:14px;padding:20px;margin-bottom:10px;">`,
-      `<p style="color:oklch(0.78 0.15 75);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">SLIDE 5 — CHALLENGES</p>`,
-      `<ul style="color:oklch(0.80 0.02 265);font-size:13px;line-height:2;padding-left:16px;">`,
-      "<li>Common misconceptions that need to be addressed</li>",
-      `<li>Practical obstacles in applying knowledge of ${topicCap}</li>`,
-      "<li>How to overcome these challenges with targeted strategies</li>",
-      "</ul>",
-      "</div>",
-      `<div class="slide slide-conclusion" style="background:oklch(0.12 0.025 265);border:1.5px solid oklch(0.78 0.15 75 / 0.5);border-radius:16px;padding:20px;">`,
-      `<p style="color:oklch(0.78 0.15 75);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">SLIDE 6 — CONCLUSION</p>`,
-      `<p style="color:oklch(0.93 0.006 80);font-size:14px;line-height:1.6;font-weight:600;">${topicCap} is a multifaceted subject. By understanding its core concepts, analyzing its components, and addressing its challenges, you can develop a comprehensive and actionable understanding.</p>`,
-      `<p style="margin-top:12px;color:oklch(0.55 0.02 265);font-size:12px;">💡 Ask me to expand any slide with more detail!</p>`,
-      "</div>",
-      "</div>",
-    ].join("\n");
+    return `<div class="navv-presentation">
+  <div class="navv-slide navv-slide-title">
+    <h2>📊 ${topicCap}</h2>
+    <p>Complete Presentation — Prepared by NavvGenX AI</p>
+  </div>
+  <div class="navv-slide">
+    <h3>Slide 1: Introduction</h3>
+    <ul>
+      <li>${topicCap} is a key topic with wide-ranging implications</li>
+      <li>Understanding it helps in both academic and professional settings</li>
+      <li>This presentation covers all major aspects comprehensively</li>
+    </ul>
+  </div>
+  <div class="navv-slide">
+    <h3>Slide 2: Background & History</h3>
+    <ul>
+      <li>The origins and history of ${topicCap} date back significantly</li>
+      <li>Key milestones have shaped how we understand this today</li>
+      <li>Historical context helps in appreciating modern developments</li>
+    </ul>
+  </div>
+  <div class="navv-slide">
+    <h3>Slide 3: Key Facts & Concepts</h3>
+    <ul>
+      <li>The core principles of ${topicCap} are well-established</li>
+      <li>Multiple dimensions and perspectives exist on this topic</li>
+      <li>Recent research has revealed important new insights</li>
+      <li>Expert consensus supports several key conclusions</li>
+    </ul>
+  </div>
+  <div class="navv-slide">
+    <h3>Slide 4: Analysis & Applications</h3>
+    <ul>
+      <li>Real-world applications of ${topicCap} are extensive</li>
+      <li>Both short-term and long-term impacts are significant</li>
+      <li>Practical examples help illustrate the theoretical concepts</li>
+    </ul>
+  </div>
+  <div class="navv-slide">
+    <h3>Slide 5: Challenges & Solutions</h3>
+    <ul>
+      <li>Several challenges exist in understanding ${topicCap}</li>
+      <li>Innovative solutions are being developed to address them</li>
+      <li>Future prospects look promising with continued research</li>
+    </ul>
+  </div>
+  <div class="navv-slide">
+    <h3>Slide 6: Conclusion</h3>
+    <ul>
+      <li>${topicCap} is a multifaceted subject deserving careful study</li>
+      <li>Key takeaways include understanding its background, facts, and applications</li>
+      <li>Continued engagement with this topic will yield further insights</li>
+    </ul>
+  </div>
+</div>`;
   }
 
   return `<h2>${type}: ${topicCap}</h2>

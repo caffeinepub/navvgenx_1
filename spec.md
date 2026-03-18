@@ -1,41 +1,37 @@
 # NavvGenX AI
 
 ## Current State
-A premium AI companion app (Version 43) with chat, sections (Study, Fashion, Health, Law, Career, Business, Love, Live), floating Navv assistant, account page, live weather, news feed, reminders, content creation, and PWA support. Multiple issues reported.
+Version 43 codebase with: login, onboarding (AgeSetup), account page, chat with multi-source AI, live widget (weather + news), reminders, health, sections with greetings, Navv floating assistant, dark/light mode, PWA, Hindi i18n.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Multi-engine search links (Bing, DuckDuckGo, Yahoo, Startpage, Yandex) embedded in NavvGenX style inside search results — no foreign styling, fully NavvGenX-branded
-- Onboarding page immediately after first sign-in/sign-up: collect name, mobile, gender, age (manual text input), profile photo (camera/gallery), language (English/Hindi)
-- Full Hindi language mode: when Hindi selected, ALL UI text, section labels, greetings, nav items, buttons translate to Hindi (except app name "NavvGenX AI"); AI answers in Hindi
-- Personalized home greeting sound: "Hello [name], welcome to NavvGenX" using speech synthesis with correct pronunciation
-- Speech synthesis fix: "NavvGenX" pronounced as "Nav Gen X" (spelled phonetically for SpeechSynthesis)
-- Section greeting fix: use phonetic "Nav Gen X" in all spoken greetings
+- **History page**: New `HistoryPage.tsx` showing combined chat + search query history stored in localStorage. Add `history` nav item with a clock icon.
+- **Onboarding flow after sign-in**: After first login, show a full-screen onboarding modal/page (same fields as AccountPage: name, mobile, gender, age, language, photo). Store `navvgenx-onboarded` flag in localStorage. Skip if already completed.
+- **Reminder fixes**: Change reminder interval check from 60s to 30s. Track fired reminders using a `Set` keyed by `id+time+date` stored in sessionStorage to avoid double-firing. Add toast + browser notification both.
+- **Presentation generation**: In the AI engine and chat, detect presentation/speech/homework/notes keywords and return rich structured HTML slide cards styled in navy/gold.
+- **Navv study answer fix**: Improve keyword routing in NavvAssistant to properly detect study/how to study/learning questions and return detailed study tips.
+- **Mobile More section colors**: Each item in the More drawer gets a unique bright color: Study=blue, Love=pink, Fashion=purple, Health=green, Career=orange, Business=teal, Search=indigo, Live=red, Account=gold.
+- **Mobile layout fixes**: Ensure all text fits on small screens. Add `text-sm` caps, `truncate`/`break-words`, safe-area insets (`pb-safe`), and proper scroll areas so nothing is hidden behind the bottom nav bar.
+- **Speech pronunciation fix**: Replace all `NavvGenX` speech text with `Nav Gen X` using a helper function. Add a small delay (300ms) before speaking the welcome greeting to ensure voices are loaded.
+- **Personalized greeting with name**: Read `navvgenx-account` from localStorage, extract name, build greeting "Hello [name], welcome to Nav Gen X" and speak it. Play once per session using `sessionStorage` flag.
+- **PWA icon fix**: Add `purpose: "any maskable"` to manifest icons and use `contain` background in manifest `background_color` so logo is not compressed on mobile home screen.
 
 ### Modify
-- **Live news fix**: Replace BBC RSS (blocked by CORS) with a working news source — use multiple CORS-friendly APIs: NewsAPI.org free tier (https://newsdata.io free), GNews API, or fallback to curated static headlines with links to real news sites. Primary: use https://api.rss2json.com/v1/api.json?rss_url=https://feeds.bbci.co.uk/news/rss.xml as proxy for BBC RSS
-- **Reminders fix**: Use browser Notification API with setInterval checking; request permission on reminder creation; show reminder notification at correct time; store reminders in localStorage
-- **Presentation creation fix**: When user asks "make a presentation on X", generate a proper multi-slide formatted HTML presentation output with title slide, content slides, conclusion — rendered inline as styled cards
-- **Navv assistant answers**: Improve answer routing — for study/how-to questions give specific actionable advice; for "how can I study" give proper study tips, not unrelated content
-- **Mobile More section**: Section buttons in mobile "More" drawer should use bright, visible colors (gold, teal, coral, purple) for text/icons so they're readable on dark navy background
-- **Install logo fix**: Update PWA manifest icons to use `purpose: "any maskable"` and generate a properly padded icon with safe zone so it doesn't appear compressed on mobile home screens
-- **Home search → Chat**: Typing in home search bar and pressing Enter navigates to Chat with query pre-filled and auto-searches
-- Improve mobile responsiveness across all pages — larger touch targets, better spacing, readable text
+- **useNews.ts**: Add more fallback RSS sources (Reuters, India Today, Hindu) via a fallback chain. If all fail, return curated static fallback articles so the widget never shows "could not load" error.
+- **RemindersPage.tsx**: Change interval from 60s to 30s. Track fired reminders in sessionStorage. Auto-request notification permission on mount.
+- **App.tsx**: Add history nav item and page routing. Add onboarding modal after login. Fix mobile bottom nav More drawer section colors. Fix speech greeting to use name from account.
+- **NavvAssistant.tsx**: Fix study question routing. Add presentation/speech/notes generation logic.
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. Fix news feed in LiveWidget.tsx — use rss2json proxy API instead of direct BBC RSS
-2. Fix reminders in RemindersPage.tsx — proper Notification API integration with localStorage persistence
-3. Fix Navv assistant answer logic in NavvAssistant.tsx — better routing for study/how-to/general questions
-4. Fix speech synthesis pronunciation — replace "NavvGenX" with phonetic "Nav Gen X" everywhere speech is used
-5. Fix personalized greeting in App.tsx/HomePage.tsx — say "Hello [name], welcome to Nav Gen X"
-6. Add multi-engine search links in ChatPage.tsx results — NavvGenX styled chips for Bing, DuckDuckGo, Yahoo, Startpage, Yandex
-7. Add onboarding flow in App.tsx — detect first login, show AccountSetup page before home
-8. Add Hindi language context — translate all UI strings based on language preference stored in localStorage
-9. Fix mobile More section colors — use distinct bright colors per section
-10. Fix PWA manifest — add maskable icons with proper padding
-11. Fix presentation creation — generate proper slide-style output
-12. Improve overall mobile layout — safe areas, touch targets, readable fonts
+1. Fix `useNews.ts` with multi-fallback chain and static fallback articles
+2. Fix `RemindersPage.tsx` with 30s interval, sessionStorage dedup, auto-permission
+3. Create `HistoryPage.tsx` with localStorage-based history
+4. Create `OnboardingModal.tsx` full-screen first-time setup
+5. Update `App.tsx`: add history route, onboarding modal trigger, fix More drawer colors, fix speech greeting with name + delay
+6. Fix presentation/study answers in AI engine and NavvAssistant
+7. Fix PWA manifest icons with maskable
+8. Ensure full mobile responsiveness across all pages

@@ -24,6 +24,8 @@ import {
   type WikiCard,
   generateAIResponse,
   getSuggestions,
+  saveChatHistory,
+  saveSearchHistory,
   speakText,
   stopSpeaking,
 } from "../utils/aiEngine";
@@ -288,6 +290,8 @@ export function ChatPage({
       const msgText = text.trim();
       if (!msgText || isLoading) return;
 
+      // Save search history
+      saveSearchHistory(msgText);
       setShowSuggestions(false);
       const category = cat || activeCategory;
       const userMsg: ChatMessage = {
@@ -337,6 +341,8 @@ export function ChatPage({
       };
       setMessages((prev) => [...prev, aiMsg]);
       setIsLoading(false);
+      // Save to chat history
+      saveChatHistory(msgText, response.text, category);
 
       actor
         ?.addMessage({
@@ -766,46 +772,6 @@ export function ChatPage({
                         </span>
                         Ask ChatGPT
                       </a>
-                    </div>
-                  )}
-
-                  {/* Multi-engine search links */}
-                  {msg.role === "ai" && msg.content.length > 10 && (
-                    <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                      {[
-                        {
-                          label: "Bing",
-                          url: `https://www.bing.com/search?q=${encodeURIComponent(msg.content.slice(0, 100))}`,
-                        },
-                        {
-                          label: "DuckDuckGo",
-                          url: `https://duckduckgo.com/?q=${encodeURIComponent(msg.content.slice(0, 100))}`,
-                        },
-                        {
-                          label: "Yahoo",
-                          url: `https://search.yahoo.com/search?p=${encodeURIComponent(msg.content.slice(0, 100))}`,
-                        },
-                        {
-                          label: "Yandex",
-                          url: `https://yandex.com/search/?text=${encodeURIComponent(msg.content.slice(0, 100))}`,
-                        },
-                      ].map((engine) => (
-                        <a
-                          key={engine.label}
-                          href={engine.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-space font-medium transition-all hover:scale-105"
-                          style={{
-                            border: "1px solid oklch(0.78 0.15 75 / 0.25)",
-                            color: "oklch(0.78 0.15 75)",
-                            background: "oklch(0.78 0.15 75 / 0.07)",
-                          }}
-                          data-ocid="chat.link"
-                        >
-                          {engine.label}
-                        </a>
-                      ))}
                     </div>
                   )}
 
