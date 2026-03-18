@@ -1,7 +1,7 @@
 import { Switch } from "@/components/ui/switch";
 import { Bell, Loader2, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Reminder } from "../backend.d";
 import { useActor } from "../hooks/useActor";
@@ -13,57 +13,39 @@ export function RemindersPage() {
   const [time, setTime] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const firedRef = useRef<Set<string>>(new Set());
-
-  // Auto-request notification permission on mount
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  }, []);
 
   useEffect(() => {
     if (!actor) return;
     loadReminders();
+    // Request notification permission
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
   }, [actor]);
 
   useEffect(() => {
     const checkReminders = () => {
       const now = new Date();
       const currentTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
-      const todayStr = now.toDateString();
-
       for (const reminder of reminders) {
-        if (!reminder.active) continue;
-
-        // Match exact time or within the same minute window
-        const [rHour, rMin] = reminder.time.split(":").map(Number);
-        const [cHour, cMin] = currentTime.split(":").map(Number);
-        const matches =
-          (rHour === cHour && rMin === cMin) || reminder.time === currentTime;
-
-        if (!matches) continue;
-
-        const fireKey = `${String(reminder.id)}-${reminder.time}-${todayStr}`;
-        if (firedRef.current.has(fireKey)) continue;
-        firedRef.current.add(fireKey);
-
-        toast.success(`🔔 Reminder: ${reminder.title}`, {
-          description: `It's ${reminder.time} — time for: ${reminder.title}`,
-          duration: 10000,
-        });
-
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification(`🔔 ${reminder.title}`, {
-            body: `It's ${reminder.time} — time for your reminder!`,
-            icon: "/assets/generated/navvgenx-icon-192.dim_192x192.png",
+        if (reminder.active && reminder.time === currentTime) {
+          toast(`🔔 Reminder: ${reminder.title}`, {
+            description: `It's ${reminder.time} - time for your reminder!`,
+            duration: 8000,
           });
+          if (
+            "Notification" in window &&
+            Notification.permission === "granted"
+          ) {
+            new Notification(`🔔 Reminder: ${reminder.title}`, {
+              body: `It's ${reminder.time} — time for: ${reminder.title}`,
+              icon: "/icon-192x192.png",
+            });
+          }
         }
       }
     };
-
-    const interval = setInterval(checkReminders, 30000);
-    checkReminders(); // check immediately too
+    const interval = setInterval(checkReminders, 60000);
     return () => clearInterval(interval);
   }, [reminders]);
 

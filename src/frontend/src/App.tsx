@@ -4,7 +4,6 @@ import {
   Bell,
   BookOpen,
   Briefcase,
-  Clock,
   Download,
   Heart,
   Home,
@@ -27,27 +26,18 @@ import { toast } from "sonner";
 import { AgeSetup } from "./components/AgeSetup";
 import { Logo } from "./components/Logo";
 import { NavvAssistant } from "./components/NavvAssistant";
-import { OnboardingModal } from "./components/OnboardingModal";
 import { useActor } from "./hooks/useActor";
 import { usePWAInstall } from "./hooks/usePWAInstall";
 import { useServiceWorkerUpdate } from "./hooks/useServiceWorkerUpdate";
 import { AccountPage } from "./pages/AccountPage";
 import { ChatPage } from "./pages/ChatPage";
 import { HealthPage } from "./pages/HealthPage";
-import { HistoryPage } from "./pages/HistoryPage";
 import { HomePage } from "./pages/HomePage";
 import { LivePage } from "./pages/LivePage";
 import { LoginPage } from "./pages/LoginPage";
 import { RemindersPage } from "./pages/RemindersPage";
 
-type Page =
-  | "home"
-  | "chat"
-  | "health"
-  | "reminders"
-  | "account"
-  | "live"
-  | "history";
+type Page = "home" | "chat" | "health" | "reminders" | "account" | "live";
 
 interface Profile {
   age: bigint;
@@ -66,7 +56,6 @@ const navItems = [
   { id: "search", Icon: Search, label: "Search" },
   { id: "live", Icon: Radio, label: "Live" },
   { id: "account", Icon: UserCircle, label: "Account" },
-  { id: "history", Icon: Clock, label: "History" },
 ] as const;
 
 // Primary nav items shown in mobile bottom bar
@@ -81,7 +70,6 @@ const bottomNavMore = [
   "search",
   "live",
   "account",
-  "history",
 ] as const;
 
 const SECTION_EXPERTS: Record<string, string> = {
@@ -109,11 +97,7 @@ function speakText(text: string) {
   try {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-    // Fix NavvGenX pronunciation
-    const spokenText = text
-      .replace(/NavvGenX AI/gi, "Nav Gen X A I")
-      .replace(/NavvGenX/gi, "Nav Gen X");
-    const utterance = new SpeechSynthesisUtterance(spokenText);
+    const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.92;
     utterance.pitch = 1.1;
     utterance.volume = 1;
@@ -330,10 +314,6 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
     () => localStorage.getItem("navvgenx-user") !== null,
   );
-  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
-    const loggedIn = localStorage.getItem("navvgenx-user") !== null;
-    return loggedIn && !localStorage.getItem("navvgenx-onboarded");
-  });
   const [currentPage, setCurrentPage] = useState<Page>("home");
   const [activeCategory, setActiveCategory] = useState("general");
   const [darkMode, setDarkMode] = useState(false);
@@ -390,12 +370,12 @@ export default function App() {
         const acc = localStorage.getItem("navvgenx-account");
         const name = acc ? JSON.parse(acc).name : "";
         speakText(
-          name ? `Hello ${name}, welcome to Nav Gen X` : "Welcome to Nav Gen X",
+          name ? `Hey ${name}, welcome to NavvGenX` : "Welcome to NavvGenX",
         );
       } catch {
-        speakText("Welcome to Nav Gen X");
+        speakText("Welcome to NavvGenX");
       }
-    }, 800);
+    }, 600);
     return () => clearTimeout(timer);
   }, [isLoggedIn]);
 
@@ -445,7 +425,7 @@ export default function App() {
         <LoginPage
           onLogin={() => {
             sessionStorage.setItem("navvgenx-welcomed", "1");
-            setTimeout(() => speakText("Welcome to Nav Gen X"), 800);
+            setTimeout(() => speakText("Welcome to NavvGenX"), 600);
             setIsLoggedIn(true);
           }}
         />
@@ -491,10 +471,6 @@ export default function App() {
       setCurrentPage("live");
       return;
     }
-    if (page === "history") {
-      setCurrentPage("history");
-      return;
-    }
     if (
       page === "chat" ||
       [
@@ -528,10 +504,6 @@ export default function App() {
     }
     if (id === "account") {
       navigate("account");
-      return;
-    }
-    if (id === "history") {
-      navigate("history");
       return;
     }
     if (id === "live") {
@@ -570,31 +542,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300 flex flex-col">
       <Toaster richColors position="top-right" />
-
-      {/* Onboarding Modal */}
-      {showOnboarding && (
-        <OnboardingModal
-          onDone={() => {
-            setShowOnboarding(false);
-            if (!sessionStorage.getItem("navvgenx-welcomed")) {
-              sessionStorage.setItem("navvgenx-welcomed", "1");
-              setTimeout(() => {
-                try {
-                  const acc = localStorage.getItem("navvgenx-account");
-                  const name = acc ? JSON.parse(acc).name : "";
-                  speakText(
-                    name
-                      ? `Hello ${name}, welcome to Nav Gen X`
-                      : "Welcome to Nav Gen X",
-                  );
-                } catch {
-                  speakText("Welcome to Nav Gen X");
-                }
-              }, 800);
-            }
-          }}
-        />
-      )}
 
       {/* Section Greeting Banner */}
       <AnimatePresence>
@@ -738,7 +685,6 @@ export default function App() {
             />
           )}
           {currentPage === "live" && <LivePage />}
-          {currentPage === "history" && <HistoryPage />}
         </motion.div>
       </main>
 
@@ -884,39 +830,15 @@ export default function App() {
                       style={{
                         background: active
                           ? "oklch(0.10 0.020 265)"
-                          : ((
-                              {
-                                love: "oklch(0.14 0.015 0 / 0.6)",
-                                study: "oklch(0.13 0.015 240 / 0.6)",
-                                career: "oklch(0.14 0.015 60 / 0.6)",
-                                fashion: "oklch(0.13 0.015 300 / 0.6)",
-                                business: "oklch(0.13 0.015 180 / 0.6)",
-                                search: "oklch(0.13 0.015 270 / 0.6)",
-                                live: "oklch(0.14 0.015 20 / 0.6)",
-                                account: "oklch(0.14 0.015 75 / 0.6)",
-                                history: "oklch(0.13 0.015 145 / 0.6)",
-                              } as Record<string, string>
-                            )[id] ?? "var(--muted)"),
+                          : "var(--muted)",
                         color: active
                           ? "oklch(0.78 0.15 75)"
-                          : ((
-                              {
-                                love: "#f472b6",
-                                study: "#60a5fa",
-                                career: "#fb923c",
-                                fashion: "#c084fc",
-                                business: "#2dd4bf",
-                                search: "#818cf8",
-                                live: "#f87171",
-                                account: "#fbbf24",
-                                history: "#4ade80",
-                              } as Record<string, string>
-                            )[id] ?? "var(--muted-foreground)"),
+                          : "var(--muted-foreground)",
                       }}
                       data-ocid="nav.tab"
                     >
                       <item.Icon className="w-5 h-5" />
-                      <span className="text-xs font-medium font-jakarta truncate w-full text-center">
+                      <span className="text-xs font-medium font-jakarta">
                         {item.label}
                       </span>
                     </button>

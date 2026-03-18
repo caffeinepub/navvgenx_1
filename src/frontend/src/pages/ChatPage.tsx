@@ -24,8 +24,6 @@ import {
   type WikiCard,
   generateAIResponse,
   getSuggestions,
-  saveChatHistory,
-  saveSearchHistory,
   speakText,
   stopSpeaking,
 } from "../utils/aiEngine";
@@ -290,8 +288,6 @@ export function ChatPage({
       const msgText = text.trim();
       if (!msgText || isLoading) return;
 
-      // Save search history
-      saveSearchHistory(msgText);
       setShowSuggestions(false);
       const category = cat || activeCategory;
       const userMsg: ChatMessage = {
@@ -341,8 +337,6 @@ export function ChatPage({
       };
       setMessages((prev) => [...prev, aiMsg]);
       setIsLoading(false);
-      // Save to chat history
-      saveChatHistory(msgText, response.text, category);
 
       actor
         ?.addMessage({
