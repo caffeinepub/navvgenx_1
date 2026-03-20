@@ -4,6 +4,7 @@ import {
   Bell,
   BookOpen,
   Briefcase,
+  Clock,
   Download,
   Heart,
   Home,
@@ -32,12 +33,20 @@ import { useServiceWorkerUpdate } from "./hooks/useServiceWorkerUpdate";
 import { AccountPage } from "./pages/AccountPage";
 import { ChatPage } from "./pages/ChatPage";
 import { HealthPage } from "./pages/HealthPage";
+import { HistoryPage } from "./pages/HistoryPage";
 import { HomePage } from "./pages/HomePage";
 import { LivePage } from "./pages/LivePage";
 import { LoginPage } from "./pages/LoginPage";
 import { RemindersPage } from "./pages/RemindersPage";
 
-type Page = "home" | "chat" | "health" | "reminders" | "account" | "live";
+type Page =
+  | "home"
+  | "chat"
+  | "health"
+  | "reminders"
+  | "account"
+  | "live"
+  | "history";
 
 interface Profile {
   age: bigint;
@@ -56,6 +65,7 @@ const navItems = [
   { id: "search", Icon: Search, label: "Search" },
   { id: "live", Icon: Radio, label: "Live" },
   { id: "account", Icon: UserCircle, label: "Account" },
+  { id: "history", Icon: Clock, label: "History" },
 ] as const;
 
 // Primary nav items shown in mobile bottom bar
@@ -70,6 +80,7 @@ const bottomNavMore = [
   "search",
   "live",
   "account",
+  "history",
 ] as const;
 
 const SECTION_EXPERTS: Record<string, string> = {
@@ -93,13 +104,14 @@ function buildGreeting(section: string): string {
   return `I am NavvGenX, your ${expert}. How can I help you?`;
 }
 
-function speakText(text: string) {
+function speakText(text: string, lang = "en-IN") {
   try {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.92;
-    utterance.pitch = 1.1;
+    utterance.lang = lang;
+    utterance.rate = 0.88;
+    utterance.pitch = 1.0;
     utterance.volume = 1;
     const setVoice = () => {
       const voices = window.speechSynthesis.getVoices();
@@ -368,14 +380,27 @@ export default function App() {
     const timer = setTimeout(() => {
       try {
         const acc = localStorage.getItem("navvgenx-account");
-        const name = acc ? JSON.parse(acc).name : "";
-        speakText(
-          name ? `Hey ${name}, welcome to NavvGenX` : "Welcome to NavvGenX",
-        );
+        const accData = acc ? JSON.parse(acc) : null;
+        const name = accData?.name || "";
+        const lang = accData?.language || "en";
+        if (lang === "hi") {
+          speakText(
+            name
+              ? `नमस्ते ${name}, Nav Gen X में आपका स्वागत है`
+              : "Nav Gen X में आपका स्वागत है",
+            "hi-IN",
+          );
+        } else {
+          speakText(
+            name
+              ? `Hello ${name}, welcome to Nav Gen X`
+              : "Welcome to Nav Gen X",
+          );
+        }
       } catch {
-        speakText("Welcome to NavvGenX");
+        speakText("Welcome to Nav Gen X");
       }
-    }, 600);
+    }, 1500);
     return () => clearTimeout(timer);
   }, [isLoggedIn]);
 
@@ -424,8 +449,6 @@ export default function App() {
         <Toaster richColors position="top-right" />
         <LoginPage
           onLogin={() => {
-            sessionStorage.setItem("navvgenx-welcomed", "1");
-            setTimeout(() => speakText("Welcome to NavvGenX"), 600);
             setIsLoggedIn(true);
           }}
         />
@@ -471,6 +494,10 @@ export default function App() {
       setCurrentPage("live");
       return;
     }
+    if (page === "history") {
+      setCurrentPage("history");
+      return;
+    }
     if (
       page === "chat" ||
       [
@@ -509,6 +536,10 @@ export default function App() {
     if (id === "live") {
       navigate("live");
       triggerSectionGreeting("live");
+      return;
+    }
+    if (id === "history") {
+      navigate("history");
       return;
     }
     if (id === "chat") {
@@ -685,6 +716,7 @@ export default function App() {
             />
           )}
           {currentPage === "live" && <LivePage />}
+          {currentPage === "history" && <HistoryPage />}
         </motion.div>
       </main>
 
@@ -820,21 +852,31 @@ export default function App() {
               <div className="grid grid-cols-3 gap-3 px-5 pb-4">
                 {bottomNavMore.map((id) => {
                   const item = navItems.find((n) => n.id === id)!;
-                  const active = isNavActive(id);
+                  const _active = isNavActive(id);
                   return (
                     <button
                       key={id}
                       type="button"
                       onClick={() => handleNavClick(id)}
                       className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl transition-all min-h-[5rem]"
-                      style={{
-                        background: active
-                          ? "oklch(0.10 0.020 265)"
-                          : "var(--muted)",
-                        color: active
-                          ? "oklch(0.78 0.15 75)"
-                          : "var(--muted-foreground)",
-                      }}
+                      style={(() => {
+                        const colors: Record<string, string> = {
+                          study: "#2563eb",
+                          love: "#ec4899",
+                          fashion: "#9333ea",
+                          health: "#16a34a",
+                          career: "#ea580c",
+                          business: "#0d9488",
+                          law: "#dc2626",
+                          live: "#4f46e5",
+                          history: "#854d0e",
+                          search: "#0369a1",
+                          account: "#6b7280",
+                          reminders: "#b45309",
+                        };
+                        const bg = colors[id] || "#374151";
+                        return { background: bg, color: "#ffffff" };
+                      })()}
                       data-ocid="nav.tab"
                     >
                       <item.Icon className="w-5 h-5" />

@@ -4,6 +4,36 @@ import {
   isCountryQuestion,
 } from "./googleAnswerEngine";
 
+export function detectFunnyQuestion(query: string): string | null {
+  const q = query.toLowerCase().trim();
+  const funnyPatterns = [
+    /\bjoke\b/,
+    /\bmake me laugh\b/,
+    /\bfunny\b/,
+    /\blol\b/,
+    /\bhaha\b/,
+    /\bhumor\b/,
+    /\bpun\b/,
+    /\bridiculous\b/,
+    /\babsurd\b/,
+    /\bsilly\b/,
+    /\bwhy do cats\b/,
+    /\bchicken cross\b/,
+    /\bknock knock\b/,
+    /\bwhy is [a-z]+ so\b/,
+  ];
+  if (!funnyPatterns.some((p) => p.test(q))) return null;
+
+  const jokes = [
+    "Haha! 😂 Why don't scientists trust atoms? Because they make up everything! Ha!\n\nOkay okay, one more: Why did the math book look so sad? It had too many problems! 😄",
+    "Ha ha ha! 😂 Here's one for you: Why can't you give Elsa a balloon? Because she'll let it go! 😂\n\nOr how about: I told my friend 10 jokes to make him laugh. No pun in ten did! 🤣",
+    "Hahaha! 🤣 Why do programmers prefer dark mode? Because light attracts bugs! 😄\n\nBonus: Why was the belt arrested? For holding up pants! Ha!",
+    "Ha! 😂 What do you call a fake noodle? An impasta! 🤣\n\nAnd: Why did the scarecrow win an award? He was outstanding in his field! 😄",
+    "Hahaha! 🤣 Okay okay: Why don't eggs tell jokes? They'd crack each other up! 😂\n\nAlso: What did the ocean say to the beach? Nothing, it just waved! Ha!",
+  ];
+  return jokes[Math.floor(Math.random() * jokes.length)];
+}
+
 export interface SearchResult {
   title: string;
   snippet: string;
@@ -25,6 +55,7 @@ export interface WikiCard {
 
 export interface AIResponse {
   text: string;
+  isHtml?: boolean;
   searchResults?: SearchResult[];
   imageResults?: ImageResult[];
   isSearch?: boolean;
@@ -1583,36 +1614,73 @@ export function detectContentCreation(query: string): string | null {
 
   const topicCap = topic.charAt(0).toUpperCase() + topic.slice(1);
 
-  return `<h2>${type}: ${topicCap}</h2>
+  const isSlides = type === "Presentation";
 
-<p><strong>Introduction</strong></p>
-<p>${topicCap} is an important and fascinating subject. This ${type.toLowerCase()} covers the key aspects, facts, and insights you need to understand and communicate effectively about this topic.</p>
+  if (isSlides) {
+    return `<div style="font-family: inherit;">
+  <div style="background: oklch(0.10 0.020 265); color: oklch(0.78 0.15 75); padding: 20px; border-radius: 12px; margin-bottom: 12px; text-align: center;">
+    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.7; margin-bottom: 8px;">Slide 1 — Title</div>
+    <h2 style="font-size: 22px; font-weight: 800; margin: 0 0 8px;">${topicCap}</h2>
+    <p style="opacity: 0.8; font-size: 13px; margin: 0;">A comprehensive presentation by NavvGenX AI</p>
+  </div>
+  <div style="background: oklch(0.97 0.004 60); border: 1px solid oklch(0.78 0.15 75 / 0.3); padding: 16px; border-radius: 12px; margin-bottom: 10px;">
+    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: oklch(0.52 0.12 75); margin-bottom: 8px;">Slide 2 — Introduction</div>
+    <h3 style="font-size: 16px; font-weight: 700; color: oklch(0.15 0.020 265); margin: 0 0 8px;">What is ${topicCap}?</h3>
+    <p style="color: oklch(0.25 0.010 265); font-size: 13px; line-height: 1.6; margin: 0;">${topicCap} is a fascinating and important subject that impacts many aspects of our lives. This presentation explores its core concepts, significance, and real-world applications.</p>
+  </div>
+  <div style="background: oklch(0.97 0.004 60); border: 1px solid oklch(0.78 0.15 75 / 0.3); padding: 16px; border-radius: 12px; margin-bottom: 10px;">
+    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: oklch(0.52 0.12 75); margin-bottom: 8px;">Slide 3 — Key Facts</div>
+    <h3 style="font-size: 16px; font-weight: 700; color: oklch(0.15 0.020 265); margin: 0 0 10px;">Key Points About ${topicCap}</h3>
+    <ul style="color: oklch(0.25 0.010 265); font-size: 13px; line-height: 1.8; margin: 0; padding-left: 18px;">
+      <li>${topicCap} has a rich history and evolving definition across disciplines</li>
+      <li>It plays a significant role in modern society and everyday life</li>
+      <li>Recent research and developments have expanded our understanding</li>
+      <li>There are multiple perspectives and schools of thought</li>
+      <li>Practical applications span education, technology, and beyond</li>
+    </ul>
+  </div>
+  <div style="background: oklch(0.97 0.004 60); border: 1px solid oklch(0.78 0.15 75 / 0.3); padding: 16px; border-radius: 12px; margin-bottom: 10px;">
+    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: oklch(0.52 0.12 75); margin-bottom: 8px;">Slide 4 — Deep Dive</div>
+    <h3 style="font-size: 16px; font-weight: 700; color: oklch(0.15 0.020 265); margin: 0 0 8px;">Detailed Analysis</h3>
+    <p style="color: oklch(0.25 0.010 265); font-size: 13px; line-height: 1.6; margin: 0;">A thorough examination of ${topicCap} reveals its significance across multiple domains. The interplay between various factors creates a complex but understandable picture. Expert analysis shows that understanding ${topicCap} deeply can lead to meaningful insights and better decision-making.</p>
+  </div>
+  <div style="background: oklch(0.97 0.004 60); border: 1px solid oklch(0.78 0.15 75 / 0.3); padding: 16px; border-radius: 12px; margin-bottom: 10px;">
+    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: oklch(0.52 0.12 75); margin-bottom: 8px;">Slide 5 — Challenges</div>
+    <h3 style="font-size: 16px; font-weight: 700; color: oklch(0.15 0.020 265); margin: 0 0 8px;">Challenges &amp; Solutions</h3>
+    <p style="color: oklch(0.25 0.010 265); font-size: 13px; line-height: 1.6; margin: 0;">Like any complex topic, ${topicCap} comes with challenges including misconceptions, limited awareness, and implementation barriers. Solutions include education, collaboration, and evidence-based approaches that address these obstacles systematically.</p>
+  </div>
+  <div style="background: oklch(0.10 0.020 265); color: oklch(0.78 0.15 75); padding: 16px; border-radius: 12px; text-align: center;">
+    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.7; margin-bottom: 8px;">Slide 6 — Conclusion</div>
+    <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 8px;">Thank You!</h3>
+    <p style="opacity: 0.8; font-size: 12px; margin: 0;">Generated by NavvGenX AI • Ask follow-up questions below</p>
+  </div>
+</div>`;
+  }
 
-<p><strong>1. Overview & Background</strong></p>
-<p>To begin, it is important to understand the context of ${topicCap}. This section outlines the foundational concepts, historical background, and why this topic matters in today's world.</p>
-
-<p><strong>2. Key Points & Main Ideas</strong></p>
-<ul>
-<li>The core concept of ${topicCap} involves understanding its fundamental principles</li>
-<li>There are multiple perspectives and dimensions to consider</li>
-<li>Recent developments have significantly shaped how we view this topic</li>
-<li>Both short-term and long-term implications are worth analyzing</li>
-<li>Expert opinions and research provide valuable insights</li>
-</ul>
-
-<p><strong>3. Detailed Analysis</strong></p>
-<p>A thorough examination of ${topicCap} reveals its significance across multiple domains. The interplay between various factors creates a complex but understandable picture. When we analyze the available information, several important patterns and themes emerge that are critical to understanding the complete picture.</p>
-
-<p><strong>4. Examples & Applications</strong></p>
-<p>Real-world examples help illustrate the concepts related to ${topicCap}. From practical applications to theoretical frameworks, this topic has relevance in everyday life, academic settings, and professional environments.</p>
-
-<p><strong>5. Challenges & Considerations</strong></p>
-<p>Like any complex topic, ${topicCap} comes with its challenges. Understanding these obstacles and how to address them is key to mastering this subject and applying it effectively.</p>
-
-<p><strong>Conclusion</strong></p>
-<p>In summary, ${topicCap} is a multifaceted subject that requires careful consideration and analysis. By understanding its key components — background, main ideas, applications, and challenges — you can develop a comprehensive understanding and communicate about it effectively.</p>
-
-<p><em>💡 Want more detail on any specific section? Just ask!</em></p>`;
+  return `<div style="font-family: inherit; padding: 4px 0;">
+  <h2 style="font-size: 20px; font-weight: 800; color: oklch(0.15 0.020 265); margin: 0 0 16px; padding-bottom: 12px; border-bottom: 2px solid oklch(0.78 0.15 75 / 0.3);">${type}: ${topicCap}</h2>
+  <p><strong>Introduction</strong></p>
+  <p style="color: oklch(0.25 0.010 265); line-height: 1.7;">${topicCap} is an important and fascinating subject. This ${type.toLowerCase()} covers the key aspects, facts, and insights you need to understand and communicate effectively about this topic.</p>
+  <p><strong>1. Overview &amp; Background</strong></p>
+  <p style="color: oklch(0.25 0.010 265); line-height: 1.7;">To begin, it is important to understand the context of ${topicCap}. This section outlines the foundational concepts, historical background, and why this topic matters in today's world.</p>
+  <p><strong>2. Key Points &amp; Main Ideas</strong></p>
+  <ul style="color: oklch(0.25 0.010 265); line-height: 1.8; padding-left: 20px;">
+    <li>The core concept of ${topicCap} involves understanding its fundamental principles</li>
+    <li>There are multiple perspectives and dimensions to consider</li>
+    <li>Recent developments have significantly shaped how we view this topic</li>
+    <li>Both short-term and long-term implications are worth analyzing</li>
+    <li>Expert opinions and research provide valuable insights</li>
+  </ul>
+  <p><strong>3. Detailed Analysis</strong></p>
+  <p style="color: oklch(0.25 0.010 265); line-height: 1.7;">A thorough examination of ${topicCap} reveals its significance across multiple domains. The interplay between various factors creates a complex but understandable picture.</p>
+  <p><strong>4. Examples &amp; Applications</strong></p>
+  <p style="color: oklch(0.25 0.010 265); line-height: 1.7;">Real-world examples help illustrate the concepts related to ${topicCap}. From practical applications to theoretical frameworks, this topic has relevance in everyday life, academic settings, and professional environments.</p>
+  <p><strong>5. Challenges &amp; Considerations</strong></p>
+  <p style="color: oklch(0.25 0.010 265); line-height: 1.7;">Like any complex topic, ${topicCap} comes with its challenges. Understanding these obstacles is key to mastering this subject and applying it effectively.</p>
+  <p><strong>Conclusion</strong></p>
+  <p style="color: oklch(0.25 0.010 265); line-height: 1.7;">In summary, ${topicCap} is a multifaceted subject that requires careful consideration and analysis. By understanding its key components you can develop a comprehensive understanding.</p>
+  <p><em>💡 Want more detail on any specific section? Just ask!</em></p>
+</div>`;
 }
 
 // ─────────────────── AI Image Generation ───────────────────
@@ -1710,6 +1778,7 @@ export async function generateAIResponse(
   if (contentCreationResult) {
     return {
       text: contentCreationResult,
+      isHtml: true,
       suggestions: getSuggestions(message, activeCategory),
       quickLinks,
       sources: ["NavvGenX AI"],
@@ -1831,6 +1900,21 @@ export async function generateAIResponse(
     if (pattern.test(lower)) {
       return { text: applyTone(response, ageGroup), quickLinks };
     }
+  }
+
+  // ── Funny/joke detection ──
+  const funnyResponse = detectFunnyQuestion(message);
+  if (funnyResponse) {
+    return {
+      text: funnyResponse,
+      sources: ["NavvGenX Comedy Club 🎭"],
+      imageResults: [],
+      searchResults: [],
+      quickLinks: {
+        google: "https://www.google.com/search?q=funny+jokes",
+        chatgpt: "https://chat.openai.com/?q=tell+me+a+joke",
+      },
+    };
   }
 
   // ── Recommendation queries (songs, movies, food, travel, etc.) ──
@@ -2028,16 +2112,70 @@ export async function generateAIResponse(
     return buildCatResponse(businessResponses, "business");
   }
 
-  // ── Ultimate fallback ──
+  // ── Ultimate fallback — always give a helpful answer ──
+  const topic = message.replace(/[?!.]/g, "").trim();
+  const helpfulFallback = `Hey! Let me help you with "${topic}"! 😊
+
+Here's what I know about this:
+
+**About ${topic}:**
+This is a great topic to explore! Here are some key points and helpful advice:
+
+• **Start simple** — Break down "${topic}" into smaller parts. What's the most important aspect for you?
+• **Research tip** — Wikipedia, YouTube tutorials, and Google are your best friends for learning more
+• **Expert advice** — Experts recommend approaching "${topic}" with curiosity and patience
+• **Common insights** — Most people find that the best way to understand "${topic}" is through hands-on experience
+
+**Quick actions you can take:**
+1. Search Google for the latest information on this topic
+2. Check Wikipedia for a comprehensive overview
+3. Ask me a more specific question about any aspect!
+
+I'm here to help — what specific part of "${topic}" would you like to know more about? 🚀`;
+
   return {
-    text: wrapFriendly(
-      applyTone(
-        `I searched multiple sources for "${message}" but couldn't find a specific answer. Try rephrasing your question, or use the "Search Google" button below for the most up-to-date results. You can also try asking "what is [topic]", "who is [person]", or "how does [thing] work" for better results.`,
-        ageGroup,
-      ),
-      message,
-    ),
+    text: helpfulFallback,
+    sources: ["NavvGenX AI Knowledge Base"],
+    imageResults: getImageResults(message),
+    searchResults: generateSearchResults(message),
     suggestions,
     quickLinks,
   };
+}
+
+// ── New multi-source link helpers ──
+
+export const API_CONFIG = {
+  openai: "", // Add your OpenAI API key here
+  huggingface: "", // Add your Hugging Face token here
+  googleSearch: "", // Add your Google Custom Search API key here
+  googleSearchCx: "", // Add your Google Search Engine ID here
+  youtube: "", // Add your YouTube API key here
+  stability: "", // Add your Stability AI key here
+};
+
+export function getYouTubeLinks(query: string): string {
+  const encoded = encodeURIComponent(query);
+  return `<div class="source-links"><span class="source-badge">📺 YouTube</span> <a href="https://www.youtube.com/results?search_query=${encoded}" target="_blank" class="link-pill">Watch on YouTube</a></div>`;
+}
+
+export function getSocialLinks(query: string): string {
+  const encoded = encodeURIComponent(query);
+  const tag = query.replace(/\s+/g, "");
+  return `<div class="source-links"><span class="source-badge">📱 Social</span> <a href="https://twitter.com/search?q=${encoded}" target="_blank" class="link-pill">Twitter/X</a> <a href="https://www.instagram.com/explore/tags/${tag}/" target="_blank" class="link-pill">Instagram</a> <a href="https://www.tiktok.com/search?q=${encoded}" target="_blank" class="link-pill">TikTok</a></div>`;
+}
+
+export function getShoppingLinks(query: string): string {
+  const encoded = encodeURIComponent(query);
+  return `<div class="source-links"><span class="source-badge">🛒 Shop</span> <a href="https://amazon.com/s?k=${encoded}" target="_blank" class="link-pill">Amazon</a> <a href="https://www.flipkart.com/search?q=${encoded}" target="_blank" class="link-pill">Flipkart</a> <a href="https://www.google.com/search?tbm=shop&q=${encoded}" target="_blank" class="link-pill">Google Shopping</a></div>`;
+}
+
+export function getWebSearchLinks(query: string): string {
+  const encoded = encodeURIComponent(query);
+  return `<div class="source-links"><span class="source-badge">🔍 Find More</span> <a href="https://www.google.com/search?q=${encoded}" target="_blank" class="link-pill">Google</a> <a href="https://duckduckgo.com/?q=${encoded}" target="_blank" class="link-pill">DuckDuckGo</a> <a href="https://chat.openai.com/?q=${encoded}" target="_blank" class="link-pill">ChatGPT</a></div>`;
+}
+
+export function getPollinationsImage(query: string): string {
+  const encoded = encodeURIComponent(`${query} high quality artistic`);
+  return `<div class="ai-generated-image"><strong>🎨 AI Generated Image:</strong><br/><img src="https://image.pollinations.ai/prompt/${encoded}?width=400&height=300&nologo=true" alt="AI generated: ${query}" style="max-width:100%;border-radius:12px;margin-top:8px;border:2px solid #c9a84c;" loading="lazy"/></div>`;
 }

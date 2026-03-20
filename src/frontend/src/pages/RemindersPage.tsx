@@ -1,65 +1,124 @@
 import { Switch } from "@/components/ui/switch";
 import { Bell, Loader2, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Reminder } from "../backend.d";
 import { useActor } from "../hooks/useActor";
+
+const LS_KEY = "navvgenx-reminders";
+
+interface LocalReminder {
+  id: string;
+  title: string;
+  time: string;
+  active: boolean;
+  createdAt: number;
+}
+
+function loadLocalReminders(): LocalReminder[] {
+  try {
+    return JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalReminders(reminders: LocalReminder[]): void {
+  localStorage.setItem(LS_KEY, JSON.stringify(reminders));
+}
 
 export function RemindersPage() {
   const { actor } = useActor();
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [reminders, setReminders] = useState<LocalReminder[]>([]);
   const [title, setTitle] = useState("");
   const [time, setTime] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const firedRef = useRef<Set<string>>(new Set());
 
+  // Load on mount — localStorage first, then try backend
   useEffect(() => {
-    if (!actor) return;
-    loadReminders();
     // Request notification permission
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
+
+    // Load from localStorage immediately
+    const local = loadLocalReminders();
+    setReminders(local);
+    setIsFetching(false);
+
+    // Also try backend and merge
+    if (actor) {
+      actor
+        .getReminders()
+        .then((data) => {
+          // Convert backend reminders and merge with local (local takes priority)
+          const localIds = new Set(local.map((r) => r.id));
+          const backendReminders: LocalReminder[] = data
+            .filter((r) => !localIds.has(String(r.id)))
+            .map((r) => ({
+              id: String(r.id),
+              title: r.title,
+              time: r.time,
+              active: r.active,
+              createdAt: Number(r.createdAt ?? Date.now()),
+            }));
+          if (backendReminders.length > 0) {
+            const merged = [...local, ...backendReminders];
+            setReminders(merged);
+            saveLocalReminders(merged);
+          }
+        })
+        .catch(() => {
+          // Backend unavailable — localStorage is fine
+        });
+    }
   }, [actor]);
 
+  // Reminder checker — fires every 30 seconds
   useEffect(() => {
     const checkReminders = () => {
       const now = new Date();
       const currentTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+      const currentKey = `${now.toDateString()}-${currentTime}`;
+
       for (const reminder of reminders) {
         if (reminder.active && reminder.time === currentTime) {
-          toast(`🔔 Reminder: ${reminder.title}`, {
-            description: `It's ${reminder.time} - time for your reminder!`,
-            duration: 8000,
-          });
-          if (
-            "Notification" in window &&
-            Notification.permission === "granted"
-          ) {
-            new Notification(`🔔 Reminder: ${reminder.title}`, {
-              body: `It's ${reminder.time} — time for: ${reminder.title}`,
-              icon: "/icon-192x192.png",
+          const fireKey = `${reminder.id}-${currentKey}`;
+          if (!firedRef.current.has(fireKey)) {
+            firedRef.current.add(fireKey);
+
+            // Sonner toast
+            toast(`🔔 Reminder: ${reminder.title}`, {
+              description: `It's ${reminder.time} — time for: ${reminder.title}`,
+              duration: 8000,
             });
+
+            // Browser Notification
+            if (
+              "Notification" in window &&
+              Notification.permission === "granted"
+            ) {
+              try {
+                new Notification(`🔔 ${reminder.title}`, {
+                  body: `It's ${reminder.time} — ${reminder.title}`,
+                  icon: "/icon-192x192.png",
+                });
+              } catch {
+                // Notification creation failed silently
+              }
+            }
           }
         }
       }
     };
-    const interval = setInterval(checkReminders, 60000);
+
+    // Check immediately and then every 30s
+    checkReminders();
+    const interval = setInterval(checkReminders, 30000);
     return () => clearInterval(interval);
   }, [reminders]);
-
-  async function loadReminders() {
-    if (!actor) return;
-    try {
-      const data = await actor.getReminders();
-      setReminders(data);
-    } catch {
-      toast.error("Failed to load reminders");
-    } finally {
-      setIsFetching(false);
-    }
-  }
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,44 +126,67 @@ export function RemindersPage() {
       toast.error("Please enter a title and time");
       return;
     }
-    if (!actor) {
-      toast.error("Not connected");
-      return;
-    }
     setIsLoading(true);
-    try {
-      await actor.addReminder(title.trim(), time, BigInt(Date.now()));
-      await loadReminders();
-      toast.success("Reminder added! 🔔");
-      setTitle("");
-      setTime("");
-    } catch {
-      toast.error("Failed to add reminder");
-    } finally {
-      setIsLoading(false);
+
+    const newReminder: LocalReminder = {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      title: title.trim(),
+      time,
+      active: true,
+      createdAt: Date.now(),
+    };
+
+    // Immediately save to localStorage
+    const updated = [...reminders, newReminder];
+    setReminders(updated);
+    saveLocalReminders(updated);
+    toast.success("Reminder added! 🔔");
+    setTitle("");
+    setTime("");
+    setIsLoading(false);
+
+    // Try backend silently
+    if (actor) {
+      try {
+        await actor.addReminder(
+          newReminder.title,
+          newReminder.time,
+          BigInt(newReminder.createdAt),
+        );
+      } catch {
+        // Backend unavailable — localStorage already saved
+      }
     }
   };
 
-  const handleToggle = async (id: bigint) => {
-    if (!actor) return;
-    try {
-      await actor.toggleReminder(id);
-      setReminders((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, active: !r.active } : r)),
-      );
-    } catch {
-      toast.error("Failed to update reminder");
+  const handleToggle = (id: string) => {
+    const updated = reminders.map((r) =>
+      r.id === id ? { ...r, active: !r.active } : r,
+    );
+    setReminders(updated);
+    saveLocalReminders(updated);
+
+    // Try backend silently
+    if (actor) {
+      const numId = Number.parseInt(id.replace("local-", ""), 10);
+      if (!Number.isNaN(numId)) {
+        actor.toggleReminder(BigInt(numId)).catch(() => {});
+      }
     }
   };
 
-  const handleDelete = async (id: bigint) => {
-    if (!actor) return;
-    try {
-      await actor.deleteReminder(id);
-      setReminders((prev) => prev.filter((r) => r.id !== id));
-      toast.success("Reminder removed");
-    } catch {
-      toast.error("Failed to delete reminder");
+  const handleDelete = (id: string) => {
+    const updated = reminders.filter((r) => r.id !== id);
+    setReminders(updated);
+    saveLocalReminders(updated);
+    toast.success("Reminder removed");
+
+    // Try backend silently
+    if (actor) {
+      const numId = Number.parseInt(id.replace("local-", ""), 10);
+      if (!Number.isNaN(numId)) {
+        actor.deleteReminder(BigInt(numId)).catch(() => {});
+      }
     }
   };
 
@@ -193,7 +275,7 @@ export function RemindersPage() {
           <AnimatePresence>
             {reminders.map((reminder, i) => (
               <motion.div
-                key={String(reminder.id)}
+                key={reminder.id}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}

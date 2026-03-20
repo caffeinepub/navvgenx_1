@@ -28,12 +28,7 @@ export function LiveWidget({ onNavigateToLive }: LiveWidgetProps) {
     permissionDenied,
     requestLocation,
   } = useWeather();
-  const {
-    articles,
-    loading: nLoading,
-    error: nError,
-    refresh: refreshNews,
-  } = useNews();
+  const { articles, loading: nLoading, refresh: refreshNews } = useNews();
 
   useEffect(() => {
     if (weather && location) {
@@ -304,14 +299,6 @@ export function LiveWidget({ onNavigateToLive }: LiveWidgetProps) {
                 </div>
               ))}
             </div>
-          ) : nError ? (
-            <p
-              className="text-sm font-jakarta"
-              style={{ color: "oklch(0.60 0.02 265)" }}
-              data-ocid="news.error_state"
-            >
-              {nError}
-            </p>
           ) : articles.length === 0 ? (
             <p
               className="text-sm font-jakarta"

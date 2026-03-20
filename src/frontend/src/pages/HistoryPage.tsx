@@ -1,23 +1,21 @@
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, MessageSquare, Search, Trash2 } from "lucide-react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-interface ChatHistoryEntry {
+export interface ChatHistoryEntry {
   query: string;
   answer: string;
   timestamp: number;
-  section: string;
 }
 
-interface SearchHistoryEntry {
+export interface SearchHistoryEntry {
   query: string;
   timestamp: number;
 }
 
-function timeAgo(ts: number): string {
+function formatTime(ts: number): string {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "just now";
@@ -27,26 +25,10 @@ function timeAgo(ts: number): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function getSectionColor(section: string): string {
-  const map: Record<string, string> = {
-    love: "bg-pink-500/20 text-pink-400 border-pink-500/30",
-    study: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-    career: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-    fashion: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-    business: "bg-teal-500/20 text-teal-400 border-teal-500/30",
-    search: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
-    live: "bg-red-500/20 text-red-400 border-red-500/30",
-    health: "bg-green-500/20 text-green-400 border-green-500/30",
-    general: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-    chat: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  };
-  return map[section] ?? "bg-muted text-muted-foreground border-border";
-}
-
 export function HistoryPage() {
   const [chatHistory, setChatHistory] = useState<ChatHistoryEntry[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem("navvgenx-chat-history") ?? "[]");
+      return JSON.parse(localStorage.getItem("navvgenx-chat-history") || "[]");
     } catch {
       return [];
     }
@@ -56,7 +38,7 @@ export function HistoryPage() {
     () => {
       try {
         return JSON.parse(
-          localStorage.getItem("navvgenx-search-history") ?? "[]",
+          localStorage.getItem("navvgenx-search-history") || "[]",
         );
       } catch {
         return [];
@@ -81,144 +63,157 @@ export function HistoryPage() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-8"
+        className="text-center mb-6"
       >
-        <h1 className="font-poppins font-bold text-3xl navvgenx-gradient-text mb-2">
-          History
+        <h1
+          className="font-bold text-3xl mb-2"
+          style={{
+            fontFamily: "'Playfair Display', serif",
+            color: "oklch(0.78 0.15 75)",
+          }}
+        >
+          History 📋
         </h1>
-        <p className="text-muted-foreground font-inter text-sm">
-          Your recent chats and searches
+        <p className="text-muted-foreground text-sm font-jakarta">
+          Your past chats and searches
         </p>
       </motion.div>
 
-      <Tabs defaultValue="chat" data-ocid="history.tab">
-        <TabsList className="w-full mb-6">
-          <TabsTrigger value="chat" className="flex-1 gap-2">
-            <MessageSquare className="w-4 h-4" />
+      <Tabs defaultValue="chat" className="w-full">
+        <TabsList className="w-full mb-4">
+          <TabsTrigger
+            value="chat"
+            className="flex-1 gap-1.5"
+            data-ocid="history.tab"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
             Chat History ({chatHistory.length})
           </TabsTrigger>
-          <TabsTrigger value="search" className="flex-1 gap-2">
-            <Search className="w-4 h-4" />
+          <TabsTrigger
+            value="search"
+            className="flex-1 gap-1.5"
+            data-ocid="history.tab"
+          >
+            <Search className="w-3.5 h-3.5" />
             Search History ({searchHistory.length})
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="chat">
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-xs text-muted-foreground">
-              Last {chatHistory.length} conversations
-            </p>
+          <div className="flex justify-end mb-3">
             {chatHistory.length > 0 && (
               <button
                 type="button"
                 onClick={clearChatHistory}
-                className="flex items-center gap-1 text-xs text-red-400 hover:text-red-500 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-jakarta font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                 data-ocid="history.delete_button"
               >
-                <Trash2 className="w-3 h-3" />
-                Clear All
+                <Trash2 className="w-3 h-3" /> Clear All
               </button>
             )}
           </div>
-
           {chatHistory.length === 0 ? (
-            <div
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               className="text-center py-16 glass-card rounded-3xl"
               data-ocid="history.empty_state"
             >
-              <MessageSquare className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-muted-foreground font-inter text-sm">
+              <MessageSquare className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+              <p className="text-muted-foreground font-jakarta text-sm">
                 No chat history yet. Start a conversation!
               </p>
-            </div>
+            </motion.div>
           ) : (
             <div className="space-y-3">
-              {[...chatHistory].reverse().map((entry, i) => (
-                <motion.div
-                  key={`${entry.timestamp}-${i}`}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                  className="glass-card rounded-2xl p-4 border border-border"
-                  data-ocid={`history.item.${i + 1}`}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <p className="font-inter font-semibold text-sm text-foreground flex-1 min-w-0">
-                      {entry.query}
-                    </p>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] px-1.5 py-0 border ${getSectionColor(entry.section)}`}
+              <AnimatePresence>
+                {[...chatHistory].reverse().map((entry, i) => (
+                  <motion.div
+                    key={`chat-${entry.timestamp}-${i}`}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="glass-card rounded-2xl p-4 border border-border"
+                    data-ocid={`history.item.${i + 1}`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <p className="font-jakarta font-semibold text-sm text-foreground line-clamp-1">
+                        {entry.query}
+                      </p>
+                      <span
+                        className="flex items-center gap-1 text-[10px] font-jakarta shrink-0"
+                        style={{ color: "oklch(0.60 0.01 265)" }}
                       >
-                        {entry.section}
-                      </Badge>
-                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                         <Clock className="w-3 h-3" />
-                        {timeAgo(entry.timestamp)}
+                        {formatTime(entry.timestamp)}
                       </span>
                     </div>
-                  </div>
-                  <p className="font-inter text-xs text-muted-foreground line-clamp-2">
-                    {entry.answer.replace(/<[^>]+>/g, "").slice(0, 150)}
-                    {entry.answer.length > 150 ? "..." : ""}
-                  </p>
-                </motion.div>
-              ))}
+                    <p className="text-xs font-jakarta text-muted-foreground line-clamp-2">
+                      {entry.answer}
+                    </p>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           )}
         </TabsContent>
 
         <TabsContent value="search">
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-xs text-muted-foreground">
-              Last {searchHistory.length} searches
-            </p>
+          <div className="flex justify-end mb-3">
             {searchHistory.length > 0 && (
               <button
                 type="button"
                 onClick={clearSearchHistory}
-                className="flex items-center gap-1 text-xs text-red-400 hover:text-red-500 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-jakarta font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                 data-ocid="history.delete_button"
               >
-                <Trash2 className="w-3 h-3" />
-                Clear All
+                <Trash2 className="w-3 h-3" /> Clear All
               </button>
             )}
           </div>
-
           {searchHistory.length === 0 ? (
-            <div
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               className="text-center py-16 glass-card rounded-3xl"
               data-ocid="history.empty_state"
             >
-              <Search className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-muted-foreground font-inter text-sm">
-                No search history yet. Try searching something!
+              <Search className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+              <p className="text-muted-foreground font-jakarta text-sm">
+                No search history yet. Search something!
               </p>
-            </div>
+            </motion.div>
           ) : (
             <div className="space-y-2">
-              {[...searchHistory].reverse().map((entry, i) => (
-                <motion.div
-                  key={`${entry.timestamp}-${i}`}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.02 }}
-                  className="glass-card rounded-xl px-4 py-3 border border-border flex items-center justify-between"
-                  data-ocid={`history.item.${i + 1}`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                    <p className="font-inter text-sm text-foreground truncate">
-                      {entry.query}
-                    </p>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
-                    {timeAgo(entry.timestamp)}
-                  </span>
-                </motion.div>
-              ))}
+              <AnimatePresence>
+                {[...searchHistory].reverse().map((entry, i) => (
+                  <motion.div
+                    key={`search-${entry.timestamp}-${i}`}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="glass-card rounded-xl p-3 border border-border flex items-center justify-between gap-3"
+                    data-ocid={`history.item.${i + 1}`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Search
+                        className="w-3.5 h-3.5 shrink-0"
+                        style={{ color: "oklch(0.78 0.15 75 / 0.7)" }}
+                      />
+                      <p className="font-jakarta text-sm text-foreground truncate">
+                        {entry.query}
+                      </p>
+                    </div>
+                    <span
+                      className="flex items-center gap-1 text-[10px] font-jakarta shrink-0"
+                      style={{ color: "oklch(0.60 0.01 265)" }}
+                    >
+                      <Clock className="w-3 h-3" />
+                      {formatTime(entry.timestamp)}
+                    </span>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           )}
         </TabsContent>

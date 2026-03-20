@@ -193,10 +193,77 @@ function getNavvAnswer(query: string): string {
     );
   }
 
-  return wrapFriendly(
-    `I'm NavvGenX AI — your smart companion for any topic! You can ask me about health, fashion, relationships, technology, science, travel, food, business, history, or literally anything. Try asking "what is [topic]" or "how do I [task]". I'm here to help with real answers and friendly advice.`,
-    query,
-  );
+  // Study tips
+  if (
+    /how can i study|study tips|how to study|help me study|i want to study|best way to study|study better|improve study|focus on study/.test(
+      q,
+    )
+  ) {
+    return wrapFriendly(
+      "Here are 7 powerful study techniques that actually work:\n\n1) Pomodoro Technique - Study 25 min, break 5 min. After 4 rounds take a longer break.\n\n2) Active Recall - Test yourself instead of re-reading. Close notes and recall from memory.\n\n3) Spaced Repetition - Review after 1 day, 3 days, 1 week, 1 month.\n\n4) Mind Maps - Visualize connections between topics. Great for complex subjects.\n\n5) Teach Someone - Explain a concept aloud. If you can teach it, you understand it.\n\n6) Eliminate Distractions - Phone away, quiet space. Retention improves by 30%.\n\n7) Sleep Well - Memory consolidates during deep sleep. Never skip sleep to study.\n\nWhich subject are you studying? I can give you specific tips!",
+      query,
+    );
+  }
+
+  // Suggestions / recommendations
+  if (
+    /suggest|recommend|what should i|give me ideas|what are some good|tell me about some/.test(
+      q,
+    )
+  ) {
+    if (/song|music|playlist|singer|artist|album/.test(q)) {
+      return wrapFriendly(
+        "Here are some great music suggestions!\n\nPunjabi/Bollywood: Kesariya (Arijit Singh), Tum Hi Ho, Raataan Lambiyan, Ik Vaari Aa (Pritam)\n\nInternational Pop: Blinding Lights (The Weeknd), Shape of You (Ed Sheeran), As It Was (Harry Styles)\n\nFocus/Study Music: Lo-fi Hip Hop, Hans Zimmer soundtracks, Ludovico Einaudi piano\n\nWhat genre or mood are you looking for? I'll make a tailored list!",
+        query,
+      );
+    }
+    if (/movie|film|watch|show|series|web series|netflix/.test(q)) {
+      return wrapFriendly(
+        "Here are top movie/show recommendations!\n\nBollywood: 3 Idiots, Dangal, PK, Zindagi Na Milegi Dobara, Queen\n\nHollywood: The Shawshank Redemption, Inception, Interstellar, The Dark Knight, Forrest Gump\n\nWeb Series: Breaking Bad, Money Heist, Mirzapur, Sacred Games, Scam 1992\n\nFeel-Good: Friends, Brooklyn Nine-Nine, The Office, Panchayat\n\nWhat mood or genre do you prefer?",
+        query,
+      );
+    }
+    if (/book|read|novel|author/.test(q)) {
+      return wrapFriendly(
+        "Here are my top book recommendations!\n\nSelf-Help: Atomic Habits (James Clear), The Alchemist (Paulo Coelho), Think and Grow Rich, The 5 AM Club\n\nFiction: Harry Potter, The Kite Runner, To Kill a Mockingbird, Ikigai\n\nTechnology: Zero to One (Peter Thiel), The Lean Startup, Deep Work (Cal Newport)\n\nWhat genre interests you most?",
+        query,
+      );
+    }
+    return wrapFriendly(
+      "I'd love to give you suggestions! Could you be a bit more specific? For example:\n- Suggest some Punjabi songs\n- Recommend a good movie\n- Give me ideas for a business\n- Suggest healthy breakfast options\n\nTell me more and I'll give you a personalized list!",
+      query,
+    );
+  }
+
+  // Motivational / inspiration
+  if (
+    /motivat|inspire|inspiration|feel motivated|need motivation|keep going|don.t give up|failing/.test(
+      q,
+    )
+  ) {
+    return wrapFriendly(
+      "Here's a dose of real motivation for you!\n\n\"Every expert was once a beginner. Every pro was once an amateur.\"\n\nThe difference between people who succeed is consistency. Show up every single day, even when you don't feel like it.\n\nQuick motivation boost:\n- Write down 3 things you're grateful for right now\n- Recall your biggest achievement so far\n- Set ONE small goal for today and complete it\n- Remember: discomfort is the price of growth\n\nYou've got this! What specific challenge are you facing?",
+      query,
+    );
+  }
+
+  // Generate helpful response for any topic
+  const topic = query.replace(/[?!.]/g, "").trim();
+  return `Hey! Great question about "${topic}"! 😊
+
+Here's my friendly advice:
+
+**What I know about ${topic}:**
+• This is something many people want to learn about!
+• The best approach is to start with the basics and build from there
+• There are many great resources online — Google, YouTube, and Wikipedia are perfect starting points
+
+**My suggestions:**
+1. Break it into smaller questions
+2. Try practical experience when possible
+3. Connect with others who know about this topic
+
+What specific part would you like to explore? I'm here to help with anything! 🚀`;
 }
 
 // ─── Sound wave bars ────────────────────────────────────────────────────────────
@@ -616,6 +683,22 @@ export function NavvAssistant({
       setMessages((prev) =>
         prev.filter((m) => m.id !== loadingId).concat(navvMsg),
       );
+
+      // Check if it was a funny question and add laugh
+      const isFunny =
+        /joke|funny|lol|haha|make me laugh|pun|silly|knock knock/i.test(
+          trimmed,
+        );
+      if (isFunny) {
+        setTimeout(() => {
+          const laugh = new SpeechSynthesisUtterance(
+            "Ha ha ha ha! That is so funny!",
+          );
+          laugh.rate = 1.1;
+          laugh.pitch = 1.3;
+          window.speechSynthesis.speak(laugh);
+        }, 200);
+      }
 
       speak(aiResult.text.slice(0, 200));
     },

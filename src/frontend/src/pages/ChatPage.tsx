@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import LinkEmbed from "../components/LinkEmbed";
@@ -29,6 +30,15 @@ import {
 } from "../utils/aiEngine";
 import { extractUrls } from "../utils/linkUtils";
 // ─── NavvLogoN ────────────────────────────────────────────────────────────────
+// HTML content renderer (for presentations and structured content)
+function HtmlContent({ html }: { html: string }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (ref.current) ref.current.innerHTML = html;
+  }, [html]);
+  return <div ref={ref} className="prose-content overflow-x-auto" />;
+}
+
 function NavvLogoN({ size = 32 }: { size?: number }) {
   const gold = "oklch(0.78 0.15 75)";
   const navy = "oklch(0.08 0.022 265)";
@@ -85,6 +95,7 @@ interface ChatMessage {
   id: string;
   role: "user" | "ai";
   content: string;
+  isHtml?: boolean;
   category: string;
   timestamp: number;
   searchResults?: SearchResult[];
@@ -325,6 +336,7 @@ export function ChatPage({
         id: (Date.now() + 1).toString(),
         role: "ai",
         content: response.text,
+        isHtml: response.isHtml,
         category,
         timestamp: Date.now(),
         searchResults: response.searchResults,
@@ -335,6 +347,19 @@ export function ChatPage({
         quickLinks: response.quickLinks,
         sources: response.sources,
       };
+      // Save to chat history
+      try {
+        const hist = JSON.parse(
+          localStorage.getItem("navvgenx-chat-history") || "[]",
+        );
+        hist.push({
+          query: msgText,
+          answer: response.text.replace(/<[^>]+>/g, "").slice(0, 200),
+          timestamp: Date.now(),
+        });
+        if (hist.length > 50) hist.splice(0, hist.length - 50);
+        localStorage.setItem("navvgenx-chat-history", JSON.stringify(hist));
+      } catch {}
       setMessages((prev) => [...prev, aiMsg]);
       setIsLoading(false);
 
@@ -669,7 +694,11 @@ export function ChatPage({
                         : "chat-bubble-ai glass-card border border-border text-slate-900 dark:text-gray-50"
                     }`}
                   >
-                    {msg.content}
+                    {msg.isHtml ? (
+                      <HtmlContent html={msg.content} />
+                    ) : (
+                      msg.content
+                    )}
                     {/* TTS button on AI messages */}
                     {msg.role === "ai" && (
                       <button
