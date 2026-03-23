@@ -3,10 +3,12 @@ import {
   Camera,
   ExternalLink,
   Image,
+  ImagePlus,
   Images,
   Lightbulb,
   Menu,
   Mic,
+  Pencil,
   Send,
   SwitchCamera,
   Volume2,
@@ -50,9 +52,9 @@ function NavvLogoN({ size = 32 }: { size?: number }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="NavvGenX N logo"
+      aria-label="NAVVURA AI N logo"
     >
-      <title>NavvGenX N</title>
+      <title>NAVVURA AI N</title>
       <circle
         cx="20"
         cy="20"
@@ -123,47 +125,46 @@ const categories = [
   { key: "search", label: "Search" },
 ];
 
-const categoryGreetings: Record<string, string> = {
-  health:
-    "Hi! I'm NavvGenX, your health and wellness expert. How can I help you today?",
-  love: "Hi! I'm NavvGenX, your relationship coach. How can I help you today?",
-  study:
-    "Hi! I'm NavvGenX, your study and learning expert. How can I help you today?",
-  career:
-    "Hi! I'm NavvGenX, your career development expert. How can I help you today?",
-  fashion:
-    "Hi! I'm NavvGenX, your style and fashion expert. How can I help you today?",
-  business:
-    "Hi! I'm NavvGenX, your business and entrepreneurship expert. How can I help you today?",
-  search:
-    "Hi! I'm NavvGenX, your search expert. What would you like to find today?",
-  general:
-    "Hi! I'm NavvGenX, your personal AI companion. How can I help you today?",
-};
+function getCategoryGreetings(): Record<string, string> {
+  const assistantName =
+    localStorage.getItem("navvura-assistant-name") || "NAVVURA AI";
+  return {
+    health: `Hi! I'm ${assistantName}, your health and wellness expert. How can I help you today?`,
+    love: `Hi! I'm ${assistantName}, your relationship coach. How can I help you today?`,
+    study: `Hi! I'm ${assistantName}, your study and learning expert. How can I help you today?`,
+    career: `Hi! I'm ${assistantName}, your career development expert. How can I help you today?`,
+    fashion: `Hi! I'm ${assistantName}, your style and fashion expert. How can I help you today?`,
+    business: `Hi! I'm ${assistantName}, your business and entrepreneurship expert. How can I help you today?`,
+    search: `Hi! I'm ${assistantName}, your search expert. What would you like to find today?`,
+    general: `Hi! I'm ${assistantName}, your personal AI companion. How can I help you today?`,
+  };
+}
 
 export function ChatPage({
   profile,
   initialCategory = "general",
 }: ChatPageProps) {
   const { actor } = useActor();
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "0",
-      role: "ai",
-      content:
-        "Hello! I'm NavvGenX, your personal AI companion. Ask me anything, search any topic, or use the mic to speak. I'll give you ideas, images, and voice responses.",
-      category: "general",
-      timestamp: Date.now(),
-      suggestions: [
-        "What is artificial intelligence",
-        "How to improve sleep quality",
-        "Best business ideas for 2026",
-        "How does the human brain work",
-        "Fashion trends 2026",
-        "Career growth tips",
-      ],
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const _n = localStorage.getItem("navvura-assistant-name") || "NAVVURA AI";
+    return [
+      {
+        id: "0",
+        role: "ai" as const,
+        content: `Hello! I'm ${_n}, your personal AI companion. Ask me anything, search any topic, or use the mic to speak. I'll give you ideas, images, and voice responses.`,
+        category: "general",
+        timestamp: Date.now(),
+        suggestions: [
+          "What is artificial intelligence",
+          "How to improve sleep quality",
+          "Best business ideas for 2026",
+          "How does the human brain work",
+          "Fashion trends 2026",
+          "Career growth tips",
+        ],
+      },
+    ];
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
@@ -174,6 +175,9 @@ export function ChatPage({
   const [showCamera, setShowCamera] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const imageAttachRef = React.useRef<HTMLInputElement>(null);
   const [hasSpeechSupport] = useState(
     () =>
       !!(
@@ -211,15 +215,15 @@ export function ChatPage({
   // Auto-submit initial query from home page search
   // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
   useEffect(() => {
-    const q = sessionStorage.getItem("navvgenx-initial-query");
+    const q = sessionStorage.getItem("navvura-initial-query");
     if (q) {
-      sessionStorage.removeItem("navvgenx-initial-query");
+      sessionStorage.removeItem("navvura-initial-query");
       setTimeout(() => sendMessage(q, initialCategory || "general"), 800);
     }
     // Camera search
-    const cameraSearch = sessionStorage.getItem("navvgenx-camera-search");
+    const cameraSearch = sessionStorage.getItem("navvura-camera-search");
     if (cameraSearch) {
-      sessionStorage.removeItem("navvgenx-camera-search");
+      sessionStorage.removeItem("navvura-camera-search");
       setTimeout(() => setShowCamera(true), 500);
     }
   }, []);
@@ -233,7 +237,8 @@ export function ChatPage({
     if (isFirstVisit) {
       if (activeCategory !== "general") {
         const greeting =
-          categoryGreetings[activeCategory] ?? categoryGreetings.general;
+          getCategoryGreetings()[activeCategory] ??
+          getCategoryGreetings().general;
         setMessages((prev) => [
           ...prev,
           {
@@ -247,7 +252,8 @@ export function ChatPage({
       }
     } else if (hasChanged) {
       const greeting =
-        categoryGreetings[activeCategory] ?? categoryGreetings.general;
+        getCategoryGreetings()[activeCategory] ??
+        getCategoryGreetings().general;
       setMessages((prev) => [
         ...prev,
         {
@@ -350,7 +356,7 @@ export function ChatPage({
       // Save to chat history
       try {
         const hist = JSON.parse(
-          localStorage.getItem("navvgenx-chat-history") || "[]",
+          localStorage.getItem("navvura-chat-history") || "[]",
         );
         hist.push({
           query: msgText,
@@ -358,7 +364,7 @@ export function ChatPage({
           timestamp: Date.now(),
         });
         if (hist.length > 50) hist.splice(0, hist.length - 50);
-        localStorage.setItem("navvgenx-chat-history", JSON.stringify(hist));
+        localStorage.setItem("navvura-chat-history", JSON.stringify(hist));
       } catch {}
       setMessages((prev) => [...prev, aiMsg]);
       setIsLoading(false);
@@ -469,6 +475,40 @@ export function ChatPage({
       toast.success("Image selected for analysis");
     }
     if (galleryInputRef.current) galleryInputRef.current.value = "";
+  };
+
+  const handleEditMessage = (msg: ChatMessage) => {
+    setEditingMsgId(msg.id);
+    setInput(msg.content);
+  };
+
+  const handleImageAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setAttachedImage(dataUrl);
+      toast.success("Image attached. Type your question about it.");
+    };
+    reader.readAsDataURL(file);
+    if (imageAttachRef.current) imageAttachRef.current.value = "";
+  };
+
+  const handleSendWithImage = async () => {
+    if (!input.trim() && !attachedImage) return;
+    if (attachedImage) {
+      const question = input.trim() || "What can you see in this image?";
+      setAttachedImage(null);
+      await sendMessage(
+        `[Image attached] ${question} — Based on the image, please provide a detailed answer.`,
+      );
+    } else if (editingMsgId) {
+      setEditingMsgId(null);
+      await sendMessage(input.trim());
+    } else {
+      await sendMessage(input.trim());
+    }
   };
 
   return (
@@ -698,6 +738,18 @@ export function ChatPage({
                       <HtmlContent html={msg.content} />
                     ) : (
                       msg.content
+                    )}
+                    {/* Edit button on user messages (hover) */}
+                    {msg.role === "user" && (
+                      <button
+                        type="button"
+                        onClick={() => handleEditMessage(msg)}
+                        className="absolute -top-2 -left-2 p-1.5 rounded-full transition-all opacity-0 group-hover:opacity-100 bg-muted text-muted-foreground hover:text-primary"
+                        title="Edit message"
+                        data-ocid="chat.edit_button"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
                     )}
                     {/* TTS button on AI messages */}
                     {msg.role === "ai" && (
@@ -995,18 +1047,83 @@ export function ChatPage({
             )}
           </AnimatePresence>
 
+          {/* Attached image preview */}
+          {attachedImage && (
+            <div className="flex items-center gap-2 mb-2">
+              <img
+                src={attachedImage}
+                alt="Attached"
+                className="h-14 w-14 rounded-xl object-cover border border-border"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground font-space">
+                  Image attached. Type your question below.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAttachedImage(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          {/* Edit mode indicator */}
+          {editingMsgId && (
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <Pencil className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs text-primary font-space">
+                Editing message
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingMsgId(null);
+                  setInput("");
+                }}
+                className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          <input
+            ref={imageAttachRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageAttach}
+            data-ocid="chat.upload_button"
+          />
           <div className="glass-card rounded-2xl flex items-center gap-2 px-3 py-2">
+            {/* Image attach button */}
+            <button
+              type="button"
+              onClick={() => imageAttachRef.current?.click()}
+              className="p-1.5 text-muted-foreground hover:text-primary transition-colors"
+              title="Attach image"
+              data-ocid="chat.upload_button"
+            >
+              <ImagePlus className="w-4 h-4" />
+            </button>
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) =>
-                e.key === "Enter" && !e.shiftKey && sendMessage(input)
+                e.key === "Enter" && !e.shiftKey && handleSendWithImage()
               }
               onFocus={() =>
                 input.trim().length >= 2 && setShowSuggestions(true)
               }
-              placeholder={"Ask NavvGenX anything..."}
+              placeholder={
+                attachedImage
+                  ? "Ask about this image..."
+                  : editingMsgId
+                    ? "Edit your message..."
+                    : "Ask NAVVURA AI anything..."
+              }
               className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-sm font-space"
               data-ocid="chat.input"
             />
@@ -1037,7 +1154,7 @@ export function ChatPage({
             </button>
             <button
               type="button"
-              onClick={() => sendMessage(input)}
+              onClick={handleSendWithImage}
               disabled={!input.trim() || isLoading}
               className="navvgenx-gradient-btn p-2 rounded-xl disabled:opacity-40 disabled:hover:transform-none"
               data-ocid="chat.submit_button"

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useActor } from "../hooks/useActor";
 
-const LS_KEY = "navvgenx-reminders";
+const LS_KEY = "navvura-reminders";
 
 interface LocalReminder {
   id: string;

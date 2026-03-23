@@ -13,10 +13,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Bot,
   Camera,
   Check,
   Edit3,
-  Languages,
+  Image,
   Loader2,
   Save,
   User,
@@ -31,14 +32,13 @@ export interface AccountData {
   name: string;
   mobile: string;
   gender: string;
-  language: string;
   age: string;
   photoUrl: string;
 }
 
 function loadAccount(): AccountData {
   try {
-    const saved = localStorage.getItem("navvgenx-account");
+    const saved = localStorage.getItem("navvura-account");
     if (saved) return JSON.parse(saved);
   } catch {
     // ignore
@@ -47,14 +47,13 @@ function loadAccount(): AccountData {
     name: "",
     mobile: "",
     gender: "",
-    language: "en",
     age: "",
     photoUrl: "",
   };
 }
 
 function saveAccount(data: AccountData): void {
-  localStorage.setItem("navvgenx-account", JSON.stringify(data));
+  localStorage.setItem("navvura-account", JSON.stringify(data));
 }
 
 interface AccountPageProps {
@@ -65,6 +64,10 @@ export function AccountPage({ onSaved }: AccountPageProps) {
   const [form, setForm] = useState<AccountData>(loadAccount);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [assistantName, setAssistantName] = useState(
+    () => localStorage.getItem("navvura-assistant-name") || "NAVVURA",
+  );
+  const [assistantNameSaved, setAssistantNameSaved] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const galleryRef = useRef<HTMLInputElement>(null);
 
@@ -149,7 +152,7 @@ export function AccountPage({ onSaved }: AccountPageProps) {
             {t("myAccount")}
           </h1>
           <p className="text-muted-foreground text-sm font-jakarta">
-            Manage your NavvGenX AI profile
+            Manage your NAVVURA AI profile
           </p>
         </motion.div>
 
@@ -207,7 +210,7 @@ export function AccountPage({ onSaved }: AccountPageProps) {
               className="gap-1.5"
               data-ocid="account.button"
             >
-              <Languages className="w-3.5 h-3.5" /> {t("chooseGallery")}
+              <Image className="w-3.5 h-3.5" /> {t("chooseGallery")}
             </Button>
           </div>
           <input
@@ -266,7 +269,7 @@ export function AccountPage({ onSaved }: AccountPageProps) {
               </div>
 
               {/* Gender + Language row */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1.5">
                   <Label className="font-jakarta text-sm">{t("gender")}</Label>
                   <Select
@@ -283,26 +286,6 @@ export function AccountPage({ onSaved }: AccountPageProps) {
                       <SelectItem value="prefer_not">
                         {t("preferNotToSay")}
                       </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="font-jakarta text-sm">
-                    {t("language")}
-                  </Label>
-                  <Select
-                    value={form.language}
-                    onValueChange={(v) =>
-                      setForm((p) => ({ ...p, language: v }))
-                    }
-                  >
-                    <SelectTrigger data-ocid="account.select">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">{t("english")}</SelectItem>
-                      <SelectItem value="hi">{t("hindi")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -328,6 +311,76 @@ export function AccountPage({ onSaved }: AccountPageProps) {
                   placeholder="Your age"
                   data-ocid="account.input"
                 />
+              </div>
+
+              {/* AI Assistant Name */}
+              <div
+                className="rounded-2xl p-4 space-y-3"
+                style={{
+                  background: "oklch(0.12 0.02 265 / 0.6)",
+                  border: "1px solid oklch(0.78 0.15 75 / 0.25)",
+                }}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Bot
+                    className="w-4 h-4"
+                    style={{ color: "oklch(0.78 0.15 75)" }}
+                  />
+                  <span
+                    className="font-semibold text-sm"
+                    style={{
+                      color: "oklch(0.78 0.15 75)",
+                      fontFamily: "Playfair Display, serif",
+                    }}
+                  >
+                    AI Assistant
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="assistant-name"
+                    className="font-jakarta text-sm"
+                  >
+                    Assistant Name
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="assistant-name"
+                      value={assistantName}
+                      onChange={(e) => setAssistantName(e.target.value)}
+                      placeholder="Navv"
+                      data-ocid="account.input"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        localStorage.setItem(
+                          "navvura-assistant-name",
+                          assistantName.trim() || "NAVVURA",
+                        );
+                        setAssistantNameSaved(true);
+                        setTimeout(() => setAssistantNameSaved(false), 2000);
+                        toast.success("Assistant name saved!");
+                      }}
+                      style={{
+                        background: "oklch(0.78 0.15 75)",
+                        color: "#0a1628",
+                        minWidth: "70px",
+                      }}
+                      data-ocid="account.save_button"
+                    >
+                      {assistantNameSaved ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        "Save"
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    This is the name your AI assistant will respond to
+                  </p>
+                </div>
               </div>
 
               {/* Save button */}

@@ -28,7 +28,7 @@ function formatTime(ts: number): string {
 export function HistoryPage() {
   const [chatHistory, setChatHistory] = useState<ChatHistoryEntry[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem("navvgenx-chat-history") || "[]");
+      return JSON.parse(localStorage.getItem("navvura-chat-history") || "[]");
     } catch {
       return [];
     }
@@ -38,7 +38,7 @@ export function HistoryPage() {
     () => {
       try {
         return JSON.parse(
-          localStorage.getItem("navvgenx-search-history") || "[]",
+          localStorage.getItem("navvura-search-history") || "[]",
         );
       } catch {
         return [];
@@ -47,13 +47,13 @@ export function HistoryPage() {
   );
 
   const clearChatHistory = () => {
-    localStorage.removeItem("navvgenx-chat-history");
+    localStorage.removeItem("navvura-chat-history");
     setChatHistory([]);
     toast.success("Chat history cleared");
   };
 
   const clearSearchHistory = () => {
-    localStorage.removeItem("navvgenx-search-history");
+    localStorage.removeItem("navvura-search-history");
     setSearchHistory([]);
     toast.success("Search history cleared");
   };

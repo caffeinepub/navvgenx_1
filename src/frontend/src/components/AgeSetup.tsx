@@ -65,7 +65,7 @@ export function AgeSetup({ onComplete, actor }: AgeSetupProps) {
 
     onComplete(newProfile);
     setAgeLoading(false);
-    toast.success("Welcome to NavvGenX! Personalized just for you.");
+    toast.success("Welcome to NAVVURA AI! Personalized just for you.");
   };
 
   const handleSkip = () => {
@@ -79,7 +79,7 @@ export function AgeSetup({ onComplete, actor }: AgeSetupProps) {
           <Logo size="lg" />
         </div>
         <h2 className="font-bricolage font-bold text-2xl text-foreground mb-2">
-          Welcome to NavvGenX
+          Welcome to NAVVURA AI
         </h2>
         <p className="text-muted-foreground text-sm font-space">
           Enter your age once to personalize your experience
