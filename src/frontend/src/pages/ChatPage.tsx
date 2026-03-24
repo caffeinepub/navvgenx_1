@@ -7,7 +7,6 @@ import {
   Images,
   Lightbulb,
   Menu,
-  Mic,
   Pencil,
   Send,
   SwitchCamera,
@@ -20,6 +19,7 @@ import React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import LinkEmbed from "../components/LinkEmbed";
+import { ProfessionalMic } from "../components/ProfessionalMic";
 import { useActor } from "../hooks/useActor";
 import {
   type ImageResult,
@@ -52,9 +52,9 @@ function NavvLogoN({ size = 32 }: { size?: number }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="NAVVURA AI N logo"
+      aria-label="NavvGenX AI N logo"
     >
-      <title>NAVVURA AI N</title>
+      <title>NavvGenX AI N</title>
       <circle
         cx="20"
         cy="20"
@@ -127,7 +127,7 @@ const categories = [
 
 function getCategoryGreetings(): Record<string, string> {
   const assistantName =
-    localStorage.getItem("navvura-assistant-name") || "NAVVURA AI";
+    localStorage.getItem("navvgenx-assistant-name") || "NavvGenX AI";
   return {
     health: `Hi! I'm ${assistantName}, your health and wellness expert. How can I help you today?`,
     love: `Hi! I'm ${assistantName}, your relationship coach. How can I help you today?`,
@@ -146,7 +146,7 @@ export function ChatPage({
 }: ChatPageProps) {
   const { actor } = useActor();
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const _n = localStorage.getItem("navvura-assistant-name") || "NAVVURA AI";
+    const _n = localStorage.getItem("navvgenx-assistant-name") || "NavvGenX AI";
     return [
       {
         id: "0",
@@ -215,15 +215,15 @@ export function ChatPage({
   // Auto-submit initial query from home page search
   // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
   useEffect(() => {
-    const q = sessionStorage.getItem("navvura-initial-query");
+    const q = sessionStorage.getItem("navvgenx-initial-query");
     if (q) {
-      sessionStorage.removeItem("navvura-initial-query");
+      sessionStorage.removeItem("navvgenx-initial-query");
       setTimeout(() => sendMessage(q, initialCategory || "general"), 800);
     }
     // Camera search
-    const cameraSearch = sessionStorage.getItem("navvura-camera-search");
+    const cameraSearch = sessionStorage.getItem("navvgenx-camera-search");
     if (cameraSearch) {
-      sessionStorage.removeItem("navvura-camera-search");
+      sessionStorage.removeItem("navvgenx-camera-search");
       setTimeout(() => setShowCamera(true), 500);
     }
   }, []);
@@ -356,7 +356,7 @@ export function ChatPage({
       // Save to chat history
       try {
         const hist = JSON.parse(
-          localStorage.getItem("navvura-chat-history") || "[]",
+          localStorage.getItem("navvgenx-chat-history") || "[]",
         );
         hist.push({
           query: msgText,
@@ -364,7 +364,7 @@ export function ChatPage({
           timestamp: Date.now(),
         });
         if (hist.length > 50) hist.splice(0, hist.length - 50);
-        localStorage.setItem("navvura-chat-history", JSON.stringify(hist));
+        localStorage.setItem("navvgenx-chat-history", JSON.stringify(hist));
       } catch {}
       setMessages((prev) => [...prev, aiMsg]);
       setIsLoading(false);
@@ -1006,6 +1006,51 @@ export function ChatPage({
 
         {/* Input area */}
         <div className="p-3 pb-3 border-t border-border relative">
+          {/* Quick prompt chips */}
+          <div
+            className="flex gap-2 overflow-x-auto pb-2 scrollbar-none"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {[
+              {
+                label: "Homework Helper",
+                prompt: "Help me solve this homework problem: ",
+              },
+              {
+                label: "Presentation",
+                prompt: "Create a presentation about: ",
+              },
+              { label: "Smart Advice", prompt: "Give me smart advice about: " },
+              {
+                label: "Shopping Guide",
+                prompt: "Help me find the best deals for: ",
+              },
+              {
+                label: "Study Tips",
+                prompt: "Give me effective study tips for: ",
+              },
+            ].map((chip) => (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={() => {
+                  setInput(chip.prompt);
+                }}
+                className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full transition-all whitespace-nowrap"
+                style={{
+                  border: "1.5px solid oklch(0.91 0.003 265)",
+                  color: "oklch(0.155 0.030 265)",
+                  background: "oklch(0.98 0.002 80)",
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  fontWeight: 500,
+                }}
+                data-ocid="chat.button"
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+
           {/* Suggestions dropdown */}
           <AnimatePresence>
             {showSuggestions && suggestions.length > 0 && (
@@ -1122,7 +1167,7 @@ export function ChatPage({
                   ? "Ask about this image..."
                   : editingMsgId
                     ? "Edit your message..."
-                    : "Ask NAVVURA AI anything..."
+                    : "Ask NavvGenX AI anything..."
               }
               className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-sm font-space"
               data-ocid="chat.input"
@@ -1141,7 +1186,7 @@ export function ChatPage({
                 }`}
                 data-ocid="chat.toggle"
               >
-                <Mic className="w-4 h-4" />
+                <ProfessionalMic size={16} />
               </button>
             )}
             <button

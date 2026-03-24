@@ -1,4 +1,4 @@
-// Google-style Answer Engine for NAVVURA AI
+// Google-style Answer Engine for NavvGenX AI
 export interface GoogleStyleAnswer {
   title: string;
   answer: string;

@@ -348,3 +348,28 @@
 .font-bricolage {
   font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
 }
+
+/* ── NavvGenX Shimmer Text Animation ── */
+@keyframes navvShimmer {
+  0% {
+    background-position: -300% center;
+  }
+  100% {
+    background-position: 300% center;
+  }
+}
+.navvgenx-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    #c9a84c,
+    #fff8e1,
+    #ffffff,
+    #fff8e1,
+    #c9a84c
+  );
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: navvShimmer 3s linear infinite;
+}

@@ -1,8 +1,6 @@
 import {
   ExternalLink,
   Maximize2,
-  Mic,
-  MicOff,
   Send,
   Speaker,
   Volume2,
@@ -19,6 +17,7 @@ import {
 import { wrapFriendly } from "../utils/friendlyTone";
 import { extractUrls } from "../utils/linkUtils";
 import LinkEmbed from "./LinkEmbed";
+import { ProfessionalMic } from "./ProfessionalMic";
 
 interface Message {
   id: string;
@@ -192,6 +191,44 @@ function getNavvAnswer(query: string): string {
 
   const topic = query.replace(/[?!.]/g, "").trim();
   return `Hey! Great question about "${topic}"! 😊\n\nHere's what I know:\n\n**About ${topic}:**\n• This is a fascinating topic that many people want to learn more about!\n• The best approach is to start with the fundamentals and build understanding step by step\n• There are many excellent resources — Wikipedia, YouTube tutorials, and academic sources are perfect starting points\n\n**My recommendations:**\n1. Break it into smaller, specific questions\n2. Try hands-on experience whenever possible\n3. Connect with communities and experts in this area\n4. Use multiple sources for a well-rounded perspective\n\nWhat specific aspect of ${topic} would you like to explore deeper? I'm here to help with everything! 🚀`;
+}
+
+// ─── Hindi Responses ──────────────────────────────────────────────────────────
+function getHindiResponse(query: string): string | null {
+  const q = query.trim();
+  if (
+    /\u0928\u092e\u0938\u094d\u0924\u0947|\u0939\u0947\u0932\u094b|\u0939\u093e\u092f/.test(
+      q,
+    )
+  )
+    return "\u0928\u092e\u0938\u094d\u0924\u0947! \u092e\u0948\u0902 NavvGenX AI \u0939\u0942\u0902\u0964 \u0906\u092a \u0915\u0948\u0938\u0947 \u0939\u0948\u0902? \u092e\u0948\u0902 \u0906\u092a\u0915\u0940 \u0915\u0948\u0938\u0947 \u092e\u0926\u0926 \u0915\u0930 \u0938\u0915\u0924\u093e \u0939\u0942\u0902?";
+  if (/\u092e\u094c\u0938\u092e|weather/.test(q))
+    return "\u0906\u091c \u0915\u093e \u092e\u094c\u0938\u092e \u091c\u093e\u0928\u0928\u0947 \u0915\u0947 \u0932\u093f\u090f \u0905\u092a\u0928\u093e \u0936\u0939\u0930 \u092c\u0924\u093e\u090f\u0902\u0964 \u092e\u0948\u0902 weather.com \u092f\u093e Google \u0938\u0947 \u091c\u093e\u0928\u0915\u093e\u0930\u0940 \u0926\u0947 \u0938\u0915\u0924\u093e \u0939\u0942\u0902\u0964";
+  if (
+    /joke|\u092e\u091c\u093e\u0915|\u091a\u0941\u091f\u0915\u0941\u0932\u093e/.test(
+      q,
+    )
+  )
+    return "\u090f\u0915 \u092e\u091c\u0947\u0926\u093e\u0930 \u091a\u0941\u091f\u0915\u0941\u0932\u093e: \u090f\u0915 \u092c\u093e\u0930 \u090f\u0915 \u092c\u091a\u094d\u091a\u0947 \u0928\u0947 \u092a\u0942\u091b\u093e \u2014 '\u092a\u093e\u092a\u093e, \u0906\u092a \u092e\u0941\u091d\u0947 \u0915\u0948\u0938\u0947 \u091c\u093e\u0928\u0924\u0947 \u0939\u0948\u0902?' \u092a\u093e\u092a\u093e \u092c\u094b\u0932\u0947 \u2014 '\u092c\u0947\u091f\u093e, \u092e\u0948\u0902 \u0924\u0941\u092e\u094d\u0939\u093e\u0930\u093e \u092c\u093e\u092a \u0939\u0942\u0902!' \ud83d\ude04";
+  if (
+    /\u0916\u093e\u0928\u093e|recipe|\u0930\u0947\u0938\u093f\u092a\u0940|food/.test(
+      q,
+    )
+  )
+    return "\u092d\u093e\u0930\u0924\u0940\u092f \u0916\u093e\u0928\u0947 \u0915\u0940 \u0930\u0947\u0938\u093f\u092a\u0940: \u0926\u093e\u0932 \u0924\u095c\u0915\u093e, \u092a\u0928\u0940\u0930 \u092c\u091f\u0930 \u092e\u0938\u093e\u0932\u093e, \u092c\u093f\u0930\u092f\u093e\u0928\u0940, \u091b\u094b\u0932\u0947 \u092d\u091f\u0942\u0930\u0947\u0964 \u0915\u094c\u0928 \u0938\u0940 \u0930\u0947\u0938\u093f\u092a\u0940 \u091a\u093e\u0939\u093f\u090f?";
+  if (/\u092a\u095d\u093e\u0908|study|exam/.test(q))
+    return "\u092a\u095d\u093e\u0908 \u0915\u0947 \u091f\u093f\u092a\u094d\u0938:\n1. Pomodoro Technique \u2014 25 \u092e\u093f\u0928\u091f \u092a\u095d\u094b, 5 \u092e\u093f\u0928\u091f \u0906\u0930\u093e\u092e\n2. Notes \u092c\u0928\u093e\u090f\u0902\n3. \u0930\u093e\u0924 \u0915\u094b \u0905\u091a\u094d\u091b\u0940 \u0928\u0940\u0902\u0926 \u0932\u0947\u0902\n4. \u0930\u094b\u091c\u093c practice \u0915\u0930\u0947\u0902";
+  if (/\u0938\u092e\u093e\u091a\u093e\u0930|news/.test(q))
+    return "\u0924\u093e\u091c\u093c\u093e \u0938\u092e\u093e\u091a\u093e\u0930 \u0915\u0947 \u0932\u093f\u090f Live section \u0916\u094b\u0932\u0947\u0902 \u092f\u093e news.google.com \u0935\u093f\u091c\u093c\u093f\u091f \u0915\u0930\u0947\u0902\u0964";
+  if (
+    /\u0927\u0928\u094d\u092f\u0935\u093e\u0926|thanks|\u0936\u0941\u0915\u094d\u0930\u093f\u092f\u093e/.test(
+      q,
+    )
+  )
+    return "\u0906\u092a\u0915\u093e \u0938\u094d\u0935\u093e\u0917\u0924 \u0939\u0948! \u0915\u094b\u0908 \u0914\u0930 \u0938\u0935\u093e\u0932 \u0939\u094b \u0924\u094b \u092c\u0924\u093e\u090f\u0902\u0964 \ud83d\ude0a";
+  if (/\u0906\u092a \u0915\u0948\u0938\u0947|how are you/.test(q))
+    return "\u092e\u0948\u0902 \u092c\u093f\u0932\u0915\u0941\u0932 \u0920\u0940\u0915 \u0939\u0942\u0902, \u0927\u0928\u094d\u092f\u0935\u093e\u0926! \u092c\u0924\u093e\u0907\u090f, \u0906\u092a \u0915\u0948\u0938\u0947 \u0939\u0948\u0902? \u0915\u0948\u0938\u0947 \u092e\u0926\u0926 \u0915\u0930\u0942\u0902?";
+  return `\u0906\u092a\u0928\u0947 \u092a\u0942\u091b\u093e: "${query}"\n\n\u092e\u0948\u0902 \u0907\u0938\u0915\u093e \u091c\u0935\u093e\u092c \u0926\u0947\u0928\u0947 \u0915\u0940 \u0915\u094b\u0936\u093f\u0936 \u0915\u0930\u0924\u093e \u0939\u0942\u0902\u0964 \u092c\u0947\u0939\u0924\u0930 \u091c\u093e\u0928\u0915\u093e\u0930\u0940 \u0915\u0947 \u0932\u093f\u090f Google \u092a\u0930 \u092d\u0940 search \u0915\u0930\u0947\u0902\u0964`;
 }
 
 // ─── Sound wave bars ────────────────────────────────────────────────────────────
@@ -493,7 +530,7 @@ export function NavvAssistant({
   // darkMode prop reserved for future use
   userAge = 99,
   onNavigate,
-  profilePhotoUrl,
+  profilePhotoUrl: _profilePhotoUrl,
 }: NavvAssistantProps) {
   const gold = "oklch(0.78 0.15 75)";
   const navyDark = "#0a1628";
@@ -512,7 +549,7 @@ export function NavvAssistant({
 
   // Get assistant name fresh each time
   const getAssistantName = () =>
-    localStorage.getItem("navvura-assistant-name") || "NAVVURA";
+    localStorage.getItem("navvgenx-assistant-name") || "NavvGenX";
 
   // Scroll when messages change - messages in dep triggers re-run
   // biome-ignore lint/correctness/useExhaustiveDependencies: messages change should trigger scroll
@@ -656,6 +693,46 @@ export function NavvAssistant({
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed) return;
+      // Hindi auto-detect
+      const isHindi = /[\u0900-\u097F]/.test(trimmed);
+      if (isHindi) {
+        const hindiResponse = getHindiResponse(trimmed);
+        if (hindiResponse) {
+          const userMsg: Message = {
+            id: `u-${Date.now()}`,
+            role: "user",
+            text: trimmed,
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, userMsg]);
+          setInputText("");
+          setSuggestions([]);
+          const loadingId = `loading-${Date.now()}`;
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: loadingId,
+              role: "navv",
+              text: "",
+              timestamp: new Date(),
+              isLoading: true,
+            },
+          ]);
+          setTimeout(() => {
+            const navvMsg: Message = {
+              id: `n-${Date.now()}`,
+              role: "navv",
+              text: hindiResponse,
+              timestamp: new Date(),
+            };
+            setMessages((prev) =>
+              prev.filter((m) => m.id !== loadingId).concat(navvMsg),
+            );
+            speak(hindiResponse.slice(0, 200));
+          }, 600);
+          return;
+        }
+      }
 
       setSuggestions([]);
       setInputText("");
@@ -888,17 +965,33 @@ export function NavvAssistant({
         whileTap={{ scale: 0.96 }}
         aria-label="Open Navv AI assistant"
       >
-        {profilePhotoUrl ? (
-          <img
-            src={profilePhotoUrl}
-            alt="Profile"
-            className="w-9 h-9 rounded-full object-cover"
-            style={{ border: `1.5px solid ${gold}` }}
-          />
-        ) : (
-          <NavvLogo size={36} dark={true} />
-        )}
+        <img
+          src="/assets/generated/ngx-logo-transparent.dim_512x512.png"
+          alt="NavvGenX AI"
+          className="w-9 h-9 object-contain"
+          style={{ filter: "drop-shadow(0 0 8px oklch(0.78 0.15 75 / 0.6))" }}
+        />
       </motion.button>
+      {/* Name label below orb */}
+      <div
+        className="fixed z-50 pointer-events-none"
+        style={{
+          bottom: "calc(5rem + env(safe-area-inset-bottom, 0px) + 56px)",
+          right: "0",
+          width: "56px",
+        }}
+      >
+        <p
+          className="text-center text-[9px] font-semibold truncate px-1"
+          style={{
+            color: gold,
+            fontFamily: "'Space Grotesk', sans-serif",
+            lineHeight: 1,
+          }}
+        >
+          {assistantName}
+        </p>
+      </div>
 
       {/* Full-screen overlay */}
       <AnimatePresence>
@@ -921,7 +1014,15 @@ export function NavvAssistant({
               }}
             >
               <div className="flex items-center gap-3">
-                <NavvLogo size={36} dark={true} />
+                <img
+                  src="/assets/generated/ngx-logo-transparent.dim_512x512.png"
+                  alt="NavvGenX AI"
+                  className="w-9 h-9 object-contain rounded-full"
+                  style={{
+                    background: "oklch(0.10 0.025 265)",
+                    padding: "4px",
+                  }}
+                />
                 <div>
                   <p
                     className="font-semibold text-base leading-tight"
@@ -950,7 +1051,7 @@ export function NavvAssistant({
                           className="text-xs"
                           style={{ color: `${gold}80` }}
                         >
-                          NAVVURA AI · Online
+                          NavvGenX AI · Online
                         </span>
                       </>
                     )}
@@ -1062,7 +1163,11 @@ export function NavvAssistant({
                   isListening ? "Stop listening" : "Start voice input"
                 }
               >
-                {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                {isListening ? (
+                  <ProfessionalMic size={18} className="opacity-60" />
+                ) : (
+                  <ProfessionalMic size={18} />
+                )}
               </motion.button>
               <button
                 type="button"

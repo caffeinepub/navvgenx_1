@@ -9,7 +9,7 @@ export function usePWAInstall() {
   const [promptEvent, setPromptEvent] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [isDismissed, setIsDismissed] = useState(
-    () => localStorage.getItem("navvura-install-dismissed") === "1",
+    () => localStorage.getItem("navvgenx-install-dismissed") === "1",
   );
   const [isInstalled, setIsInstalled] = useState(
     () =>
@@ -50,7 +50,7 @@ export function usePWAInstall() {
   }, [promptEvent]);
 
   const dismiss = useCallback(() => {
-    localStorage.setItem("navvura-install-dismissed", "1");
+    localStorage.setItem("navvgenx-install-dismissed", "1");
     setIsDismissed(true);
   }, []);
 

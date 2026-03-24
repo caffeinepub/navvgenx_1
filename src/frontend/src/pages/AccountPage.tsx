@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Bot,
   Camera,
@@ -38,7 +39,7 @@ export interface AccountData {
 
 function loadAccount(): AccountData {
   try {
-    const saved = localStorage.getItem("navvura-account");
+    const saved = localStorage.getItem("navvgenx-account");
     if (saved) return JSON.parse(saved);
   } catch {
     // ignore
@@ -53,7 +54,7 @@ function loadAccount(): AccountData {
 }
 
 function saveAccount(data: AccountData): void {
-  localStorage.setItem("navvura-account", JSON.stringify(data));
+  localStorage.setItem("navvgenx-account", JSON.stringify(data));
 }
 
 interface AccountPageProps {
@@ -65,9 +66,46 @@ export function AccountPage({ onSaved }: AccountPageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [assistantName, setAssistantName] = useState(
-    () => localStorage.getItem("navvura-assistant-name") || "NAVVURA",
+    () => localStorage.getItem("navvgenx-assistant-name") || "NavvGenX",
   );
   const [assistantNameSaved, setAssistantNameSaved] = useState(false);
+
+  // Nav preferences
+  const [hiddenSections, setHiddenSections] = useState<string[]>(() => {
+    try {
+      const prefs = localStorage.getItem("navvgenx-nav-prefs");
+      return prefs ? JSON.parse(prefs).hidden || [] : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const allSections = [
+    { id: "chat", label: "Chat" },
+    { id: "health", label: "Health" },
+    { id: "creative-ai", label: "Creative AI" },
+    { id: "love", label: "Love" },
+    { id: "study", label: "Study" },
+    { id: "career", label: "Career" },
+    { id: "fashion", label: "Fashion" },
+    { id: "business", label: "Business" },
+    { id: "live", label: "Live" },
+    { id: "history", label: "History" },
+  ];
+
+  const toggleSection = (id: string) => {
+    setHiddenSections((prev) => {
+      const updated = prev.includes(id)
+        ? prev.filter((s) => s !== id)
+        : [...prev, id];
+      localStorage.setItem(
+        "navvgenx-nav-prefs",
+        JSON.stringify({ hidden: updated }),
+      );
+      return updated;
+    });
+  };
+
   const [showCamera, setShowCamera] = useState(false);
   const galleryRef = useRef<HTMLInputElement>(null);
 
@@ -152,7 +190,7 @@ export function AccountPage({ onSaved }: AccountPageProps) {
             {t("myAccount")}
           </h1>
           <p className="text-muted-foreground text-sm font-jakarta">
-            Manage your NAVVURA AI profile
+            Manage your NavvGenX AI profile
           </p>
         </motion.div>
 
@@ -356,8 +394,8 @@ export function AccountPage({ onSaved }: AccountPageProps) {
                       size="sm"
                       onClick={() => {
                         localStorage.setItem(
-                          "navvura-assistant-name",
-                          assistantName.trim() || "NAVVURA",
+                          "navvgenx-assistant-name",
+                          assistantName.trim() || "NavvGenX",
                         );
                         setAssistantNameSaved(true);
                         setTimeout(() => setAssistantNameSaved(false), 2000);
@@ -380,6 +418,37 @@ export function AccountPage({ onSaved }: AccountPageProps) {
                   <p className="text-xs text-muted-foreground">
                     This is the name your AI assistant will respond to
                   </p>
+                </div>
+              </div>
+
+              {/* Customize Navigation */}
+              <div className="space-y-3 pt-4 border-t border-border">
+                <p className="font-semibold text-sm text-foreground">
+                  Customize Navigation
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Toggle sections to show or hide them in your navigation bar.
+                </p>
+                <div className="space-y-2">
+                  {allSections.map((section) => (
+                    <div
+                      key={section.id}
+                      className="flex items-center justify-between py-1.5"
+                    >
+                      <Label
+                        htmlFor={`nav-${section.id}`}
+                        className="text-sm font-space cursor-pointer"
+                      >
+                        {section.label}
+                      </Label>
+                      <Switch
+                        id={`nav-${section.id}`}
+                        checked={!hiddenSections.includes(section.id)}
+                        onCheckedChange={() => toggleSection(section.id)}
+                        data-ocid="account.switch"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 

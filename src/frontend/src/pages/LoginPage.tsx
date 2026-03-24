@@ -163,7 +163,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setLoginErrors(errs);
     if (Object.keys(errs).length > 0) return;
     localStorage.setItem(
-      "navvura-user",
+      "navvgenx-user",
       JSON.stringify({ email: loginEmail, rememberMe, loggedInAt: Date.now() }),
     );
     onLogin();
@@ -174,7 +174,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setSignupErrors(errs);
     if (Object.keys(errs).length > 0) return;
     localStorage.setItem(
-      "navvura-user",
+      "navvgenx-user",
       JSON.stringify({
         name: signupName,
         email: signupEmail,
@@ -243,7 +243,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
         <div className="relative z-10">
           <p className="text-white/40 text-xs font-jakarta">
-            &copy; {new Date().getFullYear()} NAVVURA AI
+            &copy; {new Date().getFullYear()} NavvGenX AI
           </p>
         </div>
       </div>
@@ -268,8 +268,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               </h1>
               <p className="text-muted-foreground font-jakarta text-sm">
                 {tab === "login"
-                  ? "Sign in to your NAVVURA AI account"
-                  : "Join NAVVURA AI — it's free"}
+                  ? "Sign in to your NavvGenX AI account"
+                  : "Join NavvGenX AI — it's free"}
               </p>
             </div>
 
@@ -534,7 +534,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             </Tabs>
 
             <p className="text-center text-xs text-muted-foreground font-jakarta mt-4">
-              By continuing you agree to NAVVURA AI&apos;s Terms of Service.
+              By continuing you agree to NavvGenX AI&apos;s Terms of Service.
             </p>
           </div>
         </motion.div>

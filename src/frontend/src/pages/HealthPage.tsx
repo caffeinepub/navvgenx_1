@@ -160,7 +160,7 @@ export function HealthPage() {
           Health Tracker 🏃
         </h1>
         <p className="text-muted-foreground font-inter text-sm">
-          Log your daily health metrics and get your NAVVURA AI Health Score
+          Log your daily health metrics and get your NavvGenX AI Health Score
         </p>
       </motion.div>
 
@@ -290,7 +290,7 @@ export function HealthPage() {
           <div className="glass-card rounded-3xl p-6 flex flex-col items-center">
             <CircularGauge score={score ?? 0} size={200} />
             <h3 className="font-poppins font-semibold text-base text-foreground mt-3">
-              Your NAVVURA AI Health Score
+              Your NavvGenX AI Health Score
             </h3>
             {score !== null && (
               <p className="text-muted-foreground text-sm font-inter mt-1">

@@ -24,7 +24,7 @@ export function useServiceWorkerUpdate() {
       if (!registration) return;
 
       const showUpdateToast = () => {
-        toast("New version of NAVVURA AI is available", {
+        toast("New version of NavvGenX AI is available", {
           duration: Number.POSITIVE_INFINITY,
           action: {
             label: "Update now",

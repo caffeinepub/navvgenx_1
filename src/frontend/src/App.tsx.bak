@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   Lightbulb,
   LogOut,
+  Mic,
   Moon,
   MoreHorizontal,
   Radio,
@@ -33,15 +34,11 @@ import { AgeSetup } from "./components/AgeSetup";
 import { LiveWidget } from "./components/LiveWidget";
 import { Logo } from "./components/Logo";
 import { NavvAssistant } from "./components/NavvAssistant";
-import { ProfessionalMic } from "./components/ProfessionalMic";
 import { useActor } from "./hooks/useActor";
-import { useNews } from "./hooks/useNews";
 import { usePWAInstall } from "./hooks/usePWAInstall";
 import { useServiceWorkerUpdate } from "./hooks/useServiceWorkerUpdate";
-import { useWeather } from "./hooks/useWeather";
 import { AccountPage } from "./pages/AccountPage";
 import { ChatPage } from "./pages/ChatPage";
-import { CreativeAIPage } from "./pages/CreativeAIPage";
 import { HealthPage } from "./pages/HealthPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { LivePage } from "./pages/LivePage";
@@ -70,8 +67,7 @@ type Section =
   | "career"
   | "fashion"
   | "business"
-  | "search"
-  | "creative-ai";
+  | "search";
 
 interface Profile {
   age: bigint;
@@ -91,7 +87,6 @@ const navItems = [
   { id: "live", Icon: Radio, label: "Live" },
   { id: "account", Icon: UserCircle, label: "Account" },
   { id: "history", Icon: Clock, label: "History" },
-  { id: "creative-ai", Icon: Wand2, label: "Creative AI" },
 ] as const;
 
 const bottomNavPrimary = ["home", "chat", "health"] as const;
@@ -105,7 +100,6 @@ const bottomNavMore = [
   "live",
   "account",
   "history",
-  "creative-ai",
 ] as const;
 
 const SECTION_EXPERTS: Record<string, string> = {
@@ -122,12 +116,50 @@ const SECTION_EXPERTS: Record<string, string> = {
   reminders: "productivity expert",
   account: "account manager",
   live: "live updates expert",
-  "creative-ai": "creative AI specialist",
 };
+
+const featureCards = [
+  {
+    Icon: BookOpen,
+    title: "Homework Helper",
+    desc: "Solve any assignment",
+    prompt: "Help me with my homework assignment",
+  },
+  {
+    Icon: LayoutDashboard,
+    title: "Presentations",
+    desc: "Create slides instantly",
+    prompt: "Make a presentation on",
+  },
+  {
+    Icon: Lightbulb,
+    title: "Smart Advice",
+    desc: "Life & career tips",
+    prompt: "Give me smart life and career advice",
+  },
+  {
+    Icon: ShoppingBag,
+    title: "Shopping Guide",
+    desc: "Best deals & suggestions",
+    prompt: "Help me find the best shopping deals",
+  },
+  {
+    Icon: GraduationCap,
+    title: "Study Helper",
+    desc: "Exam prep & notes",
+    prompt: "How can I study effectively for exams",
+  },
+  {
+    Icon: Wand2,
+    title: "Creative AI",
+    desc: "Images, voice, video, apps",
+    prompt: "Create something creative for me",
+  },
+];
 
 function buildGreeting(section: string): string {
   const expert = SECTION_EXPERTS[section] ?? `${section} expert`;
-  return `I am NavvGenX AI, your ${expert}. How can I help you?`;
+  return `I am NAVVURA AI, your ${expert}. How can I help you?`;
 }
 
 function speakText(text: string, lang = "en-IN") {
@@ -230,7 +262,7 @@ function getHomePanelResponse(query: string): string {
   ) {
     text = `🖼️ **Generating Image...**\n\nCreating an image for: "${query}"\n\nPowered by Pollinations AI ✨`;
   } else {
-    text = `🤖 **NavvGenX AI is here!**\n\nYou asked: "${query}"\n\nI can help with:\n• 📚 Homework & studies\n• 📊 Presentations\n• 🎵 Music & movies\n• 🛍️ Shopping\n• 💡 Life & career tips\n• ✨ Creative writing\n\nAsk me anything! 😊`;
+    text = `🤖 **NAVVURA AI is here!**\n\nYou asked: "${query}"\n\nI can help with:\n• 📚 Homework & studies\n• 📊 Presentations\n• 🎵 Music & movies\n• 🛍️ Shopping\n• 💡 Life & career tips\n• ✨ Creative writing\n\nAsk me anything! 😊`;
   }
 
   const links: string[] = [];
@@ -343,7 +375,7 @@ function SectionGreetingBanner({
             fontFamily: "'Space Grotesk', sans-serif",
           }}
         >
-          NavvGenX AI
+          NAVVURA AI
         </p>
         <p
           className="text-sm leading-snug"
@@ -397,7 +429,7 @@ function InstallBanner({
               fontFamily: "'Space Grotesk', sans-serif",
             }}
           >
-            Install NavvGenX AI
+            Install NAVVURA AI
           </p>
           <p
             className="text-[11px] leading-tight truncate"
@@ -439,251 +471,6 @@ function InstallBanner({
   );
 }
 
-// ─── Home Profile Avatar ─────────────────────────────────────────────────────
-function HomeProfileAvatar() {
-  const [photoUrl] = useState<string>(() => {
-    try {
-      const acc = localStorage.getItem("navvgenx-account");
-      return acc ? JSON.parse(acc).photoUrl || "" : "";
-    } catch {
-      return "";
-    }
-  });
-  const gold = "oklch(0.72 0.12 75)";
-  const navy = "oklch(0.155 0.030 265)";
-  if (!photoUrl) {
-    return (
-      <div
-        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-        style={{ background: navy, border: `2px solid ${gold}` }}
-      >
-        <img
-          src="/assets/generated/ngx-logo-transparent.dim_512x512.png"
-          alt="NGX"
-          className="w-7 h-7 object-contain"
-        />
-      </div>
-    );
-  }
-  return (
-    <img
-      src={photoUrl}
-      alt="Profile"
-      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-      style={{ border: `2px solid ${gold}` }}
-    />
-  );
-}
-
-// ─── Assistant Name Tag ───────────────────────────────────────────────────────
-function AssistantNameTag() {
-  const [assistantName, setAssistantName] = useState<string>(() => {
-    try {
-      const acc = localStorage.getItem("navvgenx-account");
-      return acc ? JSON.parse(acc).assistantName || "" : "";
-    } catch {
-      return "";
-    }
-  });
-
-  useEffect(() => {
-    const onStorage = () => {
-      try {
-        const acc = localStorage.getItem("navvgenx-account");
-        setAssistantName(acc ? JSON.parse(acc).assistantName || "" : "");
-      } catch {
-        // ignore
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
-  if (!assistantName) return null;
-  return (
-    <p
-      style={{
-        color: "rgba(255,255,255,0.95)",
-        fontFamily: "'Space Grotesk', sans-serif",
-        fontSize: "0.85rem",
-        fontWeight: 600,
-        marginTop: 6,
-        textShadow: "0 1px 4px rgba(0,0,0,0.2)",
-      }}
-    >
-      Your AI: <span style={{ color: "#fff8c6" }}>{assistantName}</span>
-    </p>
-  );
-}
-
-// ─── Home Preview Strip (3 columns: Weather / News / Business) ────────────────
-function HomePreviewStrip({
-  onSectionChange,
-}: { onSectionChange: (s: string) => void }) {
-  const { weather, location, loading: wLoading } = useWeather();
-  const { articles, loading: nLoading } = useNews();
-
-  const firstArticle = articles?.[0];
-
-  return (
-    <div className="px-4 pb-3">
-      <div className="grid grid-cols-3 gap-2">
-        {/* Weather Card */}
-        <button
-          type="button"
-          onClick={() => onSectionChange("live")}
-          className="rounded-xl p-3 text-left transition-all hover:scale-[1.03] active:scale-[0.97]"
-          style={{
-            background: "oklch(0.97 0.01 220)",
-            borderTop: "3px solid oklch(0.55 0.18 220)",
-            border: "1px solid oklch(0.55 0.18 220 / 0.35)",
-            borderTopColor: "oklch(0.55 0.18 220)",
-          }}
-          data-ocid="home.button"
-        >
-          <p
-            className="text-[10px] font-bold uppercase tracking-wide mb-1"
-            style={{ color: "oklch(0.40 0.15 220)" }}
-          >
-            Weather
-          </p>
-          {wLoading ? (
-            <div className="h-6 rounded bg-current opacity-10 animate-pulse" />
-          ) : (
-            <>
-              <p
-                className="text-sm font-bold leading-tight"
-                style={{ color: "oklch(0.20 0.12 220)" }}
-              >
-                {weather?.temp ?? "--"}°
-              </p>
-              <p
-                className="text-[10px] truncate mt-0.5"
-                style={{ color: "oklch(0.45 0.10 220)" }}
-              >
-                {weather?.condition ?? "—"}
-              </p>
-              <p
-                className="text-[9px] truncate"
-                style={{ color: "oklch(0.55 0.08 220)" }}
-              >
-                {location?.city ?? "Locating..."}
-              </p>
-            </>
-          )}
-        </button>
-
-        {/* News Card */}
-        <button
-          type="button"
-          onClick={() => onSectionChange("live")}
-          className="rounded-xl p-3 text-left transition-all hover:scale-[1.03] active:scale-[0.97]"
-          style={{
-            background: "oklch(0.97 0.01 145)",
-            borderTop: "3px solid oklch(0.50 0.16 145)",
-            border: "1px solid oklch(0.50 0.16 145 / 0.35)",
-            borderTopColor: "oklch(0.50 0.16 145)",
-          }}
-          data-ocid="home.button"
-        >
-          <p
-            className="text-[10px] font-bold uppercase tracking-wide mb-1"
-            style={{ color: "oklch(0.35 0.14 145)" }}
-          >
-            Latest News
-          </p>
-          {nLoading ? (
-            <div className="h-6 rounded bg-current opacity-10 animate-pulse" />
-          ) : (
-            <p
-              className="text-[10px] font-medium leading-snug line-clamp-3"
-              style={{ color: "oklch(0.25 0.10 145)" }}
-            >
-              {firstArticle?.title ?? "Loading headlines..."}
-            </p>
-          )}
-        </button>
-
-        {/* Business / Markets Card */}
-        <button
-          type="button"
-          onClick={() => onSectionChange("live")}
-          className="rounded-xl p-3 text-left transition-all hover:scale-[1.03] active:scale-[0.97]"
-          style={{
-            background: "oklch(0.97 0.02 55)",
-            borderTop: "3px solid oklch(0.60 0.15 55)",
-            border: "1px solid oklch(0.60 0.15 55 / 0.35)",
-            borderTopColor: "oklch(0.60 0.15 55)",
-          }}
-          data-ocid="home.button"
-        >
-          <p
-            className="text-[10px] font-bold uppercase tracking-wide mb-1"
-            style={{ color: "oklch(0.42 0.14 55)" }}
-          >
-            Markets
-          </p>
-          <p
-            className="text-[10px] font-semibold leading-snug"
-            style={{ color: "oklch(0.30 0.12 55)" }}
-          >
-            NIFTY
-          </p>
-          <p
-            className="text-[10px] font-semibold leading-snug"
-            style={{ color: "oklch(0.30 0.12 55)" }}
-          >
-            SENSEX
-          </p>
-          <p
-            className="text-[10px] font-semibold leading-snug"
-            style={{ color: "oklch(0.30 0.12 55)" }}
-          >
-            GOLD
-          </p>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Quick Sections Row ────────────────────────────────────────────────────────
-function QuickSectionsRow({
-  onSectionChange,
-}: { onSectionChange: (s: string) => void }) {
-  const sections = [
-    { id: "chat", label: "Chat", color: "oklch(0.55 0.18 250)" },
-    { id: "health", label: "Health", color: "oklch(0.55 0.18 145)" },
-    { id: "live", label: "Live", color: "oklch(0.55 0.22 25)" },
-    { id: "creative", label: "Creative AI", color: "oklch(0.60 0.18 330)" },
-    { id: "history", label: "History", color: "oklch(0.50 0.08 265)" },
-    { id: "reminders", label: "Reminders", color: "oklch(0.60 0.15 55)" },
-  ];
-  return (
-    <div className="px-4 pb-4">
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-        {sections.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => onSectionChange(s.id)}
-            className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all hover:scale-[1.04] active:scale-[0.96]"
-            style={{
-              background: `${s.color}20`,
-              border: `1.5px solid ${s.color}60`,
-              color: s.color,
-              fontFamily: "'Space Grotesk', sans-serif",
-            }}
-            data-ocid="home.button"
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Home Section ─────────────────────────────────────────────────────────────
 function HomeSection({
   onSectionChange,
@@ -718,7 +505,7 @@ function HomeSection({
   const handleSearch = (q?: string) => {
     const query = (q ?? searchQuery).trim();
     setShowSuggestions(false);
-    if (query) sessionStorage.setItem("navvgenx-initial-query", query);
+    if (query) sessionStorage.setItem("navvura-initial-query", query);
     onSectionChange("chat", "general");
   };
 
@@ -734,11 +521,11 @@ function HomeSection({
         setAiLoading(false);
         try {
           const history = JSON.parse(
-            localStorage.getItem("navvgenx-chat-history") || "[]",
+            localStorage.getItem("navvura-chat-history") || "[]",
           );
           history.unshift({ query, answer: response, timestamp: Date.now() });
           localStorage.setItem(
-            "navvgenx-chat-history",
+            "navvura-chat-history",
             JSON.stringify(history.slice(0, 50)),
           );
         } catch {
@@ -821,41 +608,60 @@ function HomeSection({
     canvas.height = videoRef.current.videoHeight;
     canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
     closeCamera();
-    sessionStorage.setItem("navvgenx-camera-search", "1");
+    sessionStorage.setItem("navvura-camera-search", "1");
     onSectionChange("chat", "general");
   };
+
+  const suggestionChips = [
+    "What is the weather today?",
+    "Tell me a joke",
+    "Help me study",
+    "Generate an image of a landscape",
+  ];
 
   return (
     <>
       <div className="w-full mx-auto flex flex-col" style={{ maxWidth: 560 }}>
-        {/* ===== HERO SECTION — v43 style ===== */}
+        {/* ===== HERO SECTION ===== */}
         <div
-          className="px-5 pt-8 pb-7 text-center"
-          style={{
-            background: "oklch(0.99 0.001 80)",
-          }}
+          className="hex-pattern px-5 pt-8 pb-6"
+          style={{ background: "oklch(0.985 0.002 80)" }}
         >
-          {/* NGX Logo */}
-          <div className="flex justify-center mb-4">
-            <Logo size="lg" />
+          {/* ===== NAVVURA AI LOGO ===== */}
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <div
+                className="absolute inset-0 rounded-2xl blur-2xl opacity-25"
+                style={{ background: "oklch(0.72 0.12 75)" }}
+              />
+              <img
+                src="/assets/generated/navvura-logo-full.dim_600x200.png"
+                alt="NAVVURA AI"
+                className="relative h-14 sm:h-16 object-contain"
+                style={{
+                  filter: "drop-shadow(0 4px 20px oklch(0.72 0.12 75 / 0.5))",
+                  maxWidth: "280px",
+                }}
+              />
+            </div>
           </div>
-          {/* App name — single clean line */}
           <h1
-            className="font-playfair font-black mb-3"
+            className="font-playfair text-3xl sm:text-4xl font-bold leading-tight mb-2"
+            style={{ color: "oklch(0.155 0.030 265)" }}
+          >
+            Your AI Companion
+            <br />
+            <span style={{ color: "oklch(0.72 0.12 75)" }}>for Everything</span>
+          </h1>
+          <p
+            className="text-sm mb-5"
             style={{
-              fontSize: "clamp(2.2rem, 8vw, 3.2rem)",
-              letterSpacing: "-0.02em",
-              lineHeight: 1.1,
-              color: "oklch(0.155 0.030 265)",
+              color: "oklch(0.50 0.008 265)",
+              fontFamily: "'Space Grotesk', sans-serif",
             }}
           >
-            NavvGenX <span style={{ color: "oklch(0.72 0.12 75)" }}>AI</span>
-          </h1>
-          {/* Profile avatar + assistant name row */}
-          <div className="flex items-center justify-center gap-3 mb-5">
-            <HomeProfileAvatar />
-            <AssistantNameTag />
-          </div>
+            Search smarter. Chat better. Live fully.
+          </p>
 
           {/* Main Search Bar */}
           <div className="relative">
@@ -883,7 +689,7 @@ function HomeSection({
                 onFocus={() =>
                   searchQuery.trim().length >= 2 && setShowSuggestions(true)
                 }
-                placeholder="Ask NavvGenX AI anything..."
+                placeholder="Ask NAVVURA AI anything..."
                 className="flex-1 bg-transparent outline-none text-sm"
                 style={{
                   color: "oklch(0.08 0.012 265)",
@@ -913,10 +719,7 @@ function HomeSection({
                 title="Voice search"
                 data-ocid="home.toggle"
               >
-                <ProfessionalMic
-                  size={16}
-                  className={isRecording ? "animate-pulse" : ""}
-                />
+                <Mic size={16} className={isRecording ? "animate-pulse" : ""} />
               </button>
               <button
                 type="button"
@@ -973,6 +776,32 @@ function HomeSection({
               )}
             </AnimatePresence>
           </div>
+
+          {/* Quick suggestion chips */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {suggestionChips.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => {
+                  setAiInput(chip);
+                  setAiPanelOpen(true);
+                  setTimeout(() => handleAISubmit(chip), 100);
+                }}
+                className="text-xs px-3 py-1.5 rounded-full transition-all"
+                style={{
+                  background: "white",
+                  border: "1px solid oklch(0.91 0.003 265)",
+                  color: "oklch(0.155 0.030 265)",
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  boxShadow: "0 1px 3px oklch(0.155 0.030 265 / 0.06)",
+                }}
+                data-ocid="home.button"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ===== AI PANEL (slides from right) ===== */}
@@ -1023,7 +852,7 @@ function HomeSection({
                       fontFamily: "'Space Grotesk', sans-serif",
                     }}
                   >
-                    NavvGenX AI
+                    NAVVURA AI
                   </span>
                 </div>
                 <button
@@ -1109,7 +938,7 @@ function HomeSection({
                         borderTopColor: "oklch(0.72 0.12 75)",
                       }}
                     />
-                    NavvGenX AI is thinking...
+                    NAVVURA AI is thinking...
                   </div>
                 )}
                 {aiResponse && !aiLoading && (
@@ -1179,11 +1008,60 @@ function HomeSection({
           )}
         </AnimatePresence>
 
-        {/* ===== 3-COLUMN PREVIEW STRIP ===== */}
-        <HomePreviewStrip onSectionChange={onSectionChange} />
-
-        {/* ===== QUICK SECTIONS ROW ===== */}
-        <QuickSectionsRow onSectionChange={onSectionChange} />
+        {/* ===== FEATURE GRID ===== */}
+        <div className="px-4 pb-4 pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {featureCards.map((card) => (
+              <motion.button
+                key={card.title}
+                type="button"
+                whileHover={{
+                  y: -4,
+                  boxShadow: "0 12px 30px oklch(0.155 0.030 265 / 0.12)",
+                }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => {
+                  setAiInput(card.prompt);
+                  setAiPanelOpen(true);
+                }}
+                className="flex flex-col items-center p-4 rounded-2xl text-center transition-all bg-white dark:bg-card"
+                style={{
+                  border: "1px solid oklch(0.91 0.003 265)",
+                  boxShadow: "0 1px 4px oklch(0.155 0.030 265 / 0.05)",
+                }}
+                data-ocid="home.button"
+              >
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center mb-2.5"
+                  style={{
+                    background: "oklch(0.94 0.018 80)",
+                    border: "1px solid oklch(0.72 0.12 75 / 0.3)",
+                  }}
+                >
+                  <card.Icon
+                    className="w-5 h-5"
+                    style={{ color: "oklch(0.155 0.030 265)" }}
+                  />
+                </div>
+                <p
+                  className="font-semibold text-xs mb-0.5"
+                  style={{
+                    color: "oklch(0.155 0.030 265)",
+                    fontFamily: "'Space Grotesk', sans-serif",
+                  }}
+                >
+                  {card.title}
+                </p>
+                <p
+                  className="text-[11px]"
+                  style={{ color: "oklch(0.50 0.008 265)" }}
+                >
+                  {card.desc}
+                </p>
+              </motion.button>
+            ))}
+          </div>
+        </div>
 
         {/* ===== LIVE WIDGET ===== */}
         <div className="px-4 pb-4">
@@ -1275,7 +1153,7 @@ function CategorySection({
               fontFamily: "'Space Grotesk', sans-serif",
             }}
           >
-            NavvGenX AI — {label}
+            NAVVURA AI — {label}
           </p>
           <p className="text-xs" style={{ color: "oklch(0.50 0.008 265)" }}>
             Your {SECTION_EXPERTS[category] ?? `${category} expert`}
@@ -1292,7 +1170,7 @@ function CategorySection({
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
-    () => localStorage.getItem("navvgenx-user") !== null,
+    () => localStorage.getItem("navvura-user") !== null,
   );
   const [activeSection, setActiveSection] = useState<Section>("home");
   const [activeCategory, setActiveCategory] = useState("general");
@@ -1301,7 +1179,7 @@ export default function App() {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [profile, setProfile] = useState<Profile | null>(() => {
-    const saved = localStorage.getItem("navvgenx-profile");
+    const saved = localStorage.getItem("navvura-profile");
     if (saved) {
       try {
         const p = JSON.parse(saved);
@@ -1315,7 +1193,7 @@ export default function App() {
   const { actor } = useActor();
   const [profilePhotoUrl] = useState<string>(() => {
     try {
-      const acc = localStorage.getItem("navvgenx-account");
+      const acc = localStorage.getItem("navvura-account");
       return acc ? JSON.parse(acc).photoUrl || "" : "";
     } catch {
       return "";
@@ -1331,7 +1209,7 @@ export default function App() {
 
   const handleProfileSet = useCallback((p: Profile) => {
     localStorage.setItem(
-      "navvgenx-profile",
+      "navvura-profile",
       JSON.stringify({ age: p.age.toString(), ageGroup: p.ageGroup }),
     );
     setProfile(p);
@@ -1340,11 +1218,11 @@ export default function App() {
   // Welcome speech
   useEffect(() => {
     if (!isLoggedIn) return;
-    if (sessionStorage.getItem("navvgenx-welcomed")) return;
-    sessionStorage.setItem("navvgenx-welcomed", "1");
+    if (sessionStorage.getItem("navvura-welcomed")) return;
+    sessionStorage.setItem("navvura-welcomed", "1");
     const timer = setTimeout(() => {
       try {
-        const acc = localStorage.getItem("navvgenx-account");
+        const acc = localStorage.getItem("navvura-account");
         const accData = acc ? JSON.parse(acc) : null;
         const name = accData?.name || "";
         const lang = accData?.language || "en";
@@ -1358,18 +1236,18 @@ export default function App() {
         else
           speakText(
             name
-              ? `Hello ${name}, welcome to NavvGenX AI`
-              : "Welcome to NavvGenX AI",
+              ? `Hello ${name}, welcome to Nav Gen X`
+              : "Welcome to Nav Gen X",
           );
       } catch {
-        speakText("Welcome to NavvGenX AI");
+        speakText("Welcome to Nav Gen X");
       }
     }, 1500);
     return () => clearTimeout(timer);
   }, [isLoggedIn]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("navvgenx-dark");
+    const saved = localStorage.getItem("navvura-dark");
     if (saved === "true") setDarkMode(true);
   }, []);
 
@@ -1386,7 +1264,7 @@ export default function App() {
   useEffect(() => {
     if (darkMode) document.documentElement.classList.add("dark");
     else document.documentElement.classList.remove("dark");
-    localStorage.setItem("navvgenx-dark", String(darkMode));
+    localStorage.setItem("navvura-dark", String(darkMode));
   }, [darkMode]);
 
   const triggerSectionGreeting = useCallback((section: string) => {
@@ -1397,7 +1275,7 @@ export default function App() {
   }, []);
 
   const handleSignOut = () => {
-    localStorage.removeItem("navvgenx-user");
+    localStorage.removeItem("navvura-user");
     setIsLoggedIn(false);
     toast.success("Signed out successfully");
   };
@@ -1425,10 +1303,6 @@ export default function App() {
     ) {
       setActiveSection("chat");
       setActiveCategory(category || page);
-      return;
-    }
-    if (page === "creative-ai") {
-      setActiveSection("creative-ai");
       return;
     }
     setActiveSection(page as Section);
@@ -1460,18 +1334,11 @@ export default function App() {
         navigate("history");
         return;
       }
-      if (id === "creative-ai") {
-        navigate("creative-ai");
-        triggerSectionGreeting("creative-ai");
-        return;
-      }
       if (id === "chat") {
-        sessionStorage.removeItem("navvgenx-initial-query");
         navigate("chat", "general");
         triggerSectionGreeting("general");
         return;
       }
-      sessionStorage.removeItem("navvgenx-initial-query");
       navigate("chat", id);
       triggerSectionGreeting(id);
     },
@@ -1482,7 +1349,7 @@ export default function App() {
     navigator.clipboard
       .writeText(window.location.href)
       .then(() => toast.success("Link copied to clipboard"))
-      .catch(() => toast.info(`NavvGenX AI: ${window.location.href}`));
+      .catch(() => toast.info(`NAVVURA AI: ${window.location.href}`));
   };
 
   const isNavActive = (id: string) =>
@@ -1528,15 +1395,15 @@ export default function App() {
 
   // More section categories
   const moreCategories = [
-    { id: "study", label: "Study", color: "oklch(0.55 0.18 250)" },
-    { id: "fashion", label: "Fashion", color: "oklch(0.60 0.18 330)" },
-    { id: "law", label: "Law", color: "oklch(0.55 0.16 290)" },
-    { id: "career", label: "Career", color: "oklch(0.60 0.15 55)" },
-    { id: "business", label: "Business", color: "oklch(0.50 0.16 145)" },
-    { id: "love", label: "Love", color: "oklch(0.55 0.22 25)" },
-    { id: "recipes", label: "Recipes", color: "oklch(0.60 0.15 55)" },
-    { id: "music", label: "Music", color: "oklch(0.55 0.18 190)" },
-    { id: "movies", label: "Movies", color: "oklch(0.50 0.16 270)" },
+    { id: "study", label: "📚 Study", color: "#2563EB" },
+    { id: "fashion", label: "👗 Fashion", color: "#DB2777" },
+    { id: "law", label: "⚖️ Law", color: "#7C3AED" },
+    { id: "career", label: "💼 Career", color: "#EA580C" },
+    { id: "business", label: "📈 Business", color: "#16A34A" },
+    { id: "love", label: "❤️ Love", color: "#DC2626" },
+    { id: "recipes", label: "🍳 Recipes", color: "#D97706" },
+    { id: "music", label: "🎵 Music", color: "#0D9488" },
+    { id: "movies", label: "🎬 Movies", color: "#4F46E5" },
   ];
 
   return (
@@ -1581,16 +1448,12 @@ export default function App() {
             onClick={() => navigate("home")}
             className="flex items-center gap-2.5 shrink-0"
           >
-            <Logo size="sm" />
-            <span
-              className="font-playfair font-black text-sm hidden sm:block"
-              style={{
-                color: "oklch(0.155 0.030 265)",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              NavvGenX <span style={{ color: "oklch(0.72 0.12 75)" }}>AI</span>
-            </span>
+            <img
+              src="/assets/generated/navvura-logo-full.dim_600x200.png"
+              alt="NAVVURA AI"
+              className="h-8 object-contain"
+              style={{ maxWidth: 120 }}
+            />
           </button>
 
           {/* Desktop nav */}
@@ -1857,9 +1720,6 @@ export default function App() {
           {/* ── History ── */}
           {activeSection === "history" && <HistoryPage />}
 
-          {/* ── Creative AI ── */}
-          {activeSection === "creative-ai" && <CreativeAIPage />}
-
           {/* ── Search (redirects to chat with search category) ── */}
           {activeSection === "search" && (
             <CategorySection
@@ -2016,31 +1876,26 @@ export default function App() {
                 }}
                 className="flex flex-col items-center py-2.5 px-2 rounded-xl text-center transition-all"
                 style={{
-                  background: cat.color,
-                  borderLeft: `3px solid ${cat.color}`,
-                  boxShadow: `0 2px 8px ${cat.color}40`,
+                  background: "oklch(0.985 0.002 80)",
+                  border: "1px solid oklch(0.91 0.003 265)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform =
-                    "scale(1.06) translateY(-2px)";
-                  e.currentTarget.style.boxShadow = `0 6px 16px ${cat.color}60`;
+                  e.currentTarget.style.background = "oklch(0.94 0.018 80)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "";
-                  e.currentTarget.style.boxShadow = `0 2px 8px ${cat.color}40`;
+                  e.currentTarget.style.background = "oklch(0.985 0.002 80)";
                 }}
                 data-ocid="nav.button"
               >
+                <span className="text-lg mb-1">{cat.label.split(" ")[0]}</span>
                 <span
-                  className="text-[11px] font-semibold mt-1"
+                  className="text-[11px] font-semibold"
                   style={{
-                    color: "#ffffff",
+                    color: cat.color,
                     fontFamily: "'Space Grotesk', sans-serif",
-                    textShadow: "0 1px 2px rgba(0,0,0,0.4)",
-                    letterSpacing: "0.01em",
                   }}
                 >
-                  {cat.label}
+                  {cat.label.split(" ").slice(1).join(" ")}
                 </span>
               </button>
             ))}
