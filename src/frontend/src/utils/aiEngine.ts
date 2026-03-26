@@ -1902,6 +1902,38 @@ export async function generateAIResponse(
     }
   }
 
+  // ── Business ideas detection ──
+  if (
+    /best ideas for business|business ideas|startup ideas|business to start|start a business/i.test(
+      lower,
+    )
+  ) {
+    return {
+      text: `Here are the best business ideas right now:
+
+**Top Business Ideas for 2024–2025:**
+1. **AI/Tech Services** — Build chatbots, automation tools, or AI-powered apps for small businesses
+2. **E-commerce Store** — Sell niche products on Amazon, Flipkart, or your own store
+3. **Digital Marketing Agency** — Help businesses with social media, SEO, ads
+4. **Content Creation** — YouTube, Instagram, blogs, podcasts
+5. **Freelancing** — Web development, graphic design, writing, video editing
+6. **Online Tutoring** — Teach skills you know (coding, music, languages)
+7. **Food Delivery / Cloud Kitchen** — Start a small food business with delivery
+8. **Health & Wellness** — Yoga studio, fitness coaching, nutrition consulting
+
+**Quick start tip:** Start with freelancing or content creation — low cost, high potential!`,
+      suggestions: [
+        "How to start a business with no money",
+        "Best business skills to learn",
+        "How to market a small business",
+        "Best freelancing platforms",
+      ],
+      imageResults: getImageResults("business startup ideas"),
+      quickLinks,
+      sources: ["NavvGenX AI Knowledge Base"],
+    };
+  }
+
   // ── Funny/joke detection ──
   const funnyResponse = detectFunnyQuestion(message);
   if (funnyResponse) {

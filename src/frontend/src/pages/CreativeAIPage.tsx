@@ -22,6 +22,9 @@ function ImageGenerator() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [fallbackIndex, setFallbackIndex] = useState(0);
+  const [sourcesForPrompt, setSourcesForPrompt] = useState<string[]>([]);
+
   const generateImage = () => {
     const p = prompt.trim();
     if (!p) {
@@ -31,17 +34,34 @@ function ImageGenerator() {
     setLoading(true);
     setError("");
     setImageUrl("");
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=512&height=512&nologo=true&seed=${Date.now()}`;
-    const img = new window.Image();
-    img.onload = () => {
-      setImageUrl(url);
-      setLoading(false);
-    };
-    img.onerror = () => {
-      setError("Image generation failed. Please try again.");
-      setLoading(false);
-    };
-    img.src = url;
+    setFallbackIndex(0);
+
+    const encodedPrompt = encodeURIComponent(p);
+    const seed = Date.now();
+    const sources = [
+      `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true&seed=${seed}&model=flux`,
+      `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true&seed=${seed + 1}`,
+      `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true&seed=${seed + 2}&enhance=true`,
+      `https://source.unsplash.com/512x512/?${encodeURIComponent(p.split(" ").slice(0, 3).join(","))}`,
+    ];
+    setSourcesForPrompt(sources);
+    // Set first URL directly — the rendered <img> onError handles fallback
+    setImageUrl(sources[0]);
+    // Stop loading spinner after a short delay (image loads async in browser)
+    setTimeout(() => setLoading(false), 800);
+  };
+
+  const handleImageError = () => {
+    const next = fallbackIndex + 1;
+    if (next < sourcesForPrompt.length) {
+      setFallbackIndex(next);
+      setImageUrl(sourcesForPrompt[next]);
+    } else {
+      setImageUrl("");
+      setError(
+        `Could not generate image for "${prompt.trim()}". Try a simpler description or try again.`,
+      );
+    }
   };
 
   const examplePrompts = [
@@ -147,15 +167,26 @@ function ImageGenerator() {
           </motion.div>
         )}
         {error && (
-          <motion.p
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-sm text-center py-4"
-            style={{ color: "oklch(0.55 0.22 25)" }}
+            className="text-sm text-center py-4 space-y-2"
             data-ocid="creative.error_state"
           >
-            {error}
-          </motion.p>
+            <p style={{ color: "oklch(0.55 0.22 25)" }}>{error}</p>
+            <button
+              type="button"
+              onClick={generateImage}
+              className="px-4 py-2 rounded-full text-xs font-semibold transition-all"
+              style={{
+                background: gold,
+                color: "oklch(0.08 0.022 265)",
+              }}
+              data-ocid="creative.button"
+            >
+              Try Again
+            </button>
+          </motion.div>
         )}
         {imageUrl && !loading && (
           <motion.div
@@ -168,6 +199,7 @@ function ImageGenerator() {
             <img
               src={imageUrl}
               alt={prompt}
+              onError={handleImageError}
               className="w-full object-cover"
               style={{ maxHeight: 400 }}
             />

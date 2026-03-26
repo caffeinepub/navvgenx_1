@@ -13,7 +13,7 @@ export function Logo({ size = "md" }: LogoProps) {
           style={{ background: "oklch(0.72 0.12 75)" }}
         />
         <img
-          src="/assets/generated/ngx-logo-transparent.dim_512x512.png"
+          src="/assets/generated/ngx-logo-v2-transparent.dim_512x512.png"
           alt="NavvGenX AI"
           className={`relative object-contain ${heights[size]}`}
           style={{

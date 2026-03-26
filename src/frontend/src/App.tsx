@@ -5,11 +5,13 @@ import {
   BookOpen,
   Briefcase,
   Camera,
+  ChevronRight,
   Clock,
   Download,
   GraduationCap,
   Heart,
   Home,
+  ImagePlus,
   LayoutDashboard,
   Lightbulb,
   LogOut,
@@ -27,6 +29,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AgeSetup } from "./components/AgeSetup";
@@ -522,125 +525,126 @@ function HomePreviewStrip({
 }: { onSectionChange: (s: string) => void }) {
   const { weather, location, loading: wLoading } = useWeather();
   const { articles, loading: nLoading } = useNews();
-
   const firstArticle = articles?.[0];
 
   return (
     <div className="px-4 pb-3">
-      <div className="grid grid-cols-3 gap-2">
-        {/* Weather Card */}
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{
+          border: "1px solid oklch(0.91 0.003 265)",
+          boxShadow: "0 2px 12px oklch(0.155 0.030 265 / 0.06)",
+        }}
+      >
+        {/* Weather row */}
         <button
           type="button"
           onClick={() => onSectionChange("live")}
-          className="rounded-xl p-3 text-left transition-all hover:scale-[1.03] active:scale-[0.97]"
-          style={{
-            background: "oklch(0.97 0.01 220)",
-            borderTop: "3px solid oklch(0.55 0.18 220)",
-            border: "1px solid oklch(0.55 0.18 220 / 0.35)",
-            borderTopColor: "oklch(0.55 0.18 220)",
-          }}
+          className="w-full flex items-center gap-4 px-4 py-3 text-left transition-all hover:bg-blue-50/50 dark:hover:bg-blue-900/10 bg-white dark:bg-card"
+          style={{ borderBottom: "1px solid oklch(0.91 0.003 265)" }}
           data-ocid="home.button"
         >
-          <p
-            className="text-[10px] font-bold uppercase tracking-wide mb-1"
-            style={{ color: "oklch(0.40 0.15 220)" }}
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-lg"
+            style={{ background: "oklch(0.94 0.04 220)" }}
           >
-            Weather
-          </p>
-          {wLoading ? (
-            <div className="h-6 rounded bg-current opacity-10 animate-pulse" />
-          ) : (
-            <>
-              <p
-                className="text-sm font-bold leading-tight"
-                style={{ color: "oklch(0.20 0.12 220)" }}
-              >
-                {weather?.temp ?? "--"}°
-              </p>
-              <p
-                className="text-[10px] truncate mt-0.5"
-                style={{ color: "oklch(0.45 0.10 220)" }}
-              >
-                {weather?.condition ?? "—"}
-              </p>
-              <p
-                className="text-[9px] truncate"
-                style={{ color: "oklch(0.55 0.08 220)" }}
-              >
-                {location?.city ?? "Locating..."}
-              </p>
-            </>
-          )}
-        </button>
-
-        {/* News Card */}
-        <button
-          type="button"
-          onClick={() => onSectionChange("live")}
-          className="rounded-xl p-3 text-left transition-all hover:scale-[1.03] active:scale-[0.97]"
-          style={{
-            background: "oklch(0.97 0.01 145)",
-            borderTop: "3px solid oklch(0.50 0.16 145)",
-            border: "1px solid oklch(0.50 0.16 145 / 0.35)",
-            borderTopColor: "oklch(0.50 0.16 145)",
-          }}
-          data-ocid="home.button"
-        >
-          <p
-            className="text-[10px] font-bold uppercase tracking-wide mb-1"
-            style={{ color: "oklch(0.35 0.14 145)" }}
-          >
-            Latest News
-          </p>
-          {nLoading ? (
-            <div className="h-6 rounded bg-current opacity-10 animate-pulse" />
-          ) : (
+            &#x1F324;
+          </div>
+          <div className="flex-1 min-w-0">
             <p
-              className="text-[10px] font-medium leading-snug line-clamp-3"
-              style={{ color: "oklch(0.25 0.10 145)" }}
+              className="text-[10px] font-bold uppercase tracking-widest mb-0.5"
+              style={{ color: "oklch(0.40 0.15 220)" }}
             >
-              {firstArticle?.title ?? "Loading headlines..."}
+              Weather
             </p>
-          )}
+            {wLoading ? (
+              <div className="h-4 w-24 rounded bg-blue-200/60 animate-pulse" />
+            ) : (
+              <>
+                <p
+                  className="text-sm font-bold"
+                  style={{ color: "oklch(0.20 0.12 220)" }}
+                >
+                  {weather?.temp ?? "--"}° {weather?.condition ?? "—"}
+                </p>
+                <p
+                  className="text-[10px] truncate"
+                  style={{ color: "oklch(0.55 0.08 220)" }}
+                >
+                  {location?.city ?? "Locating..."}
+                </p>
+              </>
+            )}
+          </div>
+          <ChevronRight size={14} style={{ color: "oklch(0.65 0.12 220)" }} />
         </button>
 
-        {/* Business / Markets Card */}
+        {/* Latest News row */}
         <button
           type="button"
           onClick={() => onSectionChange("live")}
-          className="rounded-xl p-3 text-left transition-all hover:scale-[1.03] active:scale-[0.97]"
-          style={{
-            background: "oklch(0.97 0.02 55)",
-            borderTop: "3px solid oklch(0.60 0.15 55)",
-            border: "1px solid oklch(0.60 0.15 55 / 0.35)",
-            borderTopColor: "oklch(0.60 0.15 55)",
-          }}
+          className="w-full flex items-center gap-4 px-4 py-3 text-left transition-all hover:bg-green-50/50 dark:hover:bg-green-900/10 bg-white dark:bg-card"
+          style={{ borderBottom: "1px solid oklch(0.91 0.003 265)" }}
           data-ocid="home.button"
         >
-          <p
-            className="text-[10px] font-bold uppercase tracking-wide mb-1"
-            style={{ color: "oklch(0.42 0.14 55)" }}
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-lg"
+            style={{ background: "oklch(0.94 0.04 145)" }}
           >
-            Markets
-          </p>
-          <p
-            className="text-[10px] font-semibold leading-snug"
-            style={{ color: "oklch(0.30 0.12 55)" }}
+            &#x1F4F0;
+          </div>
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-[10px] font-bold uppercase tracking-widest mb-0.5"
+              style={{ color: "oklch(0.35 0.14 145)" }}
+            >
+              Latest News
+            </p>
+            {nLoading ? (
+              <div className="h-4 w-32 rounded bg-green-200/60 animate-pulse" />
+            ) : (
+              <p
+                className="text-xs font-medium leading-snug line-clamp-2"
+                style={{ color: "oklch(0.25 0.10 145)" }}
+              >
+                {firstArticle?.title ?? "Loading headlines..."}
+              </p>
+            )}
+          </div>
+          <ChevronRight size={14} style={{ color: "oklch(0.50 0.12 145)" }} />
+        </button>
+
+        {/* Markets row */}
+        <button
+          type="button"
+          onClick={() => onSectionChange("live")}
+          className="w-full flex items-center gap-4 px-4 py-3 text-left transition-all hover:bg-amber-50/50 dark:hover:bg-amber-900/10 bg-white dark:bg-card"
+          data-ocid="home.button"
+        >
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-lg"
+            style={{ background: "oklch(0.95 0.05 55)" }}
           >
-            NIFTY
-          </p>
-          <p
-            className="text-[10px] font-semibold leading-snug"
-            style={{ color: "oklch(0.30 0.12 55)" }}
-          >
-            SENSEX
-          </p>
-          <p
-            className="text-[10px] font-semibold leading-snug"
-            style={{ color: "oklch(0.30 0.12 55)" }}
-          >
-            GOLD
-          </p>
+            &#x1F4C8;
+          </div>
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-[10px] font-bold uppercase tracking-widest mb-0.5"
+              style={{ color: "oklch(0.42 0.14 55)" }}
+            >
+              Markets
+            </p>
+            <p
+              className="text-xs font-semibold"
+              style={{ color: "oklch(0.30 0.12 55)" }}
+            >
+              NIFTY &middot; SENSEX &middot; GOLD &middot; USD/INR
+            </p>
+            <p className="text-[10px]" style={{ color: "oklch(0.55 0.10 55)" }}>
+              Tap for live updates
+            </p>
+          </div>
+          <ChevronRight size={14} style={{ color: "oklch(0.60 0.12 55)" }} />
         </button>
       </div>
     </div>
@@ -703,6 +707,8 @@ function HomeSection({
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (searchQuery.trim().length >= 2) {
@@ -719,6 +725,13 @@ function HomeSection({
     const query = (q ?? searchQuery).trim();
     setShowSuggestions(false);
     if (query) sessionStorage.setItem("navvgenx-initial-query", query);
+    if (attachedImage) {
+      sessionStorage.setItem(
+        "navvgenx-image-query",
+        JSON.stringify({ image: attachedImage, query }),
+      );
+      setAttachedImage(null);
+    }
     onSectionChange("chat", "general");
   };
 
@@ -814,6 +827,19 @@ function HomeSection({
     setCameraOpen(false);
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setAttachedImage(base64);
+    };
+    reader.readAsDataURL(file);
+    // Reset input so same file can be selected again
+    e.target.value = "";
+  };
+
   const captureForSearch = () => {
     if (!videoRef.current) return;
     const canvas = document.createElement("canvas");
@@ -829,28 +855,35 @@ function HomeSection({
     <>
       <div className="w-full mx-auto flex flex-col" style={{ maxWidth: 560 }}>
         {/* ===== HERO SECTION — v43 style ===== */}
-        <div
-          className="px-5 pt-8 pb-7 text-center"
-          style={{
-            background: "oklch(0.99 0.001 80)",
-          }}
-        >
-          {/* NGX Logo */}
-          <div className="flex justify-center mb-4">
-            <Logo size="lg" />
+        <div className="px-5 pt-10 pb-8 text-center bg-background">
+          {/* App name — shimmer hero, no logo here */}
+          <div className="relative flex justify-center mb-2">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div
+                className="hero-backdrop"
+                style={{
+                  width: "90%",
+                  height: "140%",
+                  filter: "blur(24px)",
+                }}
+              />
+            </div>
+            <h1
+              className="navvgenx-title-shimmer relative z-10"
+              style={{ fontSize: "clamp(3.2rem, 11vw, 5.5rem)" }}
+            >
+              NavvGenX AI
+            </h1>
           </div>
-          {/* App name — single clean line */}
-          <h1
-            className="font-playfair font-black mb-3"
+          <p
+            className="text-sm mb-4 tagline-text"
             style={{
-              fontSize: "clamp(2.2rem, 8vw, 3.2rem)",
-              letterSpacing: "-0.02em",
-              lineHeight: 1.1,
-              color: "oklch(0.155 0.030 265)",
+              fontFamily: "'Space Grotesk', sans-serif",
+              letterSpacing: "0.04em",
             }}
           >
-            NavvGenX <span style={{ color: "oklch(0.72 0.12 75)" }}>AI</span>
-          </h1>
+            Your intelligent AI companion
+          </p>
           {/* Profile avatar + assistant name row */}
           <div className="flex items-center justify-center gap-3 mb-5">
             <HomeProfileAvatar />
@@ -891,6 +924,31 @@ function HomeSection({
                 }}
                 data-ocid="home.search_input"
               />
+              {attachedImage && (
+                <img
+                  src={attachedImage}
+                  alt="Attached"
+                  className="w-8 h-8 rounded-lg object-cover border border-border shrink-0"
+                  title="Image attached"
+                />
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-1.5 rounded-full transition-colors"
+                style={{ color: "oklch(0.50 0.008 265)" }}
+                title="Upload image"
+                data-ocid="home.upload_button"
+              >
+                <ImagePlus size={16} />
+              </button>
               <button
                 type="button"
                 onClick={() => openCamera()}
@@ -1189,6 +1247,9 @@ function HomeSection({
         <div className="px-4 pb-4">
           <LiveWidget onNavigateToLive={() => onSectionChange("live")} />
         </div>
+
+        {/* ===== FOOTER SPACER ===== */}
+        <div className="pb-4" />
       </div>
       {/* Camera Modal */}
       <AnimatePresence>
@@ -1232,6 +1293,96 @@ function HomeSection({
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+// ─── Splash Screen ───────────────────────────────────────────────────────────
+function SplashScreen({ onDone }: { onDone: () => void }) {
+  const [phase, setPhase] = useState<"in" | "hold" | "out">("in");
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase("hold"), 400);
+    const t2 = setTimeout(() => setPhase("out"), 3000);
+    const t3 = setTimeout(() => onDone(), 3600);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [onDone]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: phase === "out" ? 0 : 1 }}
+      transition={{ duration: phase === "out" ? 0.6 : 0.5 }}
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
+      style={{ background: "oklch(0.10 0.025 265)" }}
+    >
+      {/* Logo ring */}
+      <motion.div
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
+        className="relative mb-8"
+      >
+        <div
+          className="splash-ring w-28 h-28 rounded-full flex items-center justify-center"
+          style={{
+            background: "oklch(0.155 0.030 265)",
+            border: "2px solid oklch(0.72 0.12 75 / 0.6)",
+          }}
+        >
+          <Logo size="lg" />
+        </div>
+      </motion.div>
+
+      {/* App name */}
+      <motion.h1
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.6 }}
+        className="navvgenx-title-shimmer mb-3"
+        style={{ fontSize: "clamp(2.8rem, 10vw, 4.5rem)" }}
+      >
+        NavvGenX AI
+      </motion.h1>
+
+      {/* Tagline */}
+      <motion.p
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 0.7, y: 0 }}
+        transition={{ delay: 0.8, duration: 0.5 }}
+        style={{
+          color: "oklch(0.75 0.010 265)",
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: "0.95rem",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+        }}
+      >
+        Your Intelligent AI Companion
+      </motion.p>
+
+      {/* Bottom loader dots */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.6 }}
+        transition={{ delay: 1.2 }}
+        className="absolute bottom-16 flex gap-2"
+      >
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="w-1.5 h-1.5 rounded-full"
+            style={{
+              background: "oklch(0.72 0.12 75)",
+              animation: `splashDot 1.2s ease-in-out ${i * 0.2}s infinite`,
+            }}
+          />
+        ))}
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -1296,7 +1447,12 @@ export default function App() {
   );
   const [activeSection, setActiveSection] = useState<Section>("home");
   const [activeCategory, setActiveCategory] = useState("general");
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(
+    () => localStorage.getItem("navvgenx-dark") === "1",
+  );
+  const [showSplash, setShowSplash] = useState(
+    () => !sessionStorage.getItem("navvgenx-splash-shown"),
+  );
   const [sectionGreeting, setSectionGreeting] = useState<string | null>(null);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1347,31 +1503,52 @@ export default function App() {
         const acc = localStorage.getItem("navvgenx-account");
         const accData = acc ? JSON.parse(acc) : null;
         const name = accData?.name || "";
-        const lang = accData?.language || "en";
-        if (lang === "hi")
-          speakText(
-            name
-              ? `नमस्ते ${name}, Nav Gen X में आपका स्वागत है`
-              : "Nav Gen X में आपका स्वागत है",
-            "hi-IN",
+        // Two-part speech for clearer pronunciation
+        try {
+          if (!window.speechSynthesis) throw new Error("no tts");
+          window.speechSynthesis.cancel();
+          const u1 = new SpeechSynthesisUtterance(
+            name ? `Hello ${name}` : "Hello",
           );
-        else
+          u1.rate = 0.85;
+          u1.pitch = 1.0;
+          u1.volume = 1.0;
+          u1.lang = "en-IN";
+          const u2 = new SpeechSynthesisUtterance("welcome to Nav Gen X A I");
+          u2.rate = 0.8;
+          u2.pitch = 1.0;
+          u2.volume = 1.0;
+          u2.lang = "en-IN";
+          const setVoice = (utt: SpeechSynthesisUtterance) => {
+            const voices = window.speechSynthesis.getVoices();
+            const preferred = voices.find(
+              (v) =>
+                v.name.toLowerCase().includes("google uk english female") ||
+                v.name.toLowerCase().includes("samantha") ||
+                v.name.toLowerCase().includes("female"),
+            );
+            if (preferred) utt.voice = preferred;
+          };
+          setVoice(u1);
+          setVoice(u2);
+          u1.onend = () => {
+            setTimeout(() => window.speechSynthesis.speak(u2), 400);
+          };
+          window.speechSynthesis.speak(u1);
+        } catch {
           speakText(
             name
               ? `Hello ${name}, welcome to NavvGenX AI`
               : "Welcome to NavvGenX AI",
           );
+        }
+        return; // skip old speakText call
       } catch {
         speakText("Welcome to NavvGenX AI");
       }
     }, 1500);
     return () => clearTimeout(timer);
   }, [isLoggedIn]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("navvgenx-dark");
-    if (saved === "true") setDarkMode(true);
-  }, []);
 
   useEffect(() => {
     if (!actor) return;
@@ -1384,9 +1561,12 @@ export default function App() {
   }, [actor, handleProfileSet]);
 
   useEffect(() => {
-    if (darkMode) document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
-    localStorage.setItem("navvgenx-dark", String(darkMode));
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("navvgenx-dark", darkMode ? "1" : "0");
   }, [darkMode]);
 
   const triggerSectionGreeting = useCallback((section: string) => {
@@ -1492,6 +1672,11 @@ export default function App() {
       activeCategory === "general") ||
     (activeSection === "chat" && activeCategory === id);
 
+  const handleSplashDone = useCallback(() => {
+    sessionStorage.setItem("navvgenx-splash-shown", "1");
+    setShowSplash(false);
+  }, []);
+
   // ── Login guard ──────────────────────────────────────────────────────────
   if (!isLoggedIn) {
     return (
@@ -1528,20 +1713,24 @@ export default function App() {
 
   // More section categories
   const moreCategories = [
-    { id: "study", label: "Study", color: "oklch(0.55 0.18 250)" },
-    { id: "fashion", label: "Fashion", color: "oklch(0.60 0.18 330)" },
-    { id: "law", label: "Law", color: "oklch(0.55 0.16 290)" },
-    { id: "career", label: "Career", color: "oklch(0.60 0.15 55)" },
-    { id: "business", label: "Business", color: "oklch(0.50 0.16 145)" },
-    { id: "love", label: "Love", color: "oklch(0.55 0.22 25)" },
-    { id: "recipes", label: "Recipes", color: "oklch(0.60 0.15 55)" },
-    { id: "music", label: "Music", color: "oklch(0.55 0.18 190)" },
-    { id: "movies", label: "Movies", color: "oklch(0.50 0.16 270)" },
+    { id: "study", label: "Study", icon: "📖" },
+    { id: "fashion", label: "Fashion", icon: "👗" },
+    { id: "law", label: "Law", icon: "⚖️" },
+    { id: "career", label: "Career", icon: "💼" },
+    { id: "business", label: "Business", icon: "📊" },
+    { id: "love", label: "Love", icon: "💝" },
+    { id: "recipes", label: "Recipes", icon: "🍳" },
+    { id: "music", label: "Music", icon: "🎵" },
+    { id: "movies", label: "Movies", icon: "🎬" },
   ];
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300 flex flex-col">
       <Toaster richColors position="top-right" />
+      {/* Splash Screen */}
+      <AnimatePresence>
+        {showSplash && isLoggedIn && <SplashScreen onDone={handleSplashDone} />}
+      </AnimatePresence>
       {/* Section Greeting Banner */}
       <AnimatePresence>
         {sectionGreeting && (
@@ -2014,30 +2203,27 @@ export default function App() {
                   setShowMoreMenu(false);
                   handleNavClick(cat.id);
                 }}
-                className="flex flex-col items-center py-2.5 px-2 rounded-xl text-center transition-all"
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all hover:scale-[1.04] active:scale-[0.96]"
                 style={{
-                  background: cat.color,
-                  borderLeft: `3px solid ${cat.color}`,
-                  boxShadow: `0 2px 8px ${cat.color}40`,
+                  background: darkMode
+                    ? "linear-gradient(135deg, oklch(0.72 0.12 75 / 0.10) 0%, transparent 60%), oklch(0.18 0.030 265)"
+                    : "linear-gradient(135deg, oklch(0.72 0.12 75 / 0.08) 0%, transparent 60%), oklch(0.97 0.006 265)",
+                  border: "1.5px solid oklch(0.72 0.12 75 / 0.35)",
+                  borderLeft: "3px solid oklch(0.72 0.12 75 / 0.5)",
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform =
-                    "scale(1.06) translateY(-2px)";
-                  e.currentTarget.style.boxShadow = `0 6px 16px ${cat.color}60`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "";
-                  e.currentTarget.style.boxShadow = `0 2px 8px ${cat.color}40`;
-                }}
-                data-ocid="nav.button"
+                data-ocid="more.button"
               >
+                <span style={{ fontSize: 22 }}>{cat.icon}</span>
                 <span
-                  className="text-[11px] font-semibold mt-1"
+                  className="text-xs font-semibold"
                   style={{
-                    color: "#ffffff",
-                    fontFamily: "'Space Grotesk', sans-serif",
-                    textShadow: "0 1px 2px rgba(0,0,0,0.4)",
-                    letterSpacing: "0.01em",
+                    color: darkMode
+                      ? "oklch(0.90 0.010 75)"
+                      : "oklch(0.12 0.020 265)",
+                    fontFamily: "'Playfair Display', serif",
+                    textShadow: darkMode
+                      ? "0 0 12px oklch(0.72 0.12 75 / 0.3)"
+                      : "none",
                   }}
                 >
                   {cat.label}

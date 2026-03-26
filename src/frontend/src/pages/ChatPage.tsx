@@ -215,6 +215,23 @@ export function ChatPage({
   // Auto-submit initial query from home page search
   // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
   useEffect(() => {
+    // Check for image + query from home page search bar
+    const imageData = sessionStorage.getItem("navvgenx-image-query");
+    if (imageData) {
+      try {
+        const parsed = JSON.parse(imageData);
+        sessionStorage.removeItem("navvgenx-image-query");
+        setAttachedImage(parsed.image || null);
+        if (parsed.query) {
+          setTimeout(
+            () => sendMessage(parsed.query, initialCategory || "general"),
+            900,
+          );
+        }
+      } catch {
+        sessionStorage.removeItem("navvgenx-image-query");
+      }
+    }
     const q = sessionStorage.getItem("navvgenx-initial-query");
     if (q) {
       sessionStorage.removeItem("navvgenx-initial-query");
