@@ -31,8 +31,7 @@ import {
   stopSpeaking,
 } from "../utils/aiEngine";
 import { extractUrls } from "../utils/linkUtils";
-// ─── NavvLogoN ────────────────────────────────────────────────────────────────
-// HTML content renderer (for presentations and structured content)
+
 function HtmlContent({ html }: { html: string }) {
   const ref = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
@@ -140,6 +139,44 @@ function getCategoryGreetings(): Record<string, string> {
   };
 }
 
+// Smart Wikipedia-backed answer function
+async function getSmartAnswer(query: string): Promise<string | null> {
+  const q = query.trim();
+  const encoded = encodeURIComponent(q);
+  const factualPattern =
+    /^(what is|who is|where is|when did|how does|what are|tell me about|explain|define|what was|who was|where are|when is|when was)/i;
+
+  const searchLinksHtml = `<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(128,128,128,0.15);display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span style="font-size:0.75rem;opacity:0.5;font-weight:600;letter-spacing:0.04em;margin-right:4px">SEARCH:</span><a href="https://www.google.com/search?q=${encoded}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#4285f4;text-decoration:none;padding:2px 10px;border:1px solid #4285f420;border-radius:20px;background:#4285f408">Google</a><a href="https://duckduckgo.com/?q=${encoded}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#de5833;text-decoration:none;padding:2px 10px;border:1px solid #de583320;border-radius:20px;background:#de583308">DuckDuckGo</a><a href="https://www.bing.com/search?q=${encoded}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#008373;text-decoration:none;padding:2px 10px;border:1px solid #00837320;border-radius:20px;background:#00837308">Bing</a><a href="https://en.wikipedia.org/wiki/Special:Search?search=${encoded}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#636466;text-decoration:none;padding:2px 10px;border:1px solid #63646620;border-radius:20px;background:#63646608">Wikipedia</a></div>`;
+
+  if (factualPattern.test(q)) {
+    try {
+      const subject = q
+        .replace(
+          /^(what is|who is|where is|when did|how does|what are|tell me about|explain|define|what was|who was|where are|when is|when was)\s+/i,
+          "",
+        )
+        .replace(/[?!.]$/, "")
+        .trim();
+      const wikiRes = await fetch(
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(subject)}`,
+        { signal: AbortSignal.timeout(5000) },
+      );
+      if (wikiRes.ok) {
+        const wikiData = await wikiRes.json();
+        if (wikiData.extract && wikiData.extract.length > 60) {
+          const sentences = wikiData.extract.split(/(?<=\.\s)/);
+          const answer = sentences.slice(0, 3).join(" ").trim();
+          return `<p style="line-height:1.65">${answer}</p>${searchLinksHtml}`;
+        }
+      }
+    } catch {
+      // fall through
+    }
+  }
+  // For non-factual questions, still append search links via returning null and letting caller add them
+  return null;
+}
+
 export function ChatPage({
   profile,
   initialCategory = "general",
@@ -151,17 +188,9 @@ export function ChatPage({
       {
         id: "0",
         role: "ai" as const,
-        content: `Hello! I'm ${_n}, your personal AI companion. Ask me anything, search any topic, or use the mic to speak. I'll give you ideas, images, and voice responses.`,
+        content: `Hello! I'm ${_n}, your personal AI companion. Ask me anything, search any topic, or use the mic to speak.`,
         category: "general",
         timestamp: Date.now(),
-        suggestions: [
-          "What is artificial intelligence",
-          "How to improve sleep quality",
-          "Best business ideas for 2026",
-          "How does the human brain work",
-          "Fashion trends 2026",
-          "Career growth tips",
-        ],
       },
     ];
   });
@@ -202,42 +231,54 @@ export function ChatPage({
     currentFacingMode,
   } = useCamera({ facingMode: "user" });
 
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const prevCategoryRef = useRef<string | null>(null);
+  const isLoadingRef = useRef(false);
 
   useEffect(() => {
     setActiveCategory(initialCategory);
   }, [initialCategory]);
 
-  // Auto-submit initial query from home page search
-  // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
+  // Auto-submit initial query from home page search — runs once on mount
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally run once
   useEffect(() => {
-    // Check for image + query from home page search bar
     const imageData = sessionStorage.getItem("navvgenx-image-query");
     if (imageData) {
       try {
         const parsed = JSON.parse(imageData);
         sessionStorage.removeItem("navvgenx-image-query");
-        setAttachedImage(parsed.image || null);
-        if (parsed.query) {
+        if (parsed.image) {
+          setAttachedImage(parsed.image);
+          if (parsed.query) {
+            // Pre-fill input with the query; user can see it and send
+            setInput(parsed.query);
+          }
+        } else if (parsed.query) {
           setTimeout(
             () => sendMessage(parsed.query, initialCategory || "general"),
-            900,
+            800,
           );
         }
       } catch {
         sessionStorage.removeItem("navvgenx-image-query");
       }
+      return;
     }
+
     const q = sessionStorage.getItem("navvgenx-initial-query");
     if (q) {
       sessionStorage.removeItem("navvgenx-initial-query");
-      setTimeout(() => sendMessage(q, initialCategory || "general"), 800);
+      // Pre-fill and auto-send so user sees their query appear in chat
+      setInput(q);
+      setTimeout(() => {
+        sendMessage(q, initialCategory || "general");
+      }, 500);
     }
-    // Camera search
+
     const cameraSearch = sessionStorage.getItem("navvgenx-camera-search");
     if (cameraSearch) {
       sessionStorage.removeItem("navvgenx-camera-search");
@@ -245,7 +286,7 @@ export function ChatPage({
     }
   }, []);
 
-  // Show expert greeting as chat message when section changes
+  // Show expert greeting when category changes
   useEffect(() => {
     const isFirstVisit = prevCategoryRef.current === null;
     const hasChanged = prevCategoryRef.current !== activeCategory;
@@ -284,10 +325,16 @@ export function ChatPage({
     }
   }, [activeCategory]);
 
+  // Scroll within messages container only - page should not scroll
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll ref doesn't need to be in deps
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    setTimeout(() => {
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop =
+          messagesContainerRef.current.scrollHeight;
+      }
+    }, 80);
+  }, [messages, isLoading]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: startCamera is stable
   useEffect(() => {
@@ -299,7 +346,6 @@ export function ChatPage({
     }
   }, [showCamera]);
 
-  // Suggestion update on input change
   useEffect(() => {
     if (input.trim().length >= 2) {
       const s = getSuggestions(input, activeCategory);
@@ -311,7 +357,6 @@ export function ChatPage({
     }
   }, [input, activeCategory]);
 
-  // Stop speaking on unmount
   useEffect(() => {
     return () => stopSpeaking();
   }, []);
@@ -320,8 +365,9 @@ export function ChatPage({
   const sendMessage = useCallback(
     async (text: string, cat?: string) => {
       const msgText = text.trim();
-      if (!msgText || isLoading) return;
+      if (!msgText || isLoadingRef.current) return;
 
+      isLoadingRef.current = true;
       setShowSuggestions(false);
       const category = cat || activeCategory;
       const userMsg: ChatMessage = {
@@ -333,6 +379,7 @@ export function ChatPage({
       };
       setMessages((prev) => [...prev, userMsg]);
       setInput("");
+      setAttachedImage(null);
       setIsLoading(true);
 
       actor
@@ -348,12 +395,34 @@ export function ChatPage({
 
       const ageGroup = profile?.ageGroup || "millennial";
       const userAge = profile?.age ? Number(profile.age) : 99;
-      const response = await generateAIResponse(
+
+      // Try smart Wikipedia answer first for factual questions
+      const smartHtml = await getSmartAnswer(msgText);
+
+      let response = await generateAIResponse(
         msgText,
         category,
         ageGroup,
         userAge,
       );
+
+      // If Wikipedia gave a precise answer, override response text with it
+      if (smartHtml) {
+        response = { ...response, text: smartHtml, isHtml: true };
+      } else {
+        // Add search links to every response
+        const enc = encodeURIComponent(msgText);
+        const searchLinks = `<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(128,128,128,0.15);display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span style="font-size:0.75rem;opacity:0.5;font-weight:600;letter-spacing:0.04em;margin-right:4px">SEARCH:</span><a href="https://www.google.com/search?q=${enc}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#4285f4;text-decoration:none;padding:2px 10px;border:1px solid #4285f420;border-radius:20px;background:#4285f408">Google</a><a href="https://duckduckgo.com/?q=${enc}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#de5833;text-decoration:none;padding:2px 10px;border:1px solid #de583320;border-radius:20px;background:#de583308">DuckDuckGo</a><a href="https://www.bing.com/search?q=${enc}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#008373;text-decoration:none;padding:2px 10px;border:1px solid #00837320;border-radius:20px;background:#00837308">Bing</a><a href="https://en.wikipedia.org/wiki/Special:Search?search=${enc}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#636466;text-decoration:none;padding:2px 10px;border:1px solid #63646620;border-radius:20px;background:#63646608">Wikipedia</a></div>`;
+        if (response.isHtml) {
+          response = { ...response, text: response.text + searchLinks };
+        } else {
+          response = {
+            ...response,
+            text: response.text + searchLinks,
+            isHtml: true,
+          };
+        }
+      }
 
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -370,7 +439,6 @@ export function ChatPage({
         quickLinks: response.quickLinks,
         sources: response.sources,
       };
-      // Save to chat history
       try {
         const hist = JSON.parse(
           localStorage.getItem("navvgenx-chat-history") || "[]",
@@ -383,8 +451,10 @@ export function ChatPage({
         if (hist.length > 50) hist.splice(0, hist.length - 50);
         localStorage.setItem("navvgenx-chat-history", JSON.stringify(hist));
       } catch {}
+
       setMessages((prev) => [...prev, aiMsg]);
       setIsLoading(false);
+      isLoadingRef.current = false;
 
       actor
         ?.addMessage({
@@ -395,7 +465,7 @@ export function ChatPage({
         })
         .catch(() => {});
     },
-    [activeCategory, isLoading, actor],
+    [activeCategory, actor],
   );
 
   const handleVoiceInput = async () => {
@@ -405,7 +475,6 @@ export function ChatPage({
       setIsRecording(false);
       return;
     }
-
     if (navigator.mediaDevices?.getUserMedia) {
       try {
         await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -416,7 +485,6 @@ export function ChatPage({
         return;
       }
     }
-
     const win = window as Window;
     const SpeechRec = win.SpeechRecognition || win.webkitSpeechRecognition;
     const recognition = new SpeechRec();
@@ -428,7 +496,6 @@ export function ChatPage({
       const transcript = event.results[0][0].transcript;
       setInput(transcript);
       setIsRecording(false);
-      // Auto-send after short delay
       setTimeout(() => sendMessage(transcript), 300);
     };
     recognition.onerror = () => {
@@ -470,26 +537,37 @@ export function ChatPage({
     setShowCamera(false);
   };
 
+  // ── Camera capture: set image preview, wait for user to describe it
   const handleCameraCapture = async () => {
     const file = await capturePhoto();
     if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string;
+        setAttachedImage(dataUrl);
+        toast.success(
+          "Image captured. Describe what you want to know about it.",
+        );
+      };
+      reader.readAsDataURL(file);
       stopCamera();
       setShowCamera(false);
-      sendMessage(
-        "[Image captured] Please analyze and describe what you see in this image.",
-      );
     }
   };
 
+  // ── Gallery select: set image preview, wait for user to describe it
   const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string;
+        setAttachedImage(dataUrl);
+        toast.success("Image added. Type your question about it below.");
+      };
+      reader.readAsDataURL(file);
       stopCamera();
       setShowCamera(false);
-      sendMessage(
-        "[Image from gallery] Please analyze and describe what you see in this image.",
-      );
-      toast.success("Image selected for analysis");
     }
     if (galleryInputRef.current) galleryInputRef.current.value = "";
   };
@@ -515,11 +593,12 @@ export function ChatPage({
   const handleSendWithImage = async () => {
     if (!input.trim() && !attachedImage) return;
     if (attachedImage) {
-      const question = input.trim() || "What can you see in this image?";
+      const question =
+        input.trim() ||
+        "Please describe what you see in this image and provide insights.";
+      const fullMsg = `[Image attached] ${question} — Based on the image, please provide a detailed and helpful answer.`;
       setAttachedImage(null);
-      await sendMessage(
-        `[Image attached] ${question} — Based on the image, please provide a detailed answer.`,
-      );
+      await sendMessage(fullMsg);
     } else if (editingMsgId) {
       setEditingMsgId(null);
       await sendMessage(input.trim());
@@ -712,6 +791,7 @@ export function ChatPage({
 
         {/* Messages */}
         <div
+          ref={messagesContainerRef}
           className="flex-1 overflow-y-auto p-4 space-y-4"
           data-ocid="chat.list"
         >
@@ -748,7 +828,7 @@ export function ChatPage({
                     className={`px-4 py-3 text-sm font-space leading-relaxed relative group ${
                       msg.role === "user"
                         ? "chat-bubble-user"
-                        : "chat-bubble-ai glass-card border border-border text-slate-900 dark:text-gray-50"
+                        : "chat-bubble-ai glass-card border border-border"
                     }`}
                   >
                     {msg.isHtml ? (
@@ -756,7 +836,6 @@ export function ChatPage({
                     ) : (
                       msg.content
                     )}
-                    {/* Edit button on user messages (hover) */}
                     {msg.role === "user" && (
                       <button
                         type="button"
@@ -768,7 +847,6 @@ export function ChatPage({
                         <Pencil className="w-3 h-3" />
                       </button>
                     )}
-                    {/* TTS button on AI messages */}
                     {msg.role === "ai" && (
                       <button
                         type="button"
@@ -896,15 +974,6 @@ export function ChatPage({
                         <span className="text-xs text-muted-foreground font-space font-medium">
                           Related Images
                         </span>
-                        <a
-                          href={`https://www.google.com/search?q=${encodeURIComponent(msg.content.split("\n")[0].slice(0, 60))}&tbm=isch`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-auto text-xs text-primary/70 hover:text-primary flex items-center gap-1"
-                        >
-                          View all on Google
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         {msg.imageResults.map((img, idx) => (
@@ -959,35 +1028,6 @@ export function ChatPage({
                     </div>
                   )}
 
-                  {/* Suggestion ideas */}
-                  {msg.role === "ai" &&
-                    msg.suggestions &&
-                    msg.suggestions.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="w-full"
-                      >
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
-                          <span className="text-xs text-muted-foreground font-space font-medium">
-                            Ideas to explore
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {msg.suggestions.map((s) => (
-                            <button
-                              key={s}
-                              type="button"
-                              onClick={() => sendMessage(s)}
-                              className="px-3 py-1.5 rounded-full text-xs font-space font-medium glass-card border border-border hover:border-primary/40 hover:bg-primary/5 text-foreground/70 hover:text-foreground transition-all hover:-translate-y-0.5"
-                            >
-                              {s}
-                            </button>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
                   {/* Link Embeds */}
                   {extractUrls(msg.content).map((url) => (
                     <LinkEmbed key={url} url={url} />
@@ -997,6 +1037,7 @@ export function ChatPage({
             ))}
           </AnimatePresence>
 
+          {/* Loading indicator — stays at bottom of visible area, doesn't auto-scroll */}
           {isLoading && (
             <div className="flex gap-3 items-start">
               <div className="shrink-0">
@@ -1014,6 +1055,9 @@ export function ChatPage({
                       style={{ animationDelay: `${d * 0.15}s` }}
                     />
                   ))}
+                  <span className="ml-2 text-xs text-muted-foreground font-space">
+                    NavvGenX AI is thinking…
+                  </span>
                 </div>
               </div>
             </div>
@@ -1023,51 +1067,6 @@ export function ChatPage({
 
         {/* Input area */}
         <div className="p-3 pb-3 border-t border-border relative">
-          {/* Quick prompt chips */}
-          <div
-            className="flex gap-2 overflow-x-auto pb-2 scrollbar-none"
-            style={{ scrollbarWidth: "none" }}
-          >
-            {[
-              {
-                label: "Homework Helper",
-                prompt: "Help me solve this homework problem: ",
-              },
-              {
-                label: "Presentation",
-                prompt: "Create a presentation about: ",
-              },
-              { label: "Smart Advice", prompt: "Give me smart advice about: " },
-              {
-                label: "Shopping Guide",
-                prompt: "Help me find the best deals for: ",
-              },
-              {
-                label: "Study Tips",
-                prompt: "Give me effective study tips for: ",
-              },
-            ].map((chip) => (
-              <button
-                key={chip.label}
-                type="button"
-                onClick={() => {
-                  setInput(chip.prompt);
-                }}
-                className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full transition-all whitespace-nowrap"
-                style={{
-                  border: "1.5px solid oklch(0.91 0.003 265)",
-                  color: "oklch(0.155 0.030 265)",
-                  background: "oklch(0.98 0.002 80)",
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  fontWeight: 500,
-                }}
-                data-ocid="chat.button"
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
-
           {/* Suggestions dropdown */}
           <AnimatePresence>
             {showSuggestions && suggestions.length > 0 && (
@@ -1081,7 +1080,7 @@ export function ChatPage({
                 <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
                   <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
                   <span className="text-xs text-muted-foreground font-space font-medium">
-                    Suggested ideas
+                    Suggested
                   </span>
                   <button
                     type="button"
@@ -1111,26 +1110,30 @@ export function ChatPage({
 
           {/* Attached image preview */}
           {attachedImage && (
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 p-2 rounded-xl bg-muted/30 border border-border">
               <img
                 src={attachedImage}
                 alt="Attached"
-                className="h-14 w-14 rounded-xl object-cover border border-border"
+                className="h-14 w-14 rounded-xl object-cover border border-border shrink-0"
               />
               <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-foreground font-space">
+                  Image ready
+                </p>
                 <p className="text-xs text-muted-foreground font-space">
-                  Image attached. Type your question below.
+                  Describe what you want to know about this image...
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setAttachedImage(null)}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground p-1"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
           )}
+
           {/* Edit mode indicator */}
           {editingMsgId && (
             <div className="flex items-center gap-2 mb-2 px-1">
@@ -1150,6 +1153,7 @@ export function ChatPage({
               </button>
             </div>
           )}
+
           <input
             ref={imageAttachRef}
             type="file"
@@ -1158,8 +1162,8 @@ export function ChatPage({
             onChange={handleImageAttach}
             data-ocid="chat.upload_button"
           />
+
           <div className="glass-card rounded-2xl flex items-center gap-2 px-3 py-2">
-            {/* Image attach button */}
             <button
               type="button"
               onClick={() => imageAttachRef.current?.click()}
@@ -1181,7 +1185,7 @@ export function ChatPage({
               }
               placeholder={
                 attachedImage
-                  ? "Ask about this image..."
+                  ? "Describe what you want to know about this image..."
                   : editingMsgId
                     ? "Edit your message..."
                     : "Ask NavvGenX AI anything..."
@@ -1193,9 +1197,7 @@ export function ChatPage({
               <button
                 type="button"
                 onClick={handleVoiceInput}
-                title={
-                  isRecording ? "Stop recording" : "Voice input (auto-sends)"
-                }
+                title={isRecording ? "Stop recording" : "Voice input"}
                 className={`p-2 rounded-full transition-all ${
                   isRecording
                     ? "text-red-500 bg-red-50 dark:bg-red-900/30 animate-pulse scale-110"
@@ -1217,7 +1219,7 @@ export function ChatPage({
             <button
               type="button"
               onClick={handleSendWithImage}
-              disabled={!input.trim() || isLoading}
+              disabled={(!input.trim() && !attachedImage) || isLoading}
               className="navvgenx-gradient-btn p-2 rounded-xl disabled:opacity-40 disabled:hover:transform-none"
               data-ocid="chat.submit_button"
             >

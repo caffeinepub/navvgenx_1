@@ -44,17 +44,17 @@
 
   .dark {
     --background: 0.155 0.03 265;
-    --foreground: 0.97 0.003 265;
+    --foreground: 0.97 0.003 80;
     --card: 0.22 0.035 265;
-    --card-foreground: 0.97 0.003 265;
+    --card-foreground: 0.97 0.003 80;
     --popover: 0.2 0.032 265;
-    --popover-foreground: 0.97 0.003 265;
+    --popover-foreground: 0.97 0.003 80;
     --primary: 0.72 0.12 75;
     --primary-foreground: 0.06 0.005 265;
     --secondary: 0.25 0.032 265;
     --secondary-foreground: 0.97 0.003 265;
     --muted: 0.25 0.022 265;
-    --muted-foreground: 0.65 0.012 265;
+    --muted-foreground: 0.72 0.01 265;
     --accent: 0.25 0.032 265;
     --accent-foreground: 0.97 0.003 265;
     --destructive: 0.55 0.22 25;
@@ -340,6 +340,47 @@
   box-shadow: 0 8px 24px oklch(0.155 0.03 265 / 0.12);
 }
 
+/* Explicit dark mode text overrides */
+.dark .text-foreground {
+  color: oklch(0.97 0.003 80);
+}
+.dark .text-muted-foreground {
+  color: oklch(0.72 0.01 265);
+}
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5 {
+  color: oklch(0.97 0.003 80);
+}
+.dark p,
+.dark span,
+.dark li {
+  color: oklch(0.92 0.005 265);
+}
+
+/* AI chat bubble light mode text — ensure readability */
+.chat-bubble-ai {
+  color: oklch(0.1 0.012 265) !important;
+}
+.dark .chat-bubble-ai {
+  color: oklch(0.97 0.003 80) !important;
+}
+
+/* Search links row at bottom of AI answers */
+.search-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid oklch(0.91 0.003 265);
+}
+.dark .search-links-row {
+  border-top-color: oklch(0.32 0.028 265);
+}
+
 /* Font classes for backwards compat */
 .font-playfair {
   font-family: "Playfair Display", serif;
@@ -347,6 +388,10 @@
 .font-space {
   font-family: "Space Grotesk", sans-serif;
 }
+.font-jakarta {
+  font-family: "Plus Jakarta Sans", "Space Grotesk", sans-serif;
+}
+
 .font-bricolage {
   font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
 }

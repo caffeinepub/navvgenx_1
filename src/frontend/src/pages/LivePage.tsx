@@ -12,11 +12,10 @@ import {
   Wind,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNews } from "../hooks/useNews";
 import { useWeather } from "../hooks/useWeather";
 
-// ─── Market Ticker ──────────────────────────────────────────────────────────
 const BASE_MARKETS = [
   { symbol: "NIFTY 50", base: 22450.65, currency: "" },
   { symbol: "SENSEX", base: 73810.0, currency: "" },
@@ -49,7 +48,6 @@ function initMarkets(): MarketItem[] {
 
 function useMarkets() {
   const [markets, setMarkets] = useState<MarketItem[]>(initMarkets);
-
   useEffect(() => {
     const tick = setInterval(() => {
       setMarkets((prev) =>
@@ -71,7 +69,6 @@ function useMarkets() {
     }, 5000);
     return () => clearInterval(tick);
   }, []);
-
   return markets;
 }
 
@@ -100,7 +97,7 @@ export function LivePage() {
       data-ocid="live.page"
     >
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-        {/* Header */}
+        {/* Page Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -132,7 +129,7 @@ export function LivePage() {
           </button>
         </motion.div>
 
-        {/* Weather Full */}
+        {/* ── LIVE WEATHER SECTION ── */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -142,16 +139,23 @@ export function LivePage() {
             background: "oklch(0.12 0.020 265 / 0.85)",
             border: "1px solid oklch(0.72 0.14 75 / 0.18)",
           }}
+          data-ocid="live.section"
         >
-          <div className="flex items-center gap-2 mb-4">
-            <Thermometer className="w-5 h-5" style={{ color: gold }} />
+          <div className="flex items-center gap-2 mb-5">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: "oklch(0.72 0.14 75 / 0.15)" }}
+            >
+              <Thermometer className="w-4 h-4" style={{ color: gold }} />
+            </div>
             <h2
-              className="font-jakarta font-semibold text-sm uppercase tracking-widest"
-              style={{ color: "oklch(0.72 0.14 75 / 0.7)" }}
+              className="font-jakarta font-bold text-base"
+              style={{ color: gold }}
             >
               Live Weather
             </h2>
           </div>
+
           {wLoading ? (
             <div className="space-y-3">
               {[60, 40, 80, 50].map((w) => (
@@ -260,7 +264,7 @@ export function LivePage() {
           ) : null}
         </motion.section>
 
-        {/* Market Updates */}
+        {/* ── MARKET UPDATES SECTION ── */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -270,21 +274,29 @@ export function LivePage() {
             background: "oklch(0.12 0.020 265 / 0.85)",
             border: "1px solid oklch(0.72 0.14 75 / 0.18)",
           }}
+          data-ocid="live.section"
         >
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5" style={{ color: gold }} />
-            <h2
-              className="font-jakarta font-semibold text-sm uppercase tracking-widest"
-              style={{ color: "oklch(0.72 0.14 75 / 0.7)" }}
+          <div className="flex items-center gap-2 mb-5">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: "oklch(0.72 0.14 75 / 0.15)" }}
             >
-              Market Updates
-            </h2>
-            <span
-              className="ml-auto text-xs font-jakarta"
-              style={{ color: "oklch(0.50 0.01 265)" }}
-            >
-              Simulated • Updates every 5s
-            </span>
+              <TrendingUp className="w-4 h-4" style={{ color: gold }} />
+            </div>
+            <div>
+              <h2
+                className="font-jakarta font-bold text-base"
+                style={{ color: gold }}
+              >
+                Market Updates
+              </h2>
+              <span
+                className="text-xs font-jakarta"
+                style={{ color: "oklch(0.50 0.01 265)" }}
+              >
+                Simulated • Updates every 5s
+              </span>
+            </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {markets.map((m) => (
@@ -332,7 +344,7 @@ export function LivePage() {
           </div>
         </motion.section>
 
-        {/* Extended News */}
+        {/* ── LIVE HEADLINES SECTION — clearly separated ── */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -344,44 +356,51 @@ export function LivePage() {
           }}
           data-ocid="live.section"
         >
-          <div className="flex items-center gap-2 mb-4">
-            <Newspaper className="w-5 h-5" style={{ color: gold }} />
-            <h2
-              className="font-jakarta font-semibold text-sm uppercase tracking-widest"
-              style={{ color: "oklch(0.72 0.14 75 / 0.7)" }}
+          <div className="flex items-center gap-2 mb-5">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: "oklch(0.72 0.14 75 / 0.15)" }}
             >
-              Live Headlines
-            </h2>
+              <Newspaper className="w-4 h-4" style={{ color: gold }} />
+            </div>
+            <div>
+              <h2
+                className="font-jakarta font-bold text-base"
+                style={{ color: gold }}
+              >
+                Live Headlines
+              </h2>
+              <p
+                className="text-xs font-jakarta"
+                style={{ color: "oklch(0.55 0.01 265)" }}
+              >
+                Latest global news updates
+              </p>
+            </div>
           </div>
+
           {nLoading ? (
             <div className="space-y-4">
-              {[
-                "skel1",
-                "skel2",
-                "skel3",
-                "skel4",
-                "skel5",
-                "skel6",
-                "skel7",
-                "skel8",
-              ].map((sk) => (
-                <div key={sk} className="space-y-1.5">
-                  <div
-                    className="h-4 rounded-full animate-pulse"
-                    style={{
-                      width: "85%",
-                      background: "oklch(0.25 0.015 265)",
-                    }}
-                  />
-                  <div
-                    className="h-3 rounded-full animate-pulse"
-                    style={{
-                      width: "35%",
-                      background: "oklch(0.22 0.012 265)",
-                    }}
-                  />
-                </div>
-              ))}
+              {["sk1", "sk2", "sk3", "sk4", "sk5", "sk6", "sk7", "sk8"].map(
+                (sk) => (
+                  <div key={sk} className="space-y-1.5">
+                    <div
+                      className="h-4 rounded-full animate-pulse"
+                      style={{
+                        width: "85%",
+                        background: "oklch(0.25 0.015 265)",
+                      }}
+                    />
+                    <div
+                      className="h-3 rounded-full animate-pulse"
+                      style={{
+                        width: "35%",
+                        background: "oklch(0.22 0.012 265)",
+                      }}
+                    />
+                  </div>
+                ),
+              )}
             </div>
           ) : nError ? (
             <p

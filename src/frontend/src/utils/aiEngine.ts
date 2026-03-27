@@ -1021,14 +1021,10 @@ export function generateSearchResults(query: string): SearchResult[] {
 }
 
 // ─────────────────── Detect if query warrants images ───────────────────
-function shouldShowImages(message: string, category: string): boolean {
-  const visualTopics =
-    /\b(fashion|outfit|clothes|style|food|recipe|travel|nature|space|planet|animal|art|design|architecture|city|landscape|sport|fitness|workout|health tips|beauty|makeup|hairstyle|interior|car|technology|gadget|plant|flower|ocean|mountain|beach|forest|sunset|sunrise|old money|quiet luxury|dark academia|streetwear|cottagecore|bohemian|preppy|aesthetic|look|hair|room decor|nails|jewelry|sneakers|handbag|luxury|brand)\b/i;
-  return (
-    /^search[:\s]/i.test(message) ||
-    visualTopics.test(message) ||
-    category === "fashion" ||
-    category === "search"
+function shouldShowImages(message: string, _category: string): boolean {
+  // ONLY show images when user EXPLICITLY asks for them
+  return /\b(show(?: me)?|image|images|photo|photos|picture|pictures|what does .+ look like|how does .+ look|draw|illustration|visual|generate image|create image)\b/i.test(
+    message,
   );
 }
 
@@ -1952,10 +1948,14 @@ export async function generateAIResponse(
   // ── Recommendation queries (songs, movies, food, travel, etc.) ──
   const recommendationAnswer = getRecommendation(message, activeCategory);
   if (recommendationAnswer) {
-    const imageResults = getImageResults(message);
+    const encRec = encodeURIComponent(message);
+    const searchLinksRec = `<div class="search-links-row" style="margin-top:10px;padding-top:8px;border-top:1px solid oklch(0.91 0.003 265);display:flex;flex-wrap:wrap;gap:6px;"><a href="https://www.google.com/search?q=${encRec}" target="_blank" rel="noreferrer" class="link-pill">Google</a><a href="https://duckduckgo.com/?q=${encRec}" target="_blank" rel="noreferrer" class="link-pill">DuckDuckGo</a></div>`;
     return {
-      text: recommendationAnswer,
-      imageResults,
+      text: recommendationAnswer + searchLinksRec,
+      isHtml: true,
+      imageResults: shouldShowImages(lower, activeCategory)
+        ? getImageResults(message)
+        : undefined,
       suggestions,
       quickLinks,
       sources: ["NavvGenX AI Knowledge Base"],
@@ -2087,21 +2087,20 @@ export async function generateAIResponse(
       .filter((s, i, a) => a.indexOf(s) === i)
       .slice(0, 8);
 
-    const imageResults: ImageResult[] = wikiCard?.thumbnail
-      ? [
-          {
-            url: wikiCard.thumbnail,
-            alt: wikiCard.title,
-            searchUrl: `https://www.google.com/search?q=${encodeURIComponent(message)}&tbm=isch`,
-          },
-          ...getUnsplashImages(message).slice(0, 3),
-        ]
-      : shouldShowImages(lower, activeCategory)
-        ? getImageResults(message)
-        : [];
+    // Only include images if user explicitly asked for them
+    const explicitImageRequest = shouldShowImages(lower, activeCategory);
+    const imageResults: ImageResult[] = explicitImageRequest
+      ? getImageResults(message)
+      : [];
+
+    // Build search links for every answer
+    const enc = encodeURIComponent(message);
+    const searchLinksHtml = `<div class="search-links-row" style="margin-top:10px;padding-top:8px;border-top:1px solid oklch(0.91 0.003 265);display:flex;flex-wrap:wrap;gap:6px;"><a href="https://www.google.com/search?q=${enc}" target="_blank" rel="noreferrer" class="link-pill">Google</a><a href="https://duckduckgo.com/?q=${enc}" target="_blank" rel="noreferrer" class="link-pill">DuckDuckGo</a><a href="https://www.bing.com/search?q=${enc}" target="_blank" rel="noreferrer" class="link-pill">Bing</a><a href="https://en.wikipedia.org/w/index.php?search=${enc}" target="_blank" rel="noreferrer" class="link-pill">Wikipedia</a></div>`;
 
     return {
-      text: wrapFriendly(applyTone(finalText, ageGroup), message),
+      text:
+        wrapFriendly(applyTone(finalText, ageGroup), message) + searchLinksHtml,
+      isHtml: true,
       suggestions: followUpSuggestions,
       imageResults: imageResults.length > 0 ? imageResults : undefined,
       wikiCard: wikiCard || undefined,
@@ -2111,15 +2110,17 @@ export async function generateAIResponse(
   }
 
   // ── Category-specific advice fallback ──
-  const buildCatResponse = (responses: string[], cat: string): AIResponse => {
+  const buildCatResponse = (responses: string[], _cat: string): AIResponse => {
     const r = responses[Math.floor(Math.random() * responses.length)];
-    const imageResults = shouldShowImages(lower, cat)
-      ? getImageResults(message)
-      : undefined;
+    const enc2 = encodeURIComponent(message);
+    const searchLinks2 = `<div class="search-links-row" style="margin-top:10px;padding-top:8px;border-top:1px solid oklch(0.91 0.003 265);display:flex;flex-wrap:wrap;gap:6px;"><a href="https://www.google.com/search?q=${enc2}" target="_blank" rel="noreferrer" class="link-pill">Google</a><a href="https://duckduckgo.com/?q=${enc2}" target="_blank" rel="noreferrer" class="link-pill">DuckDuckGo</a><a href="https://www.bing.com/search?q=${enc2}" target="_blank" rel="noreferrer" class="link-pill">Bing</a></div>`;
     return {
-      text: wrapFriendly(applyTone(r, ageGroup), message),
+      text: wrapFriendly(applyTone(r, ageGroup), message) + searchLinks2,
+      isHtml: true,
       suggestions,
-      imageResults,
+      imageResults: shouldShowImages(lower, _cat)
+        ? getImageResults(message)
+        : undefined,
       quickLinks,
       sources: ["Knowledge Base"],
     };
@@ -2144,31 +2145,19 @@ export async function generateAIResponse(
     return buildCatResponse(businessResponses, "business");
   }
 
-  // ── Ultimate fallback — always give a helpful answer ──
-  const topic = message.replace(/[?!.]/g, "").trim();
-  const helpfulFallback = `Hey! Let me help you with "${topic}"! 😊
+  // ── Ultimate fallback — always give a helpful, precise answer ──
+  const encFb = encodeURIComponent(message);
+  const searchLinksFb = `<div class="search-links-row" style="margin-top:10px;padding-top:8px;border-top:1px solid oklch(0.91 0.003 265);display:flex;flex-wrap:wrap;gap:6px;"><a href="https://www.google.com/search?q=${encFb}" target="_blank" rel="noreferrer" class="link-pill">Google</a><a href="https://duckduckgo.com/?q=${encFb}" target="_blank" rel="noreferrer" class="link-pill">DuckDuckGo</a><a href="https://www.bing.com/search?q=${encFb}" target="_blank" rel="noreferrer" class="link-pill">Bing</a><a href="https://en.wikipedia.org/w/index.php?search=${encFb}" target="_blank" rel="noreferrer" class="link-pill">Wikipedia</a></div>`;
 
-Here's what I know about this:
-
-**About ${topic}:**
-This is a great topic to explore! Here are some key points and helpful advice:
-
-• **Start simple** — Break down "${topic}" into smaller parts. What's the most important aspect for you?
-• **Research tip** — Wikipedia, YouTube tutorials, and Google are your best friends for learning more
-• **Expert advice** — Experts recommend approaching "${topic}" with curiosity and patience
-• **Common insights** — Most people find that the best way to understand "${topic}" is through hands-on experience
-
-**Quick actions you can take:**
-1. Search Google for the latest information on this topic
-2. Check Wikipedia for a comprehensive overview
-3. Ask me a more specific question about any aspect!
-
-I'm here to help — what specific part of "${topic}" would you like to know more about? 🚀`;
+  const fallbackText = `I couldn't find a specific answer for your question, but here are some ways to find what you're looking for. Try searching on Google, DuckDuckGo, or Wikipedia using the links below, or rephrase your question for a more precise answer.`;
 
   return {
-    text: helpfulFallback,
-    sources: ["NavvGenX AI Knowledge Base"],
-    imageResults: getImageResults(message),
+    text: fallbackText + searchLinksFb,
+    isHtml: true,
+    sources: ["NavvGenX AI"],
+    imageResults: shouldShowImages(lower, activeCategory)
+      ? getImageResults(message)
+      : undefined,
     searchResults: generateSearchResults(message),
     suggestions,
     quickLinks,

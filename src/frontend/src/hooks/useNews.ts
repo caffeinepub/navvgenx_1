@@ -219,32 +219,34 @@ export function useNews() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchNews = useCallback(async () => {
-    try {
-      let items: NewsArticle[];
+    const feeds = [
+      { url: "https://feeds.bbci.co.uk/news/world/rss.xml", name: "BBC World" },
+      { url: "https://feeds.bbci.co.uk/news/rss.xml", name: "BBC News" },
+      {
+        url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+        name: "NY Times",
+      },
+      {
+        url: "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
+        name: "Times of India",
+      },
+      { url: "https://feeds.reuters.com/reuters/topNews", name: "Reuters" },
+    ];
+
+    for (const feed of feeds) {
       try {
-        items = await fetchFeed(
-          "https://feeds.bbci.co.uk/news/rss.xml",
-          "BBC News",
-        );
-      } catch {
-        try {
-          items = await fetchFeed(
-            "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
-            "Times of India",
-          );
-        } catch {
-          // All feeds failed — static fallback already shown, don't change state
+        const items = await fetchFeed(feed.url, feed.name);
+        if (items.length > 0) {
+          setArticles(items);
+          setLoading(false);
           return;
         }
+      } catch {
+        // try next feed
       }
-      if (items.length > 0) {
-        setArticles(items);
-      }
-    } catch {
-      // silent fail — static fallback stays visible
-    } finally {
-      setLoading(false);
     }
+    // All feeds failed — static fallback stays visible
+    setLoading(false);
   }, []);
 
   const refresh = useCallback(() => fetchNews(), [fetchNews]);

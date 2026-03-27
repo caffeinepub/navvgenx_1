@@ -5,9 +5,9 @@ import {
   BookOpen,
   Briefcase,
   Camera,
-  ChevronRight,
   Clock,
   Download,
+  Dumbbell,
   GraduationCap,
   Heart,
   Home,
@@ -20,6 +20,7 @@ import {
   Radio,
   Search,
   Share2,
+  Shirt,
   ShoppingBag,
   Sparkles,
   Sun,
@@ -33,7 +34,6 @@ import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AgeSetup } from "./components/AgeSetup";
-import { LiveWidget } from "./components/LiveWidget";
 import { Logo } from "./components/Logo";
 import { NavvAssistant } from "./components/NavvAssistant";
 import { ProfessionalMic } from "./components/ProfessionalMic";
@@ -50,6 +50,7 @@ import { HistoryPage } from "./pages/HistoryPage";
 import { LivePage } from "./pages/LivePage";
 import { LoginPage } from "./pages/LoginPage";
 import { RemindersPage } from "./pages/RemindersPage";
+import { TrainingPage } from "./pages/TrainingPage";
 import {
   generateAIResponse,
   getPollinationsImage,
@@ -74,7 +75,8 @@ type Section =
   | "fashion"
   | "business"
   | "search"
-  | "creative-ai";
+  | "creative-ai"
+  | "training";
 
 interface Profile {
   age: bigint;
@@ -88,13 +90,14 @@ const navItems = [
   { id: "love", Icon: Heart, label: "Love" },
   { id: "study", Icon: BookOpen, label: "Study" },
   { id: "career", Icon: Briefcase, label: "Career" },
-  { id: "fashion", Icon: Sparkles, label: "Fashion" },
+  { id: "fashion", Icon: Shirt, label: "Fashion" },
   { id: "business", Icon: TrendingUp, label: "Business" },
   { id: "search", Icon: Search, label: "Search" },
   { id: "live", Icon: Radio, label: "Live" },
   { id: "account", Icon: UserCircle, label: "Account" },
   { id: "history", Icon: Clock, label: "History" },
   { id: "creative-ai", Icon: Wand2, label: "Creative AI" },
+  { id: "training", Icon: Dumbbell, label: "Training" },
 ] as const;
 
 const bottomNavPrimary = ["home", "chat", "health"] as const;
@@ -109,6 +112,7 @@ const bottomNavMore = [
   "account",
   "history",
   "creative-ai",
+  "training",
 ] as const;
 
 const SECTION_EXPERTS: Record<string, string> = {
@@ -126,6 +130,7 @@ const SECTION_EXPERTS: Record<string, string> = {
   account: "account manager",
   live: "live updates expert",
   "creative-ai": "creative AI specialist",
+  training: "fitness & training expert",
 };
 
 function buildGreeting(section: string): string {
@@ -262,8 +267,27 @@ function getHomePanelResponse(query: string): string {
     links.push(getYouTubeLinks(query));
     links.push(getSocialLinks(query));
   }
-  links.push(getWebSearchLinks(query));
-  return text + (links.join("") ? `\n\n${links.join("")}` : "");
+  // Always add search engine links for every query
+  const encoded = encodeURIComponent(query);
+  const searchLinks = `<div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(128,128,128,0.15);display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span style="font-size:0.75rem;opacity:0.5;margin-right:2px;font-weight:600;letter-spacing:0.04em">SEARCH:</span><a href="https://www.google.com/search?q=${encoded}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#4285f4;text-decoration:none;padding:2px 8px;border:1px solid #4285f420;border-radius:20px;background:#4285f408">Google</a><a href="https://duckduckgo.com/?q=${encoded}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#de5833;text-decoration:none;padding:2px 8px;border:1px solid #de583320;border-radius:20px;background:#de583308">DuckDuckGo</a><a href="https://www.bing.com/search?q=${encoded}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#008373;text-decoration:none;padding:2px 8px;border:1px solid #00837320;border-radius:20px;background:#00837308">Bing</a><a href="https://en.wikipedia.org/wiki/Special:Search?search=${encoded}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#636466;text-decoration:none;padding:2px 8px;border:1px solid #63646620;border-radius:20px;background:#63646608">Wikipedia</a></div>`;
+  if (
+    q.includes("buy") ||
+    q.includes("shop") ||
+    q.includes("price") ||
+    q.includes("deal")
+  ) {
+    links.push(getShoppingLinks(query));
+  }
+  if (
+    q.includes("song") ||
+    q.includes("music") ||
+    q.includes("movie") ||
+    q.includes("video")
+  ) {
+    links.push(getYouTubeLinks(query));
+    links.push(getSocialLinks(query));
+  }
+  return text + (links.join("") ? `\n\n${links.join("")}` : "") + searchLinks;
 }
 
 function formatResponse(text: string): string {
@@ -442,42 +466,6 @@ function InstallBanner({
   );
 }
 
-// ─── Home Profile Avatar ─────────────────────────────────────────────────────
-function HomeProfileAvatar() {
-  const [photoUrl] = useState<string>(() => {
-    try {
-      const acc = localStorage.getItem("navvgenx-account");
-      return acc ? JSON.parse(acc).photoUrl || "" : "";
-    } catch {
-      return "";
-    }
-  });
-  const gold = "oklch(0.72 0.12 75)";
-  const navy = "oklch(0.155 0.030 265)";
-  if (!photoUrl) {
-    return (
-      <div
-        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-        style={{ background: navy, border: `2px solid ${gold}` }}
-      >
-        <img
-          src="/assets/generated/ngx-logo-transparent.dim_512x512.png"
-          alt="NGX"
-          className="w-7 h-7 object-contain"
-        />
-      </div>
-    );
-  }
-  return (
-    <img
-      src={photoUrl}
-      alt="Profile"
-      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-      style={{ border: `2px solid ${gold}` }}
-    />
-  );
-}
-
 // ─── Assistant Name Tag ───────────────────────────────────────────────────────
 function AssistantNameTag() {
   const [assistantName, setAssistantName] = useState<string>(() => {
@@ -519,181 +507,17 @@ function AssistantNameTag() {
   );
 }
 
-// ─── Home Preview Strip (3 columns: Weather / News / Business) ────────────────
-function HomePreviewStrip({
-  onSectionChange,
-}: { onSectionChange: (s: string) => void }) {
-  const { weather, location, loading: wLoading } = useWeather();
-  const { articles, loading: nLoading } = useNews();
-  const firstArticle = articles?.[0];
-
-  return (
-    <div className="px-4 pb-3">
-      <div
-        className="rounded-2xl overflow-hidden"
-        style={{
-          border: "1px solid oklch(0.91 0.003 265)",
-          boxShadow: "0 2px 12px oklch(0.155 0.030 265 / 0.06)",
-        }}
-      >
-        {/* Weather row */}
-        <button
-          type="button"
-          onClick={() => onSectionChange("live")}
-          className="w-full flex items-center gap-4 px-4 py-3 text-left transition-all hover:bg-blue-50/50 dark:hover:bg-blue-900/10 bg-white dark:bg-card"
-          style={{ borderBottom: "1px solid oklch(0.91 0.003 265)" }}
-          data-ocid="home.button"
-        >
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-lg"
-            style={{ background: "oklch(0.94 0.04 220)" }}
-          >
-            &#x1F324;
-          </div>
-          <div className="flex-1 min-w-0">
-            <p
-              className="text-[10px] font-bold uppercase tracking-widest mb-0.5"
-              style={{ color: "oklch(0.40 0.15 220)" }}
-            >
-              Weather
-            </p>
-            {wLoading ? (
-              <div className="h-4 w-24 rounded bg-blue-200/60 animate-pulse" />
-            ) : (
-              <>
-                <p
-                  className="text-sm font-bold"
-                  style={{ color: "oklch(0.20 0.12 220)" }}
-                >
-                  {weather?.temp ?? "--"}° {weather?.condition ?? "—"}
-                </p>
-                <p
-                  className="text-[10px] truncate"
-                  style={{ color: "oklch(0.55 0.08 220)" }}
-                >
-                  {location?.city ?? "Locating..."}
-                </p>
-              </>
-            )}
-          </div>
-          <ChevronRight size={14} style={{ color: "oklch(0.65 0.12 220)" }} />
-        </button>
-
-        {/* Latest News row */}
-        <button
-          type="button"
-          onClick={() => onSectionChange("live")}
-          className="w-full flex items-center gap-4 px-4 py-3 text-left transition-all hover:bg-green-50/50 dark:hover:bg-green-900/10 bg-white dark:bg-card"
-          style={{ borderBottom: "1px solid oklch(0.91 0.003 265)" }}
-          data-ocid="home.button"
-        >
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-lg"
-            style={{ background: "oklch(0.94 0.04 145)" }}
-          >
-            &#x1F4F0;
-          </div>
-          <div className="flex-1 min-w-0">
-            <p
-              className="text-[10px] font-bold uppercase tracking-widest mb-0.5"
-              style={{ color: "oklch(0.35 0.14 145)" }}
-            >
-              Latest News
-            </p>
-            {nLoading ? (
-              <div className="h-4 w-32 rounded bg-green-200/60 animate-pulse" />
-            ) : (
-              <p
-                className="text-xs font-medium leading-snug line-clamp-2"
-                style={{ color: "oklch(0.25 0.10 145)" }}
-              >
-                {firstArticle?.title ?? "Loading headlines..."}
-              </p>
-            )}
-          </div>
-          <ChevronRight size={14} style={{ color: "oklch(0.50 0.12 145)" }} />
-        </button>
-
-        {/* Markets row */}
-        <button
-          type="button"
-          onClick={() => onSectionChange("live")}
-          className="w-full flex items-center gap-4 px-4 py-3 text-left transition-all hover:bg-amber-50/50 dark:hover:bg-amber-900/10 bg-white dark:bg-card"
-          data-ocid="home.button"
-        >
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-lg"
-            style={{ background: "oklch(0.95 0.05 55)" }}
-          >
-            &#x1F4C8;
-          </div>
-          <div className="flex-1 min-w-0">
-            <p
-              className="text-[10px] font-bold uppercase tracking-widest mb-0.5"
-              style={{ color: "oklch(0.42 0.14 55)" }}
-            >
-              Markets
-            </p>
-            <p
-              className="text-xs font-semibold"
-              style={{ color: "oklch(0.30 0.12 55)" }}
-            >
-              NIFTY &middot; SENSEX &middot; GOLD &middot; USD/INR
-            </p>
-            <p className="text-[10px]" style={{ color: "oklch(0.55 0.10 55)" }}>
-              Tap for live updates
-            </p>
-          </div>
-          <ChevronRight size={14} style={{ color: "oklch(0.60 0.12 55)" }} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Quick Sections Row ────────────────────────────────────────────────────────
-function QuickSectionsRow({
-  onSectionChange,
-}: { onSectionChange: (s: string) => void }) {
-  const sections = [
-    { id: "chat", label: "Chat", color: "oklch(0.55 0.18 250)" },
-    { id: "health", label: "Health", color: "oklch(0.55 0.18 145)" },
-    { id: "live", label: "Live", color: "oklch(0.55 0.22 25)" },
-    { id: "creative", label: "Creative AI", color: "oklch(0.60 0.18 330)" },
-    { id: "history", label: "History", color: "oklch(0.50 0.08 265)" },
-    { id: "reminders", label: "Reminders", color: "oklch(0.60 0.15 55)" },
-  ];
-  return (
-    <div className="px-4 pb-4">
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-        {sections.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => onSectionChange(s.id)}
-            className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all hover:scale-[1.04] active:scale-[0.96]"
-            style={{
-              background: `${s.color}20`,
-              border: `1.5px solid ${s.color}60`,
-              color: s.color,
-              fontFamily: "'Space Grotesk', sans-serif",
-            }}
-            data-ocid="home.button"
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Home Section ─────────────────────────────────────────────────────────────
 function HomeSection({
   onSectionChange,
 }: {
   onSectionChange: (section: string, category?: string) => void;
 }) {
+  const { weather, location } = useWeather();
+  const { articles } = useNews();
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains("dark"),
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [aiInput, setAiInput] = useState("");
@@ -720,6 +544,16 @@ function HomeSection({
       setShowSuggestions(false);
     }
   }, [searchQuery]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () =>
+      setIsDark(
+        document.documentElement.classList.contains("dark") || mq.matches,
+      );
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const handleSearch = (q?: string) => {
     const query = (q ?? searchQuery).trim();
@@ -875,18 +709,9 @@ function HomeSection({
               NavvGenX AI
             </h1>
           </div>
-          <p
-            className="text-sm mb-4 tagline-text"
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              letterSpacing: "0.04em",
-            }}
-          >
-            Your intelligent AI companion
-          </p>
-          {/* Profile avatar + assistant name row */}
+
+          {/* Assistant name tag */}
           <div className="flex items-center justify-center gap-3 mb-5">
-            <HomeProfileAvatar />
             <AssistantNameTag />
           </div>
 
@@ -1237,15 +1062,354 @@ function HomeSection({
           )}
         </AnimatePresence>
 
-        {/* ===== 3-COLUMN PREVIEW STRIP ===== */}
-        <HomePreviewStrip onSectionChange={onSectionChange} />
-
-        {/* ===== QUICK SECTIONS ROW ===== */}
-        <QuickSectionsRow onSectionChange={onSectionChange} />
-
-        {/* ===== LIVE WIDGET ===== */}
+        {/* ===== LIVE WEATHER & NEWS ===== */}
         <div className="px-4 pb-4">
-          <LiveWidget onNavigateToLive={() => onSectionChange("live")} />
+          {/* Section label */}
+          <div className="flex items-center justify-between mb-3">
+            <span
+              className="text-xs font-bold uppercase tracking-widest"
+              style={{
+                color: "oklch(0.72 0.12 75)",
+                fontFamily: "'Space Grotesk', sans-serif",
+                letterSpacing: "0.12em",
+              }}
+            >
+              Live News &amp; Weather
+            </span>
+            <span
+              className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+              style={{
+                background: "oklch(0.72 0.12 75 / 0.12)",
+                color: "oklch(0.72 0.12 75)",
+                fontFamily: "'Space Grotesk', sans-serif",
+              }}
+            >
+              LIVE
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Weather Column */}
+            <div
+              className="rounded-2xl p-3.5"
+              style={{
+                background: isDark ? "oklch(0.13 0.025 265)" : "white",
+                border: isDark
+                  ? "1.5px solid oklch(0.72 0.12 75 / 0.40)"
+                  : "1.5px solid oklch(0.72 0.12 75 / 0.25)",
+                boxShadow: isDark
+                  ? "0 2px 16px oklch(0.72 0.12 75 / 0.10)"
+                  : "0 1px 8px oklch(0.155 0.030 265 / 0.06)",
+              }}
+            >
+              <div className="flex items-center gap-1.5 mb-2">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="oklch(0.72 0.12 75)"
+                  strokeWidth="2.5"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                </svg>
+                <span
+                  className="text-[10px] font-bold uppercase tracking-wide"
+                  style={{
+                    color: "oklch(0.72 0.12 75)",
+                    fontFamily: "'Space Grotesk', sans-serif",
+                  }}
+                >
+                  Weather
+                </span>
+              </div>
+              {weather ? (
+                <>
+                  <div
+                    className="font-bold"
+                    style={{
+                      fontSize: "1.8rem",
+                      lineHeight: 1,
+                      color: isDark
+                        ? "oklch(0.90 0.10 75)"
+                        : "oklch(0.155 0.030 265)",
+                      fontFamily: "'Playfair Display', serif",
+                    }}
+                  >
+                    {weather.temp}°C
+                  </div>
+                  <div
+                    className="text-xs mt-1 leading-snug"
+                    style={{
+                      color: isDark
+                        ? "oklch(0.75 0.010 265)"
+                        : "oklch(0.40 0.008 265)",
+                      fontFamily: "'Space Grotesk', sans-serif",
+                    }}
+                  >
+                    {weather.condition.replace(/[^\w\s]/g, "").trim()}
+                  </div>
+                  <div
+                    className="text-[10px] mt-1.5 space-y-0.5"
+                    style={{
+                      color: isDark
+                        ? "oklch(0.65 0.010 265)"
+                        : "oklch(0.55 0.008 265)",
+                      fontFamily: "'Space Grotesk', sans-serif",
+                    }}
+                  >
+                    <div>Humidity: {weather.humidity}%</div>
+                    <div>Wind: {weather.windSpeed} km/h</div>
+                  </div>
+                  {location && (
+                    <div
+                      className="text-[10px] mt-1.5 font-semibold truncate"
+                      style={{ color: "oklch(0.72 0.12 75)" }}
+                    >
+                      {location.city}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div
+                  className="text-xs"
+                  style={{
+                    color: isDark
+                      ? "oklch(0.65 0.010 265)"
+                      : "oklch(0.55 0.008 265)",
+                  }}
+                >
+                  Loading...
+                </div>
+              )}
+            </div>
+
+            {/* News Column */}
+            <div
+              className="rounded-2xl p-3.5"
+              style={{
+                background: isDark ? "oklch(0.13 0.025 265)" : "white",
+                border: isDark
+                  ? "1.5px solid oklch(0.72 0.12 75 / 0.40)"
+                  : "1.5px solid oklch(0.72 0.12 75 / 0.25)",
+                boxShadow: isDark
+                  ? "0 2px 16px oklch(0.72 0.12 75 / 0.10)"
+                  : "0 1px 8px oklch(0.155 0.030 265 / 0.06)",
+                overflow: "hidden",
+              }}
+            >
+              <div className="flex items-center gap-1.5 mb-2">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="oklch(0.72 0.12 75)"
+                  strokeWidth="2.5"
+                  aria-hidden="true"
+                >
+                  <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
+                  <path d="M18 14h-8" />
+                  <path d="M15 18h-5" />
+                  <path d="M10 6h8v4h-8V6z" />
+                </svg>
+                <span
+                  className="text-[10px] font-bold uppercase tracking-wide"
+                  style={{
+                    color: "oklch(0.72 0.12 75)",
+                    fontFamily: "'Space Grotesk', sans-serif",
+                  }}
+                >
+                  Live News
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {articles.slice(0, 4).map((article, i) => (
+                  <a
+                    key={article.link || i}
+                    href={article.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-1.5 leading-tight no-underline group"
+                    style={{ textDecoration: "none" }}
+                  >
+                    <span
+                      style={{
+                        color: "oklch(0.72 0.12 75)",
+                        fontSize: "8px",
+                        marginTop: 4,
+                        flexShrink: 0,
+                      }}
+                    >
+                      ●
+                    </span>
+                    <span
+                      className="text-[10px] leading-tight line-clamp-2 group-hover:underline"
+                      style={{
+                        color: isDark
+                          ? "oklch(0.80 0.008 265)"
+                          : "oklch(0.20 0.020 265)",
+                        fontFamily: "'Space Grotesk', sans-serif",
+                      }}
+                    >
+                      {article.title}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== QUICK ACTIONS GRID ===== */}
+        <div className="px-4 pb-8">
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {
+                id: "chat",
+                label: "Ask Anything",
+                desc: "AI chat & questions",
+                icon: (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="oklch(0.72 0.12 75)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                ),
+              },
+              {
+                id: "live",
+                label: "News & Live",
+                desc: "Headlines & updates",
+                icon: (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="oklch(0.72 0.12 75)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
+                    <path d="M18 14h-8" />
+                    <path d="M15 18h-5" />
+                    <path d="M10 6h8v4h-8V6z" />
+                  </svg>
+                ),
+              },
+              {
+                id: "creative-ai",
+                label: "Creative AI",
+                desc: "Generate images & more",
+                icon: (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="oklch(0.72 0.12 75)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                    <path d="M5 3v4" />
+                    <path d="M19 17v4" />
+                    <path d="M3 5h4" />
+                    <path d="M17 19h4" />
+                  </svg>
+                ),
+              },
+              {
+                id: "health",
+                label: "Health & Wellness",
+                desc: "Tips & reminders",
+                icon: (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="oklch(0.72 0.12 75)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                  </svg>
+                ),
+              },
+            ].map((card) => (
+              <button
+                key={card.id}
+                type="button"
+                onClick={() => onSectionChange(card.id)}
+                className="flex flex-col gap-3 p-4 rounded-2xl text-left transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                style={{
+                  background: "oklch(0.99 0.001 80)",
+                  border: "1.5px solid oklch(0.91 0.003 265)",
+                  boxShadow: "0 1px 8px oklch(0.155 0.030 265 / 0.04)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "oklch(0.72 0.12 75)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 16px oklch(0.72 0.12 75 / 0.15)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "oklch(0.91 0.003 265)";
+                  e.currentTarget.style.boxShadow =
+                    "0 1px 8px oklch(0.155 0.030 265 / 0.04)";
+                }}
+                data-ocid="home.button"
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: "oklch(0.155 0.030 265)" }}
+                >
+                  {card.icon}
+                </div>
+                <div>
+                  <p
+                    className="font-semibold text-sm leading-tight"
+                    style={{
+                      color: "oklch(0.12 0.020 265)",
+                      fontFamily: "'Space Grotesk', sans-serif",
+                    }}
+                  >
+                    {card.label}
+                  </p>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{
+                      color: "oklch(0.55 0.008 265)",
+                      fontFamily: "'Space Grotesk', sans-serif",
+                    }}
+                  >
+                    {card.desc}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ===== FOOTER SPACER ===== */}
@@ -1503,12 +1667,14 @@ export default function App() {
         const acc = localStorage.getItem("navvgenx-account");
         const accData = acc ? JSON.parse(acc) : null;
         const name = accData?.name || "";
+        // Use only the first word of the name for natural greeting
+        const firstName = name.trim().split(/\s+/)[0] || name;
         // Two-part speech for clearer pronunciation
         try {
           if (!window.speechSynthesis) throw new Error("no tts");
           window.speechSynthesis.cancel();
           const u1 = new SpeechSynthesisUtterance(
-            name ? `Hello ${name}` : "Hello",
+            firstName ? `Hello ${firstName}` : "Hello",
           );
           u1.rate = 0.85;
           u1.pitch = 1.0;
@@ -1537,8 +1703,8 @@ export default function App() {
           window.speechSynthesis.speak(u1);
         } catch {
           speakText(
-            name
-              ? `Hello ${name}, welcome to NavvGenX AI`
+            firstName
+              ? `Hello ${firstName}, welcome to NavvGenX AI`
               : "Welcome to NavvGenX AI",
           );
         }
@@ -1713,15 +1879,223 @@ export default function App() {
 
   // More section categories
   const moreCategories = [
-    { id: "study", label: "Study", icon: "📖" },
-    { id: "fashion", label: "Fashion", icon: "👗" },
-    { id: "law", label: "Law", icon: "⚖️" },
-    { id: "career", label: "Career", icon: "💼" },
-    { id: "business", label: "Business", icon: "📊" },
-    { id: "love", label: "Love", icon: "💝" },
-    { id: "recipes", label: "Recipes", icon: "🍳" },
-    { id: "music", label: "Music", icon: "🎵" },
-    { id: "movies", label: "Movies", icon: "🎬" },
+    {
+      id: "study",
+      label: "Study",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+          <path d="M6 12v5c3 3 9 3 12 0v-5" />
+        </svg>
+      ),
+    },
+    {
+      id: "fashion",
+      label: "Fashion",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z" />
+        </svg>
+      ),
+    },
+    {
+      id: "law",
+      label: "Law",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 22v-7" />
+          <path d="M18 22H6" />
+          <path d="m17 11-5-5-5 5" />
+          <path d="M3 11h18" />
+          <path d="m8 11 4-8 4 8" />
+        </svg>
+      ),
+    },
+    {
+      id: "career",
+      label: "Career",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <rect width="20" height="14" x="2" y="7" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+      ),
+    },
+    {
+      id: "business",
+      label: "Business",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="18" x2="18" y1="20" y2="10" />
+          <line x1="12" x2="12" y1="20" y2="4" />
+          <line x1="6" x2="6" y1="20" y2="14" />
+        </svg>
+      ),
+    },
+    {
+      id: "love",
+      label: "Love",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+      ),
+    },
+    {
+      id: "recipes",
+      label: "Recipes",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M15 11h.01" />
+          <path d="M11 15h.01" />
+          <path d="M16 16h.01" />
+          <path d="m2 16 20 6-6-20A20 20 0 0 0 2 16" />
+          <path d="M5.71 17.11a17.04 17.04 0 0 1 11.4-11.4" />
+        </svg>
+      ),
+    },
+    {
+      id: "music",
+      label: "Music",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="18" cy="16" r="3" />
+        </svg>
+      ),
+    },
+    {
+      id: "movies",
+      label: "Movies",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <rect width="20" height="20" x="2" y="2" rx="2.18" ry="2.18" />
+          <line x1="7" x2="7" y1="2" y2="22" />
+          <line x1="17" x2="17" y1="2" y2="22" />
+          <line x1="2" x2="22" y1="12" y2="12" />
+          <line x1="2" x2="7" y1="7" y2="7" />
+          <line x1="2" x2="7" y1="17" y2="17" />
+          <line x1="17" x2="22" y1="17" y2="17" />
+          <line x1="17" x2="22" y1="7" y2="7" />
+        </svg>
+      ),
+    },
+    {
+      id: "training",
+      label: "Training",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M6 4v16" />
+          <path d="M18 4v16" />
+          <path d="M2 8h4" />
+          <path d="M2 16h4" />
+          <path d="M18 8h4" />
+          <path d="M18 16h4" />
+          <path d="M6 12h12" />
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -1729,7 +2103,7 @@ export default function App() {
       <Toaster richColors position="top-right" />
       {/* Splash Screen */}
       <AnimatePresence>
-        {showSplash && isLoggedIn && <SplashScreen onDone={handleSplashDone} />}
+        {showSplash && <SplashScreen onDone={handleSplashDone} />}
       </AnimatePresence>
       {/* Section Greeting Banner */}
       <AnimatePresence>
@@ -2049,6 +2423,9 @@ export default function App() {
           {/* ── Creative AI ── */}
           {activeSection === "creative-ai" && <CreativeAIPage />}
 
+          {/* ── Training ── */}
+          {activeSection === "training" && <TrainingPage />}
+
           {/* ── Search (redirects to chat with search category) ── */}
           {activeSection === "search" && (
             <CategorySection
@@ -2190,8 +2567,12 @@ export default function App() {
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
             className="md:hidden fixed bottom-20 left-4 right-4 z-40 rounded-2xl p-4 grid grid-cols-3 gap-2"
             style={{
-              background: "oklch(0.99 0.001 80)",
-              border: "1px solid oklch(0.91 0.003 265)",
+              background: darkMode
+                ? "oklch(0.10 0.020 265)"
+                : "oklch(0.99 0.001 80)",
+              border: darkMode
+                ? "1px solid oklch(0.72 0.12 75 / 0.25)"
+                : "1px solid oklch(0.91 0.003 265)",
               boxShadow: "0 8px 32px oklch(0.155 0.030 265 / 0.12)",
             }}
           >
@@ -2206,23 +2587,35 @@ export default function App() {
                 className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all hover:scale-[1.04] active:scale-[0.96]"
                 style={{
                   background: darkMode
-                    ? "linear-gradient(135deg, oklch(0.72 0.12 75 / 0.10) 0%, transparent 60%), oklch(0.18 0.030 265)"
-                    : "linear-gradient(135deg, oklch(0.72 0.12 75 / 0.08) 0%, transparent 60%), oklch(0.97 0.006 265)",
-                  border: "1.5px solid oklch(0.72 0.12 75 / 0.35)",
-                  borderLeft: "3px solid oklch(0.72 0.12 75 / 0.5)",
+                    ? "linear-gradient(135deg, oklch(0.72 0.12 75 / 0.18) 0%, oklch(0.08 0.015 265) 100%)"
+                    : "linear-gradient(135deg, oklch(0.72 0.12 75 / 0.08) 0%, oklch(0.97 0.006 265) 100%)",
+                  border: darkMode
+                    ? "1.5px solid oklch(0.72 0.12 75 / 0.55)"
+                    : "1.5px solid oklch(0.72 0.12 75 / 0.30)",
+                  boxShadow: darkMode
+                    ? "0 2px 12px oklch(0.72 0.12 75 / 0.20), inset 0 1px 0 oklch(0.72 0.12 75 / 0.12)"
+                    : "none",
                 }}
                 data-ocid="more.button"
               >
-                <span style={{ fontSize: 22 }}>{cat.icon}</span>
+                <span
+                  style={{
+                    color: darkMode
+                      ? "oklch(0.82 0.14 75)"
+                      : "oklch(0.22 0.035 265)",
+                  }}
+                >
+                  {cat.icon}
+                </span>
                 <span
                   className="text-xs font-semibold"
                   style={{
                     color: darkMode
-                      ? "oklch(0.90 0.010 75)"
+                      ? "oklch(0.85 0.14 75)"
                       : "oklch(0.12 0.020 265)",
                     fontFamily: "'Playfair Display', serif",
                     textShadow: darkMode
-                      ? "0 0 12px oklch(0.72 0.12 75 / 0.3)"
+                      ? "0 0 16px oklch(0.72 0.12 75 / 0.50)"
                       : "none",
                   }}
                 >

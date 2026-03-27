@@ -1,35 +1,37 @@
 # NavvGenX AI
 
 ## Current State
-The app is a full-featured AI companion with Home, Chat, Health, Live, Account, Creative AI, More sections. The home page has: logo area with styled 'NavvGenX' text + 'AI' subtitle, profile avatar, assistant name tag, a search bar, an AI panel, and a LiveWidget component. The More drawer shows sections with varying bright colors. The app name still reads 'NAVVURA AI' in some utility files (now fixed). The NGX logo image exists.
+Version 61 is live. The app has a splash screen (shows after login), home page with NGX logo below app name, search bar that carries queries to chat via sessionStorage, Creative AI with 5-source image fallback chain, Training section with timer and AI review, and a chat page that scrolls down when answers load.
 
 ## Requested Changes (Diff)
 
 ### Add
-- NGX abbreviation logo (new image generated) displayed ONCE at top of home screen replacing the styled text logo
-- Three compact info columns on home screen: Weather card, Top News card, Business/Market card — each with distinct but theme-consistent accent color
-- More content on home screen to feel professional and full-page (assistant name tag when set, date/time, quick action row)
-- NavvGenX name in ALL remaining places: AgeSetup, i18n, aiEngine, etc. (already done via sed)
+- Training section: real countdown/countup timer with start/pause/reset, workout type selector, per-exercise advice cards shown before/during timer
+- Search engine API links in AI answers (DuckDuckGo, Bing, Google search links relevant to the exact question asked)
+- Chat generation effect: streaming-style text animation while answer generates, chat container stays fixed/doesn't scroll the whole page
 
 ### Modify
-- Home screen: Remove duplicate app name text. Show NGX logo image + "NavvGenX AI" wordmark ONCE only. Remove the old styled shimmer text block.
-- Home screen: Show profile photo + assistant custom name (one row, below logo)
-- Home screen: Add 3-column preview strip (Weather / News / Business) each ~120px tall compact cards with distinct accent borders — clicking opens Live section
-- More section: Use a single consistent accent color per section (Study=blue, Fashion=pink, Love=red, Career=amber, Business=emerald, Law=purple, History=slate) — no random colors, always theme-matched
-- Logo.tsx: Use the new NGX logo image already at /assets/generated/ngx-logo-transparent.dim_512x512.png
-- PWA manifest: already correct with NavvGenX AI name and navvgenx-icon-512 image
-- Install banner: text says 'Install NavvGenX AI'
-- All greeting/response text already fixed to say NavvGenX AI
+- Splash popup: show immediately on app open, do NOT wait for isLoggedIn — show it to everyone on first open of session
+- Remove NGX logo element that appears below the app name on home page
+- Home search bar: when user submits query from home page, it opens chat AND the text is already pre-filled/sent — no need to retype
+- AI answers: give precise answers matching the question intent, not keyword analysis; remove automatic photo grid unless user specifically asks for images/photos; provide relevant search engine links per question
+- Live news: use multiple RSS/news API sources (NewsAPI, BBC RSS via cors proxy, GNews, or similar) to show current world news correctly
+- Training section: replace AI review tab with real workout timer (start/pause/reset), activity selector, and advice for each exercise type shown as cards
+- Fashion section logo: change from current icon to a more professional fashion-appropriate icon (Shirt or similar from lucide)
+- Creative AI image generation: improve prompt encoding so generated image matches description more closely (use detailed prompt engineering, add style modifiers)
+- Chat page scroll behavior: messages container uses overflow-y: auto with fixed height, new messages appear at bottom without page-level scroll; show a pulsing "generating..." indicator while loading
 
 ### Remove
-- The old animated shimmer 'NavvGenX' + 'AI' text block from home (replaced by logo image + clean wordmark)
-- Any remaining 'NAVVURA' strings (already done)
-- Duplicate app name renders on home
+- Unnecessary photo grid shown by default on every AI answer
+- NGX logo element below the "NavvGenX AI" title on home page
 
 ## Implementation Plan
-1. Update Logo.tsx to render the NGX image logo cleanly
-2. Rewrite the HomeSection header: NGX logo image + 'NavvGenX AI' text once, profile avatar row, assistant name
-3. Add WeatherPreviewCard, NewsPreviewCard, MarketPreviewCard as compact 3-column strip using existing useWeather and useNews hooks
-4. Update More section section colors to a fixed per-section palette
-5. Ensure no overlapping elements — use proper gap/padding throughout
-6. Keep all other sections (Chat, Health, etc.) unchanged functionally
+1. Fix splash: change `{showSplash && isLoggedIn}` to `{showSplash}` so it shows immediately
+2. Home page: find and remove the NGX logo JSX below the title h1
+3. Chat scroll: wrap messages list in a fixed-height scrollable div, scroll to bottom programmatically on new messages
+4. AI answer quality: rewrite `getHomePanelResponse`/`aiEngine` to use question intent detection and return precise answers; strip auto-image-grid; add search engine links row
+5. Live news: replace current news fetch with RSS-over-CORS or GNews free API endpoint
+6. Training page: rebuild with real timer (setInterval-based), activity picker, per-exercise advice cards, no AI review
+7. Fashion icon: update More section item for Fashion to use Shirt icon
+8. Creative AI: improve image prompt engineering with style/quality modifiers
+9. Chat streaming effect: add char-by-char or word-by-word reveal animation on AI messages

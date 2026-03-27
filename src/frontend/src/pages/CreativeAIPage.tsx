@@ -11,6 +11,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Logo } from "../components/Logo";
 
 const gold = "oklch(0.72 0.12 75)";
 const navy = "oklch(0.155 0.030 265)";
@@ -18,12 +19,37 @@ const navy = "oklch(0.155 0.030 265)";
 // ─── Image Generator ─────────────────────────────────────────────────────────
 function ImageGenerator() {
   const [prompt, setPrompt] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imgLoading, setImgLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fallbackUrls, setFallbackUrls] = useState<string[]>([]);
+  const [currentFallbackIndex, setCurrentFallbackIndex] = useState(0);
+  const imgTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [fallbackIndex, setFallbackIndex] = useState(0);
-  const [sourcesForPrompt, setSourcesForPrompt] = useState<string[]>([]);
+  const clearImgTimeout = () => {
+    if (imgTimeoutRef.current) {
+      clearTimeout(imgTimeoutRef.current);
+      imgTimeoutRef.current = null;
+    }
+  };
+
+  const tryNextFallback = () => {
+    clearImgTimeout();
+    const next = currentFallbackIndex + 1;
+    if (next < fallbackUrls.length) {
+      setCurrentFallbackIndex(next);
+      setImageUrl(fallbackUrls[next]);
+      setImgLoading(true);
+      // Timeout for this fallback
+      imgTimeoutRef.current = setTimeout(() => tryNextFallback(), 15000);
+    } else {
+      setImgLoading(false);
+      setImageUrl(null);
+      setError(
+        `Could not generate image for "${prompt.trim()}". The AI service may be busy — please try again in a moment.`,
+      );
+    }
+  };
 
   const generateImage = () => {
     const p = prompt.trim();
@@ -31,37 +57,43 @@ function ImageGenerator() {
       toast.error("Enter a description for the image");
       return;
     }
-    setLoading(true);
+    clearImgTimeout();
+    setImageUrl(null);
     setError("");
-    setImageUrl("");
-    setFallbackIndex(0);
+    setImgLoading(true);
+    setCurrentFallbackIndex(0);
 
-    const encodedPrompt = encodeURIComponent(p);
-    const seed = Date.now();
+    const seed = Math.floor(Math.random() * 999999);
+    // Add quality modifiers to improve prompt adherence
+    const enhancedPrompt = `${p}, professional photography, high quality, detailed, sharp focus, realistic`;
+    const encoded = encodeURIComponent(enhancedPrompt);
+    const encodedShort = encodeURIComponent(p);
     const sources = [
-      `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true&seed=${seed}&model=flux`,
-      `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true&seed=${seed + 1}`,
-      `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true&seed=${seed + 2}&enhance=true`,
-      `https://source.unsplash.com/512x512/?${encodeURIComponent(p.split(" ").slice(0, 3).join(","))}`,
+      `https://image.pollinations.ai/prompt/${encoded}?width=768&height=512&nologo=true&seed=${seed}&model=flux&enhance=true`,
+      `https://image.pollinations.ai/prompt/${encoded}?width=512&height=512&nologo=true&seed=${seed + 1}&model=flux&enhance=true`,
+      `https://image.pollinations.ai/prompt/${encodedShort}?width=512&height=512&nologo=true&seed=${seed + 2}&model=turbo`,
+      `https://image.pollinations.ai/prompt/${encodedShort}?width=512&height=512&seed=${seed + 3}&nologo=true`,
+      `https://picsum.photos/seed/${seed}/512/512`,
     ];
-    setSourcesForPrompt(sources);
-    // Set first URL directly — the rendered <img> onError handles fallback
+    setFallbackUrls(sources.slice(1));
     setImageUrl(sources[0]);
-    // Stop loading spinner after a short delay (image loads async in browser)
-    setTimeout(() => setLoading(false), 800);
+    // If image doesn't load in 20 seconds, try next fallback
+    imgTimeoutRef.current = setTimeout(() => tryNextFallback(), 20000);
   };
 
-  const handleImageError = () => {
-    const next = fallbackIndex + 1;
-    if (next < sourcesForPrompt.length) {
-      setFallbackIndex(next);
-      setImageUrl(sourcesForPrompt[next]);
-    } else {
-      setImageUrl("");
-      setError(
-        `Could not generate image for "${prompt.trim()}". Try a simpler description or try again.`,
-      );
-    }
+  // Clean up timeout on unmount
+  // biome-ignore lint/correctness/useExhaustiveDependencies: clearImgTimeout is stable
+  useEffect(() => () => clearImgTimeout(), []);
+
+  const handleImgLoad = () => {
+    clearImgTimeout();
+    setImgLoading(false);
+    setError("");
+  };
+
+  const handleImgError = () => {
+    clearImgTimeout();
+    tryNextFallback();
   };
 
   const examplePrompts = [
@@ -91,12 +123,12 @@ function ImageGenerator() {
             border: "1.5px solid oklch(0.91 0.003 265)",
             fontFamily: "'Space Grotesk', sans-serif",
             color: navy,
+            background: "white",
           }}
           data-ocid="creative.textarea"
         />
       </div>
 
-      {/* Example prompts */}
       <div className="flex flex-wrap gap-2">
         {examplePrompts.map((p) => (
           <button
@@ -119,7 +151,7 @@ function ImageGenerator() {
 
       <Button
         onClick={generateImage}
-        disabled={loading || !prompt.trim()}
+        disabled={imgLoading || !prompt.trim()}
         className="w-full font-semibold rounded-2xl py-3"
         style={{
           background: `linear-gradient(135deg, ${gold}, oklch(0.60 0.16 70))`,
@@ -128,7 +160,7 @@ function ImageGenerator() {
         }}
         data-ocid="creative.primary_button"
       >
-        {loading ? (
+        {imgLoading ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             Generating Image…
@@ -141,8 +173,9 @@ function ImageGenerator() {
         )}
       </Button>
 
+      {/* Loading state */}
       <AnimatePresence>
-        {loading && (
+        {imgLoading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -152,35 +185,48 @@ function ImageGenerator() {
             data-ocid="creative.loading_state"
           >
             <div
-              className="w-14 h-14 rounded-2xl mb-4 animate-pulse"
-              style={{ background: `${gold}30` }}
-            />
+              className="relative w-16 h-16 rounded-2xl mb-4"
+              style={{ background: `${gold}20` }}
+            >
+              <div
+                className="absolute inset-2 rounded-xl animate-pulse"
+                style={{ background: `${gold}40` }}
+              />
+            </div>
             <p
-              className="text-sm font-medium"
-              style={{
-                color: "oklch(0.50 0.008 265)",
-                fontFamily: "'Space Grotesk', sans-serif",
-              }}
+              className="text-sm font-medium mb-1"
+              style={{ color: navy, fontFamily: "'Space Grotesk', sans-serif" }}
             >
               Creating your image with AI…
             </p>
+            <p
+              className="text-xs"
+              style={{
+                color: "oklch(0.55 0.008 265)",
+                fontFamily: "'Space Grotesk', sans-serif",
+              }}
+            >
+              This may take up to 20 seconds
+            </p>
           </motion.div>
         )}
-        {error && (
+
+        {error && !imgLoading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-sm text-center py-4 space-y-2"
+            className="text-sm text-center py-4 space-y-3"
             data-ocid="creative.error_state"
           >
             <p style={{ color: "oklch(0.55 0.22 25)" }}>{error}</p>
             <button
               type="button"
               onClick={generateImage}
-              className="px-4 py-2 rounded-full text-xs font-semibold transition-all"
+              className="px-5 py-2.5 rounded-full text-sm font-semibold transition-all hover:scale-105"
               style={{
                 background: gold,
                 color: "oklch(0.08 0.022 265)",
+                fontFamily: "'Space Grotesk', sans-serif",
               }}
               data-ocid="creative.button"
             >
@@ -188,49 +234,59 @@ function ImageGenerator() {
             </button>
           </motion.div>
         )}
-        {imageUrl && !loading && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="rounded-2xl overflow-hidden"
-            style={{ border: `1px solid ${gold}30` }}
-            data-ocid="creative.success_state"
-          >
-            <img
-              src={imageUrl}
-              alt={prompt}
-              onError={handleImageError}
-              className="w-full object-cover"
-              style={{ maxHeight: 400 }}
-            />
-            <div
-              className="p-3 flex items-center justify-between"
-              style={{ background: "oklch(0.97 0.004 80)" }}
-            >
-              <p
-                className="text-xs truncate"
-                style={{
-                  color: "oklch(0.50 0.008 265)",
-                  fontFamily: "'Space Grotesk', sans-serif",
-                }}
-              >
-                {prompt}
-              </p>
-              <a
-                href={imageUrl}
-                download="navvgenx-ai-image.png"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs font-medium ml-3 flex-shrink-0"
-                style={{ color: gold }}
-              >
-                <ExternalLink className="w-3 h-3" />
-                Open
-              </a>
-            </div>
-          </motion.div>
-        )}
       </AnimatePresence>
+
+      {/* The actual image — always rendered when URL is set, hidden while loading */}
+      {imageUrl && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{
+            opacity: imgLoading ? 0 : 1,
+            scale: imgLoading ? 0.96 : 1,
+          }}
+          className="rounded-2xl overflow-hidden"
+          style={{
+            border: `1px solid ${gold}30`,
+            display: imgLoading ? "none" : "block",
+          }}
+          data-ocid="creative.success_state"
+        >
+          <img
+            src={imageUrl}
+            alt={prompt}
+            onLoad={handleImgLoad}
+            onError={handleImgError}
+            className="w-full object-cover"
+            style={{ maxHeight: 400 }}
+            crossOrigin="anonymous"
+          />
+          <div
+            className="p-3 flex items-center justify-between"
+            style={{ background: "oklch(0.97 0.004 80)" }}
+          >
+            <p
+              className="text-xs truncate"
+              style={{
+                color: "oklch(0.50 0.008 265)",
+                fontFamily: "'Space Grotesk', sans-serif",
+              }}
+            >
+              {prompt}
+            </p>
+            <a
+              href={imageUrl}
+              download="navvgenx-ai-image.png"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs font-medium ml-3 flex-shrink-0"
+              style={{ color: gold }}
+            >
+              <ExternalLink className="w-3 h-3" />
+              Open
+            </a>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }
@@ -338,7 +394,6 @@ function VoiceSynthesis() {
           </select>
         </div>
       )}
-
       <div>
         <div
           className="block text-sm font-semibold mb-2"
@@ -356,11 +411,11 @@ function VoiceSynthesis() {
             border: "1.5px solid oklch(0.91 0.003 265)",
             fontFamily: "'Space Grotesk', sans-serif",
             color: navy,
+            background: "white",
           }}
           data-ocid="creative.textarea"
         />
       </div>
-
       <div className="flex gap-3">
         <Button
           onClick={speak}
@@ -405,9 +460,7 @@ function VoiceSynthesis() {
 // ─── Video Search ─────────────────────────────────────────────────────────────
 function VideoSearch() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<
-    { title: string; url: string; thumb: string }[]
-  >([]);
+  const [results, setResults] = useState<{ title: string; url: string }[]>([]);
 
   const searchVideos = () => {
     const q = query.trim();
@@ -415,31 +468,24 @@ function VideoSearch() {
       toast.error("Enter a search term");
       return;
     }
-    // Open YouTube search
     window.open(
       `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`,
       "_blank",
     );
-
-    // Show example links
-    const topics = [
+    setResults([
       {
         title: `${q} — Full Tutorial`,
         url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${q} tutorial`)}`,
-        thumb: "https://img.youtube.com/vi/default/mqdefault.jpg",
       },
       {
         title: `Best ${q} Videos`,
         url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`best ${q}`)}`,
-        thumb: "https://img.youtube.com/vi/default/mqdefault.jpg",
       },
       {
-        title: `${q} — Latest`,
-        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${q} 2024`)}`,
-        thumb: "https://img.youtube.com/vi/default/mqdefault.jpg",
+        title: `${q} — Latest 2026`,
+        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${q} 2026`)}`,
       },
-    ];
-    setResults(topics);
+    ]);
   };
 
   return (
@@ -463,6 +509,7 @@ function VideoSearch() {
               border: "1.5px solid oklch(0.91 0.003 265)",
               fontFamily: "'Space Grotesk', sans-serif",
               color: navy,
+              background: "white",
             }}
             data-ocid="creative.input"
           />
@@ -481,7 +528,6 @@ function VideoSearch() {
           </Button>
         </div>
       </div>
-
       {results.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -541,7 +587,6 @@ export function CreativeAIPage() {
 
   return (
     <div className="min-h-screen bg-background" data-ocid="creative.page">
-      {/* Header */}
       <div
         className="px-5 py-6 text-center"
         style={{
@@ -549,17 +594,8 @@ export function CreativeAIPage() {
           borderBottom: "1px solid oklch(0.91 0.003 265)",
         }}
       >
-        <div
-          className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3"
-          style={{
-            background: `linear-gradient(135deg, ${gold}, oklch(0.60 0.16 70))`,
-          }}
-        >
-          <img
-            src="/assets/generated/ngx-logo-transparent.dim_512x512.png"
-            alt="NGX"
-            className="w-9 h-9 object-contain"
-          />
+        <div className="flex justify-center mb-3">
+          <Logo size="lg" />
         </div>
         <h1
           className="font-playfair text-2xl font-bold"
@@ -578,7 +614,6 @@ export function CreativeAIPage() {
         </p>
       </div>
 
-      {/* Tabs */}
       <div className="p-4 max-w-2xl mx-auto">
         <Tabs defaultValue="images">
           <TabsList
@@ -727,7 +762,6 @@ export function CreativeAIPage() {
         </Tabs>
       </div>
 
-      {/* Footer */}
       <footer
         className="py-4 text-center text-xs"
         style={{
