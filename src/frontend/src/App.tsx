@@ -1817,7 +1817,6 @@ export default function App() {
         triggerSectionGreeting("general");
         return;
       }
-      sessionStorage.removeItem("navvgenx-initial-query");
       navigate("chat", id);
       triggerSectionGreeting(id);
     },
@@ -1870,6 +1869,16 @@ export default function App() {
             <AgeSetup onComplete={handleProfileSet} actor={actor} />
           </motion.div>
         </div>
+      </>
+    );
+  }
+
+  // Show splash screen blocking everything else
+  if (showSplash) {
+    return (
+      <>
+        <Toaster richColors position="top-right" />
+        <SplashScreen onDone={handleSplashDone} />
       </>
     );
   }

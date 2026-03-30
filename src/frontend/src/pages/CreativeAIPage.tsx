@@ -22,79 +22,73 @@ function ImageGenerator() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imgLoading, setImgLoading] = useState(false);
   const [error, setError] = useState("");
-  const [fallbackUrls, setFallbackUrls] = useState<string[]>([]);
-  const [currentFallbackIndex, setCurrentFallbackIndex] = useState(0);
-  const imgTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [attemptCount, setAttemptCount] = useState(0);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const clearImgTimeout = () => {
-    if (imgTimeoutRef.current) {
-      clearTimeout(imgTimeoutRef.current);
-      imgTimeoutRef.current = null;
-    }
+  const buildUrl = (p: string, attempt: number): string => {
+    const seed = Math.floor(Math.random() * 9999999);
+    const encoded = encodeURIComponent(p);
+    const models = ["flux", "flux-realism", "flux-pro", "turbo"];
+    const model = models[attempt % models.length];
+    // Do NOT add extra quality words — keep exact prompt to preserve accuracy
+    return `https://image.pollinations.ai/prompt/${encoded}?width=768&height=512&nologo=true&seed=${seed}&model=${model}`;
   };
 
-  const tryNextFallback = () => {
-    clearImgTimeout();
-    const next = currentFallbackIndex + 1;
-    if (next < fallbackUrls.length) {
-      setCurrentFallbackIndex(next);
-      setImageUrl(fallbackUrls[next]);
-      setImgLoading(true);
-      // Timeout for this fallback
-      imgTimeoutRef.current = setTimeout(() => tryNextFallback(), 15000);
-    } else {
-      setImgLoading(false);
-      setImageUrl(null);
-      setError(
-        `Could not generate image for "${prompt.trim()}". The AI service may be busy — please try again in a moment.`,
-      );
-    }
-  };
-
-  const generateImage = () => {
+  const generateImage = async () => {
     const p = prompt.trim();
     if (!p) {
       toast.error("Enter a description for the image");
       return;
     }
-    clearImgTimeout();
+
+    // Cancel any previous attempt
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
+
     setImageUrl(null);
     setError("");
     setImgLoading(true);
-    setCurrentFallbackIndex(0);
+    setAttemptCount(0);
 
-    const seed = Math.floor(Math.random() * 999999);
-    // Add quality modifiers to improve prompt adherence
-    const enhancedPrompt = `${p}, professional photography, high quality, detailed, sharp focus, realistic`;
-    const encoded = encodeURIComponent(enhancedPrompt);
-    const encodedShort = encodeURIComponent(p);
-    const sources = [
-      `https://image.pollinations.ai/prompt/${encoded}?width=768&height=512&nologo=true&seed=${seed}&model=flux&enhance=true`,
-      `https://image.pollinations.ai/prompt/${encoded}?width=512&height=512&nologo=true&seed=${seed + 1}&model=flux&enhance=true`,
-      `https://image.pollinations.ai/prompt/${encodedShort}?width=512&height=512&nologo=true&seed=${seed + 2}&model=turbo`,
-      `https://image.pollinations.ai/prompt/${encodedShort}?width=512&height=512&seed=${seed + 3}&nologo=true`,
-      `https://picsum.photos/seed/${seed}/512/512`,
-    ];
-    setFallbackUrls(sources.slice(1));
-    setImageUrl(sources[0]);
-    // If image doesn't load in 20 seconds, try next fallback
-    imgTimeoutRef.current = setTimeout(() => tryNextFallback(), 20000);
-  };
+    // Try up to 4 attempts
+    for (let i = 0; i < 4; i++) {
+      const url = buildUrl(p, i);
+      try {
+        const response = await fetch(url, {
+          signal: abortRef.current.signal,
+          cache: "no-cache",
+        });
+        if (
+          response.ok &&
+          response.headers.get("content-type")?.startsWith("image/")
+        ) {
+          // Convert to blob URL so it displays reliably
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          setImageUrl(blobUrl);
+          setImgLoading(false);
+          setAttemptCount(i + 1);
+          return;
+        }
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        // Try next
+      }
+      setAttemptCount(i + 1);
+      // Small pause between retries
+      await new Promise((r) => setTimeout(r, 500));
+    }
 
-  // Clean up timeout on unmount
-  // biome-ignore lint/correctness/useExhaustiveDependencies: clearImgTimeout is stable
-  useEffect(() => () => clearImgTimeout(), []);
-
-  const handleImgLoad = () => {
-    clearImgTimeout();
+    // All attempts failed
     setImgLoading(false);
-    setError("");
+    setError(`Could not generate image for "${p}". Please try again.`);
   };
 
-  const handleImgError = () => {
-    clearImgTimeout();
-    tryNextFallback();
-  };
+  useEffect(() => {
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, []);
 
   const examplePrompts = [
     "A boy playing football on a sunny day",
@@ -163,7 +157,7 @@ function ImageGenerator() {
         {imgLoading ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Generating Image…
+            Generating{attemptCount > 0 ? ` (attempt ${attemptCount}/4)` : "…"}
           </>
         ) : (
           <>
@@ -173,7 +167,6 @@ function ImageGenerator() {
         )}
       </Button>
 
-      {/* Loading state */}
       <AnimatePresence>
         {imgLoading && (
           <motion.div
@@ -206,7 +199,9 @@ function ImageGenerator() {
                 fontFamily: "'Space Grotesk', sans-serif",
               }}
             >
-              This may take up to 20 seconds
+              {attemptCount > 0
+                ? `Trying model ${attemptCount} of 4…`
+                : "Contacting image service…"}
             </p>
           </motion.div>
         )}
@@ -236,29 +231,19 @@ function ImageGenerator() {
         )}
       </AnimatePresence>
 
-      {/* The actual image — always rendered when URL is set, hidden while loading */}
-      {imageUrl && (
+      {imageUrl && !imgLoading && (
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
-          animate={{
-            opacity: imgLoading ? 0 : 1,
-            scale: imgLoading ? 0.96 : 1,
-          }}
+          animate={{ opacity: 1, scale: 1 }}
           className="rounded-2xl overflow-hidden"
-          style={{
-            border: `1px solid ${gold}30`,
-            display: imgLoading ? "none" : "block",
-          }}
+          style={{ border: `1px solid ${gold}30` }}
           data-ocid="creative.success_state"
         >
           <img
             src={imageUrl}
             alt={prompt}
-            onLoad={handleImgLoad}
-            onError={handleImgError}
             className="w-full object-cover"
             style={{ maxHeight: 400 }}
-            crossOrigin="anonymous"
           />
           <div
             className="p-3 flex items-center justify-between"
@@ -282,7 +267,7 @@ function ImageGenerator() {
               style={{ color: gold }}
             >
               <ExternalLink className="w-3 h-3" />
-              Open
+              Save
             </a>
           </div>
         </motion.div>

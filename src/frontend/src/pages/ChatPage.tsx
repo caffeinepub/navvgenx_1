@@ -143,16 +143,48 @@ function getCategoryGreetings(): Record<string, string> {
 async function getSmartAnswer(query: string): Promise<string | null> {
   const q = query.trim();
   const encoded = encodeURIComponent(q);
-  const factualPattern =
-    /^(what is|who is|where is|when did|how does|what are|tell me about|explain|define|what was|who was|where are|when is|when was)/i;
 
   const searchLinksHtml = `<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(128,128,128,0.15);display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span style="font-size:0.75rem;opacity:0.5;font-weight:600;letter-spacing:0.04em;margin-right:4px">SEARCH:</span><a href="https://www.google.com/search?q=${encoded}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#4285f4;text-decoration:none;padding:2px 10px;border:1px solid #4285f420;border-radius:20px;background:#4285f408">Google</a><a href="https://duckduckgo.com/?q=${encoded}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#de5833;text-decoration:none;padding:2px 10px;border:1px solid #de583320;border-radius:20px;background:#de583308">DuckDuckGo</a><a href="https://www.bing.com/search?q=${encoded}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#008373;text-decoration:none;padding:2px 10px;border:1px solid #00837320;border-radius:20px;background:#00837308">Bing</a><a href="https://en.wikipedia.org/wiki/Special:Search?search=${encoded}" target="_blank" rel="noreferrer" style="font-size:0.78rem;color:#636466;text-decoration:none;padding:2px 10px;border:1px solid #63646620;border-radius:20px;background:#63646608">Wikipedia</a></div>`;
 
-  if (factualPattern.test(q)) {
+  // Try DuckDuckGo Instant Answer API for all queries
+  try {
+    const ddgRes = await fetch(
+      `https://api.duckduckgo.com/?q=${encoded}&format=json&no_html=1&skip_disambig=1`,
+      { signal: AbortSignal.timeout(4000) },
+    );
+    if (ddgRes.ok) {
+      const ddgData = await ddgRes.json();
+      // AbstractText is the best instant answer
+      if (ddgData.AbstractText && ddgData.AbstractText.length > 40) {
+        const src = ddgData.AbstractSource || "DuckDuckGo";
+        const url =
+          ddgData.AbstractURL || `https://duckduckgo.com/?q=${encoded}`;
+        return `<p style="line-height:1.65">${ddgData.AbstractText}</p><p style="margin-top:6px;font-size:0.8rem;opacity:0.6">Source: <a href="${url}" target="_blank" rel="noreferrer" style="color:#de5833">${src}</a></p>${searchLinksHtml}`;
+      }
+      // Answer (short facts like "2 + 2 = 4")
+      if (ddgData.Answer && ddgData.Answer.length > 2) {
+        return `<p style="line-height:1.65;font-weight:600">${ddgData.Answer}</p>${searchLinksHtml}`;
+      }
+      // Definition
+      if (ddgData.Definition && ddgData.Definition.length > 40) {
+        return `<p style="line-height:1.65">${ddgData.Definition}</p><p style="margin-top:6px;font-size:0.8rem;opacity:0.6">Source: ${ddgData.DefinitionSource || "Dictionary"}</p>${searchLinksHtml}`;
+      }
+    }
+  } catch {
+    // fall through to Wikipedia
+  }
+
+  // Try Wikipedia for factual/topic questions
+  const factualPattern =
+    /^(what is|who is|where is|when did|how does|what are|tell me about|explain|define|what was|who was|where are|when is|when was|history of|capital of|meaning of|founder of|president of|prime minister of)/i;
+
+  const isFactual = factualPattern.test(q) || q.split(" ").length <= 5;
+
+  if (isFactual) {
     try {
       const subject = q
         .replace(
-          /^(what is|who is|where is|when did|how does|what are|tell me about|explain|define|what was|who was|where are|when is|when was)\s+/i,
+          /^(what is|who is|where is|when did|how does|what are|tell me about|explain|define|what was|who was|where are|when is|when was|history of|capital of|meaning of|founder of|president of|prime minister of)\s+/i,
           "",
         )
         .replace(/[?!.]$/, "")
@@ -164,16 +196,17 @@ async function getSmartAnswer(query: string): Promise<string | null> {
       if (wikiRes.ok) {
         const wikiData = await wikiRes.json();
         if (wikiData.extract && wikiData.extract.length > 60) {
-          const sentences = wikiData.extract.split(/(?<=\.\s)/);
-          const answer = sentences.slice(0, 3).join(" ").trim();
-          return `<p style="line-height:1.65">${answer}</p>${searchLinksHtml}`;
+          const sentences = wikiData.extract.split(/\.\s+/);
+          const answer = sentences.slice(0, 3).join(". ").trim();
+          const finalAnswer = answer.endsWith(".") ? answer : `${answer}.`;
+          return `<p style="line-height:1.65">${finalAnswer}</p><p style="margin-top:6px;font-size:0.8rem;opacity:0.6">Source: <a href="${wikiData.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(subject)}`}" target="_blank" rel="noreferrer" style="color:#636466">Wikipedia</a></p>${searchLinksHtml}`;
         }
       }
     } catch {
       // fall through
     }
   }
-  // For non-factual questions, still append search links via returning null and letting caller add them
+
   return null;
 }
 
@@ -196,6 +229,7 @@ export function ChatPage({
   });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingId, setStreamingId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -452,9 +486,66 @@ export function ChatPage({
         localStorage.setItem("navvgenx-chat-history", JSON.stringify(hist));
       } catch {}
 
-      setMessages((prev) => [...prev, aiMsg]);
+      // Add message first with empty content, then stream it in
+      const streamId = aiMsg.id;
+      setMessages((prev) => [...prev, { ...aiMsg, content: "" }]);
       setIsLoading(false);
-      isLoadingRef.current = false;
+      setStreamingId(streamId);
+
+      // Stream the plain-text portion character by character
+      const fullText = aiMsg.isHtml ? aiMsg.content : aiMsg.content;
+      let displayed = "";
+      const chars = fullText.split("");
+      // For HTML content, stream word by word to avoid broken tags
+      if (aiMsg.isHtml) {
+        // Stream words for HTML (split on spaces to avoid mid-tag display)
+        const words = fullText.split(" ");
+        let wordIdx = 0;
+        const streamWords = () => {
+          if (wordIdx >= words.length) {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === streamId ? { ...aiMsg } : m)),
+            );
+            setStreamingId(null);
+            isLoadingRef.current = false;
+            return;
+          }
+          const chunkSize = wordIdx < 20 ? 1 : wordIdx < 60 ? 3 : 6;
+          const chunk = `${words.slice(wordIdx, wordIdx + chunkSize).join(" ")} `;
+          displayed += chunk;
+          wordIdx += chunkSize;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === streamId ? { ...aiMsg, content: displayed } : m,
+            ),
+          );
+          setTimeout(streamWords, wordIdx < 20 ? 35 : wordIdx < 60 ? 25 : 12);
+        };
+        streamWords();
+      } else {
+        let charIdx = 0;
+        const streamChars = () => {
+          if (charIdx >= chars.length) {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === streamId ? { ...aiMsg } : m)),
+            );
+            setStreamingId(null);
+            isLoadingRef.current = false;
+            return;
+          }
+          const chunkSize = charIdx < 80 ? 1 : charIdx < 200 ? 2 : 4;
+          displayed += chars.slice(charIdx, charIdx + chunkSize).join("");
+          charIdx += chunkSize;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === streamId ? { ...m, content: displayed } : m,
+            ),
+          );
+          setTimeout(streamChars, charIdx < 80 ? 18 : charIdx < 200 ? 12 : 6);
+        };
+        streamChars();
+        return; // Don't set isLoadingRef false here; streamChars handles it
+      }
 
       actor
         ?.addMessage({
@@ -832,9 +923,19 @@ export function ChatPage({
                     }`}
                   >
                     {msg.isHtml ? (
-                      <HtmlContent html={msg.content} />
+                      <>
+                        <HtmlContent html={msg.content} />
+                        {streamingId === msg.id && (
+                          <span className="inline-block w-0.5 h-4 bg-primary/70 animate-pulse ml-0.5 align-middle" />
+                        )}
+                      </>
                     ) : (
-                      msg.content
+                      <>
+                        {msg.content}
+                        {streamingId === msg.id && (
+                          <span className="inline-block w-0.5 h-4 bg-primary/70 animate-pulse ml-0.5 align-middle" />
+                        )}
+                      </>
                     )}
                     {msg.role === "user" && (
                       <button

@@ -194,12 +194,12 @@ type RSSItem = {
   description: string;
 };
 
-async function fetchFeed(
+async function fetchFeedViaRss2json(
   rssUrl: string,
   sourceName: string,
 ): Promise<NewsArticle[]> {
   const res = await fetch(
-    `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&count=20`,
+    `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&count=20&api_key=`,
     { signal: AbortSignal.timeout(8000) },
   );
   const data = await res.json();
@@ -213,12 +213,47 @@ async function fetchFeed(
   }));
 }
 
+async function fetchFeedViaAllOrigins(
+  rssUrl: string,
+  sourceName: string,
+): Promise<NewsArticle[]> {
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}`;
+  const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
+  const text = await res.text();
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(text, "text/xml");
+  const items = Array.from(xml.querySelectorAll("item"));
+  if (items.length === 0) throw new Error("No items");
+  return items.slice(0, 20).map((item) => ({
+    title: item.querySelector("title")?.textContent?.trim() || "News",
+    link: item.querySelector("link")?.textContent?.trim() || rssUrl,
+    pubDate: timeAgo(item.querySelector("pubDate")?.textContent?.trim() || ""),
+    description: (item.querySelector("description")?.textContent || "")
+      .replace(/<[^>]+>/g, "")
+      .slice(0, 160),
+    source: sourceName,
+  }));
+}
+
+async function fetchFeed(
+  rssUrl: string,
+  sourceName: string,
+): Promise<NewsArticle[]> {
+  // Try rss2json first, then allorigins as fallback
+  try {
+    return await fetchFeedViaRss2json(rssUrl, sourceName);
+  } catch {
+    return await fetchFeedViaAllOrigins(rssUrl, sourceName);
+  }
+}
+
 export function useNews() {
   const [articles, setArticles] = useState<NewsArticle[]>(STATIC_NEWS);
   const [loading, setLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchNews = useCallback(async () => {
+    setLoading(true);
     const feeds = [
       { url: "https://feeds.bbci.co.uk/news/world/rss.xml", name: "BBC World" },
       { url: "https://feeds.bbci.co.uk/news/rss.xml", name: "BBC News" },
@@ -230,9 +265,14 @@ export function useNews() {
         url: "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
         name: "Times of India",
       },
-      { url: "https://feeds.reuters.com/reuters/topNews", name: "Reuters" },
+      { url: "https://www.theguardian.com/world/rss", name: "The Guardian" },
+      {
+        url: "https://feeds.skynews.com/feeds/rss/world.xml",
+        name: "Sky News",
+      },
     ];
 
+    // Try feeds sequentially, stopping at first success
     for (const feed of feeds) {
       try {
         const items = await fetchFeed(feed.url, feed.name);
